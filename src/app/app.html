@@ -1,0 +1,38 @@
+<div style="max-width: 800px; margin: auto;">
+  <h2>🚗 Car Leasing Chart</h2>
+
+  <div class="controls">
+    <div class="field">
+      <label>Starting Price</label>
+      <input type="range" min="5000" max="150000" step="100" [(ngModel)]="capitalizedCosts" (input)="updateChart()" />
+      <input type="number" [(ngModel)]="capitalizedCosts" (input)="updateChart()" />
+    </div>
+    <div class="field">
+      <label>Residual Price</label>
+      <input type="range" min="0" max="100000" step="100" [(ngModel)]="residualPrice" (input)="updateChart()" />
+      <input type="number" [(ngModel)]="residualPrice" (input)="updateChart()" />
+    </div>
+    <div class="field">
+      <label>Interest Rate (%)</label>
+      <input type="range" min="0" max="20" step="0.01" [(ngModel)]="apr" (input)="updateChart()" />
+      <input type="number" [(ngModel)]="apr" (input)="updateChart()" />
+    </div>
+    <div class="field">
+      <label>Lease Duration (Months)</label>
+      <input type="range" min="12" max="84" step="1" [(ngModel)]="months" (input)="updateChart()" />
+      <input type="number" [(ngModel)]="months" (input)="updateChart()" />
+    </div>
+  </div>
+
+  <div>financeFee: {{financeFee}}</div>
+  <div>depreciationFee: {{depreciationFee}}</div>
+  <div>moneyFactor: {{moneyFactor}}</div>
+  <div>monthlyPayment total: {{monthlyPayment}}</div>
+  <div>adjustedCapCost: {{adjustedCapCost}}</div>
+
+  <canvas baseChart
+          [data]="chartData"
+          [type]="'line'"
+          [options]="{ responsive: true }">
+  </canvas>
+</div>
