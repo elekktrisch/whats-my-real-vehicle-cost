@@ -13,16 +13,28 @@ import {
   CategoryScale,
   Tooltip,
   Legend,
-  Filler
+  Filler,
 } from 'chart.js';
+import { SliderControl } from '../shared/slider-control/slider-control';
+import { KpiCard } from '../shared/kpi-card/kpi-card';
 
-Chart.register(LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Tooltip, Legend, Filler);
+Chart.register(
+  LineController,
+  LineElement,
+  PointElement,
+  LinearScale,
+  Title,
+  CategoryScale,
+  Tooltip,
+  Legend,
+  Filler,
+);
 
 @Component({
   selector: 'app-lease-tab',
-  imports: [FormsModule, BaseChartDirective, DecimalPipe],
+  imports: [FormsModule, BaseChartDirective, DecimalPipe, SliderControl, KpiCard],
   templateUrl: './lease-tab.html',
-  styleUrl: './lease-tab.scss'
+  styleUrl: './lease-tab.scss',
 })
 export class LeaseTab {
   capitalizedCosts = 34400;
@@ -31,11 +43,21 @@ export class LeaseTab {
   apr = 2.94;
   months = 48;
 
-  get adjustedCapCost() { return this.capitalizedCosts - this.downPayment; }
-  get moneyFactor() { return this.apr / 2400; }
-  get depreciationFee() { return (this.adjustedCapCost - this.residualPrice) / this.months; }
-  get financeFee() { return this.capitalizedCosts * this.moneyFactor; }
-  get monthlyPayment() { return this.depreciationFee + this.financeFee; }
+  get adjustedCapCost() {
+    return this.capitalizedCosts - this.downPayment;
+  }
+  get moneyFactor() {
+    return this.apr / 2400;
+  }
+  get depreciationFee() {
+    return (this.adjustedCapCost - this.residualPrice) / this.months;
+  }
+  get financeFee() {
+    return this.capitalizedCosts * this.moneyFactor;
+  }
+  get monthlyPayment() {
+    return this.depreciationFee + this.financeFee;
+  }
 
   chartData: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
 
@@ -59,9 +81,9 @@ export class LeaseTab {
           label: (ctx: any) => {
             const val = ctx.parsed.y as number;
             return `  $${Math.round(val).toLocaleString('en-US')}`;
-          }
-        }
-      }
+          },
+        },
+      },
     },
     scales: {
       x: {
@@ -71,23 +93,20 @@ export class LeaseTab {
           maxTicksLimit: 7,
         },
         grid: { color: 'rgba(255,255,255,0.04)' },
-        border: { color: 'rgba(255,255,255,0.07)' }
+        border: { color: 'rgba(255,255,255,0.07)' },
       },
       y: {
         ticks: {
           color: '#5c6d8f',
           font: { family: 'JetBrains Mono', size: 10 } as any,
-          callback: (v: any) => `$${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}`,
+          callback: (v: any) =>
+            `$${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}`,
         },
         grid: { color: 'rgba(255,255,255,0.04)' },
-        border: { color: 'rgba(255,255,255,0.07)' }
-      }
-    }
+        border: { color: 'rgba(255,255,255,0.07)' },
+      },
+    },
   };
-
-  getPct(value: number, min: number, max: number): string {
-    return `${((value - min) / (max - min)) * 100}%`;
-  }
 
   private updateTimer: ReturnType<typeof setTimeout> | null = null;
 

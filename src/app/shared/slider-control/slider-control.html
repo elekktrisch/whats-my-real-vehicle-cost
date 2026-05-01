@@ -1,0 +1,21 @@
+<div class="control-meta">
+  <label class="control-label">
+    {{ label }}
+    <app-info-badge [tip]="tip" />
+  </label>
+  <span class="control-readout">{{ readout }}</span>
+</div>
+<input
+  type="range"
+  class="slider"
+  [min]="min"
+  [max]="max"
+  [step]="step"
+  [value]="value"
+  (input)="onInput($event)"
+  [style.--pct]="pct"
+/>
+<div class="slider-bounds">
+  <span>{{ minLabel }}</span>
+  <span>{{ maxLabel }}</span>
+</div>
