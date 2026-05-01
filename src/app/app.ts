@@ -48,6 +48,8 @@ export class App {
     get monthlyPayment() { return this.depreciationFee + this.financeFee; }
     get debt() { return this.capitalizedCosts + this.financeFee + this.depreciationFee - this.downPayment; }
 
+    activeTab: 'lease' | 'financing' | 'cash' = 'lease';
+
     chartData: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
 
     private updateTimer: ReturnType<typeof setTimeout> | null = null;
