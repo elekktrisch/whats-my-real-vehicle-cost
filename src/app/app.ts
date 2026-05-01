@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { DecimalPipe } from '@angular/common';
 import { ChartConfiguration } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
 import {
@@ -27,7 +28,7 @@ Chart.register(
 );
 @Component({
   selector: 'app-root',
-  imports: [FormsModule, BaseChartDirective],
+  imports: [FormsModule, BaseChartDirective, DecimalPipe],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -47,27 +48,17 @@ export class App {
     get monthlyPayment() { return this.depreciationFee + this.financeFee; }
     get debt() { return this.capitalizedCosts + this.financeFee + this.depreciationFee - this.downPayment; }
 
-    chartData: ChartConfiguration<'line'>['data'] = {
-      labels: [],
-      datasets: [
-        {
-          data: [],
-          label: 'Car Value Over Time',
-          borderColor: '#3e95cd',
-          fill: false,
-        },
-        {
-          data: [],
-          label: 'Lease Debt Over Time',
-          borderColor: '#ff95cd',
-          fill: false,
-        },
-      ],
-    };
+    chartData: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
+
+    private updateTimer: ReturnType<typeof setTimeout> | null = null;
+
+    scheduleUpdate() {
+      if (this.updateTimer) clearTimeout(this.updateTimer);
+      this.updateTimer = setTimeout(() => this.updateChart(), 200);
+    }
 
     updateChart() {
       const depreciation = (this.capitalizedCosts - this.residualPrice) / this.months;
-      console.log("depreciation = " + depreciation);
       const labels = [];
       const data = [];
       const data2 = [];
@@ -78,9 +69,13 @@ export class App {
         data2.push(this.capitalizedCosts - depreciation * i);
       }
 
-      this.chartData.labels = labels;
-      this.chartData.datasets[0].data = data;
-      this.chartData.datasets[1].data = data2;
+      this.chartData = {
+        labels,
+        datasets: [
+          { data, label: 'Lease Debt Over Time', borderColor: '#ff95cd', fill: false },
+          { data: data2, label: 'Car Value Over Time', borderColor: '#3e95cd', fill: false },
+        ],
+      };
     }
 
     ngOnInit() {
