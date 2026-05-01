@@ -38,7 +38,6 @@ export class App {
   get depreciationFee() { return (this.adjustedCapCost - this.residualPrice) / this.months; }
   get financeFee() { return this.capitalizedCosts * this.moneyFactor; }
   get monthlyPayment() { return this.depreciationFee + this.financeFee; }
-  get debt() { return this.capitalizedCosts + this.financeFee + this.depreciationFee - this.downPayment; }
 
   activeTab: 'lease' | 'financing' | 'cash' = 'lease';
 
@@ -109,7 +108,7 @@ export class App {
 
     for (let i = 0; i <= this.months; i++) {
       labels.push(`Mo ${i}`);
-      debtData.push(this.debt - this.monthlyPayment * i);
+      debtData.push(this.monthlyPayment * (this.months - i));
       valueData.push(this.capitalizedCosts - depreciation * i);
     }
 
