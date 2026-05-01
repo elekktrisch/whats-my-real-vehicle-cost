@@ -5,7 +5,6 @@ import { LeaseTab } from './lease-tab/lease-tab';
   selector: 'app-root',
   imports: [LeaseTab],
   templateUrl: './app.html',
-  styleUrl: './app.scss'
 })
 export class App {
   protected readonly title = signal('car-leasing-chart');

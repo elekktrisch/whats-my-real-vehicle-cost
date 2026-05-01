@@ -1,0 +1,185 @@
+@import "tailwindcss";
+
+@source "./**/*.{html,ts}";
+
+@theme {
+  /* ── Color tokens ──────────────────────────────────────────────────────── */
+  --color-bg:           #07090f;
+  --color-surface:      #0d1117;
+  --color-elevated:     #111827;
+  --color-border:       rgba(255, 255, 255, 0.07);
+  --color-border-strong: rgba(255, 255, 255, 0.13);
+  --color-tx:           #dde3f0;
+  --color-tx-muted:     #8896b3;
+  --color-tx-dim:       #5c6d8f;
+  --color-accent:       #4f8ef7;
+  --color-accent-soft:  rgba(79, 142, 247, 0.1);
+  --color-accent-glow:  rgba(79, 142, 247, 0.22);
+  --color-coral:        #f4845f;
+
+  /* ── Font tokens ───────────────────────────────────────────────────────── */
+  --font-ui:   'Roboto', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    min-height: 100%;
+    background-color: var(--color-bg);
+    color: var(--color-tx);
+    font-family: var(--font-ui);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Radial glow behind the entire page */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(79, 142, 247, 0.07) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+
+@layer components {
+  /* ── Tab button animated underline ─────────────────────────────────────── */
+  .mode-btn::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: var(--color-accent);
+    transform: scaleX(0);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .mode-btn.active::after {
+    transform: scaleX(1);
+  }
+
+  .mode-btn.active .mode-dot {
+    background-color: var(--color-accent);
+    box-shadow: 0 0 7px var(--color-accent-glow);
+  }
+
+  /* ── Info-badge tooltip ─────────────────────────────────────────────────── */
+  /* content: attr() and precise positioning can't be expressed as utilities  */
+  .info-badge::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 8px);
+    transform: translateX(-50%);
+    width: 220px;
+    background: #141e33;
+    border: 1px solid var(--color-border-strong);
+    color: var(--color-tx);
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    font-weight: 400;
+    line-height: 1.55;
+    padding: 9px 11px;
+    border-radius: 7px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    white-space: normal;
+    z-index: 100;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+  }
+
+  .info-badge:hover::after {
+    opacity: 1;
+  }
+
+  /* ── Range slider ───────────────────────────────────────────────────────── */
+  /* Vendor pseudo-elements (::-webkit-slider-thumb, ::-moz-range-thumb)      */
+  /* and the CSS-variable gradient fill can't be expressed as Tailwind classes */
+  .slider {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    width: 100%;
+    height: 2px;
+    border-radius: 1px;
+    background: linear-gradient(
+      to right,
+      var(--color-accent) var(--pct, 0%),
+      var(--color-elevated) var(--pct, 0%)
+    );
+    outline: none;
+    cursor: pointer;
+  }
+
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2.5px solid var(--color-accent);
+    box-shadow: 0 0 0 3px var(--color-accent-soft);
+    cursor: pointer;
+    transition: box-shadow 0.15s, transform 0.15s;
+  }
+
+  .slider:hover::-webkit-slider-thumb,
+  .slider:focus::-webkit-slider-thumb {
+    box-shadow: 0 0 0 6px var(--color-accent-glow);
+    transform: scale(1.1);
+  }
+
+  .slider::-moz-range-thumb {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2.5px solid var(--color-accent);
+    cursor: pointer;
+  }
+
+  /* ── Number input — hide spin buttons ──────────────────────────────────── */
+  .num-input::-webkit-inner-spin-button,
+  .num-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+  }
+
+  .num-input {
+    -moz-appearance: textfield;
+  }
+
+  /* ── Hero card decorative radial overlays ──────────────────────────────── */
+  .hero-card::before {
+    content: '';
+    position: absolute;
+    top: -80px;
+    right: -80px;
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle, rgba(79, 142, 247, 0.07) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .hero-card::after {
+    content: '';
+    position: absolute;
+    bottom: -40px;
+    left: -40px;
+    width: 180px;
+    height: 180px;
+    background: radial-gradient(circle, rgba(244, 132, 95, 0.04) 0%, transparent 65%);
+    pointer-events: none;
+  }
+}

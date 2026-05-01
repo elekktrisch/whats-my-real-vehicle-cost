@@ -1,26 +1,35 @@
-<div class="app-shell">
+<div class="max-w-[1120px] mx-auto px-7 pb-[72px] relative z-[1]">
 
-  <header class="app-header">
-    <div class="header-brand">
-      <svg class="brand-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <header class="flex items-center justify-between pt-7 pb-[22px] border-b border-border mb-1">
+    <div class="flex items-center gap-2.5">
+      <svg class="w-5 h-5 text-accent" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
         <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
         <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
       </svg>
-      <span class="brand-name">WhatsMyVehicleCost</span>
+      <span class="font-ui text-[1.3rem] font-bold tracking-[0.03em] text-tx">WhatsMyVehicleCost</span>
     </div>
-    <span class="header-tag">Vehicle Finance Calculator</span>
+    <span class="font-ui text-[0.65rem] tracking-[0.12em] uppercase text-tx-dim">Vehicle Finance Calculator</span>
   </header>
 
-  <nav class="mode-nav">
-    <button class="mode-btn" [class.active]="activeTab === 'lease'" (click)="activeTab = 'lease'">
-      <span class="mode-dot"></span>Lease
+  <nav class="flex border-b border-border mb-7">
+    <button
+      class="mode-btn relative flex items-center gap-[7px] px-[22px] py-[14px] border-none bg-transparent cursor-pointer font-ui text-[0.8rem] font-medium tracking-[0.06em] uppercase text-tx-muted transition-colors duration-200 hover:text-tx"
+      [class.active]="activeTab === 'lease'"
+      (click)="activeTab = 'lease'">
+      <span class="mode-dot w-[5px] h-[5px] rounded-full bg-tx-dim shrink-0"></span>Lease
     </button>
-    <button class="mode-btn" [class.active]="activeTab === 'financing'" (click)="activeTab = 'financing'">
-      <span class="mode-dot"></span>Finance
+    <button
+      class="mode-btn relative flex items-center gap-[7px] px-[22px] py-[14px] border-none bg-transparent cursor-pointer font-ui text-[0.8rem] font-medium tracking-[0.06em] uppercase text-tx-muted transition-colors duration-200 hover:text-tx"
+      [class.active]="activeTab === 'financing'"
+      (click)="activeTab = 'financing'">
+      <span class="mode-dot w-[5px] h-[5px] rounded-full bg-tx-dim shrink-0"></span>Finance
     </button>
-    <button class="mode-btn" [class.active]="activeTab === 'cash'" (click)="activeTab = 'cash'">
-      <span class="mode-dot"></span>Cash
+    <button
+      class="mode-btn relative flex items-center gap-[7px] px-[22px] py-[14px] border-none bg-transparent cursor-pointer font-ui text-[0.8rem] font-medium tracking-[0.06em] uppercase text-tx-muted transition-colors duration-200 hover:text-tx"
+      [class.active]="activeTab === 'cash'"
+      (click)="activeTab = 'cash'">
+      <span class="mode-dot w-[5px] h-[5px] rounded-full bg-tx-dim shrink-0"></span>Cash
     </button>
   </nav>
 
@@ -29,24 +38,24 @@
   }
 
   @if (activeTab === 'financing') {
-    <div class="coming-soon">
-      <svg class="coming-soon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+    <div class="flex flex-col items-center justify-center gap-[14px] py-[110px]">
+      <svg class="w-11 h-11 text-tx-dim" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
         <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
       </svg>
-      <div class="coming-soon-title">Financing Calculator</div>
-      <div class="coming-soon-sub">Coming soon</div>
+      <div class="font-ui text-[1.5rem] font-medium text-tx-muted tracking-[0.02em]">Financing Calculator</div>
+      <div class="font-ui text-[0.65rem] tracking-[0.12em] uppercase text-tx-dim">Coming soon</div>
     </div>
   }
 
   @if (activeTab === 'cash') {
-    <div class="coming-soon">
-      <svg class="coming-soon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+    <div class="flex flex-col items-center justify-center gap-[14px] py-[110px]">
+      <svg class="w-11 h-11 text-tx-dim" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
         <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
         <line x1="1" y1="10" x2="23" y2="10"/>
       </svg>
-      <div class="coming-soon-title">Cash Purchase Calculator</div>
-      <div class="coming-soon-sub">Coming soon</div>
+      <div class="font-ui text-[1.5rem] font-medium text-tx-muted tracking-[0.02em]">Cash Purchase Calculator</div>
+      <div class="font-ui text-[0.65rem] tracking-[0.12em] uppercase text-tx-dim">Coming soon</div>
     </div>
   }
 

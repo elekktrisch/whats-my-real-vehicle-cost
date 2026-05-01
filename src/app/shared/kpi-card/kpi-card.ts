@@ -5,7 +5,10 @@ import { InfoBadge } from '../info-badge/info-badge';
   selector: 'app-kpi-card',
   imports: [InfoBadge],
   templateUrl: './kpi-card.html',
-  styleUrl: './kpi-card.scss',
+  host: {
+    class:
+      'block bg-surface border border-border rounded-[10px] py-[14px] px-4 transition-colors duration-[180ms] hover:border-border-strong',
+  },
 })
 export class KpiCard {
   @Input({ required: true }) label!: string;

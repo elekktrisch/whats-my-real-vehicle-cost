@@ -34,7 +34,6 @@ Chart.register(
   selector: 'app-lease-tab',
   imports: [FormsModule, BaseChartDirective, DecimalPipe, SliderControl, KpiCard],
   templateUrl: './lease-tab.html',
-  styleUrl: './lease-tab.scss',
 })
 export class LeaseTab {
   capitalizedCosts = 34400;

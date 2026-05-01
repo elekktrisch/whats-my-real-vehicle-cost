@@ -5,8 +5,7 @@ import { InfoBadge } from '../info-badge/info-badge';
   selector: 'app-slider-control',
   imports: [InfoBadge],
   templateUrl: './slider-control.html',
-  styleUrl: './slider-control.scss',
-  host: { class: 'control-row' },
+  host: { class: 'block mb-[22px]' },
 })
 export class SliderControl {
   @Input({ required: true }) label!: string;

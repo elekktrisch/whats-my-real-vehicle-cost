@@ -1,9 +1,9 @@
-<div class="control-meta">
-  <label class="control-label">
+<div class="flex justify-between items-baseline mb-[10px]">
+  <label class="flex items-center gap-[5px] text-[0.78rem] font-medium text-tx-muted">
     {{ label }}
     <app-info-badge [tip]="tip" />
   </label>
-  <span class="control-readout">{{ readout }}</span>
+  <span class="font-mono text-[0.88rem] font-medium text-tx tracking-[-0.01em]">{{ readout }}</span>
 </div>
 <input
   type="range"
@@ -15,7 +15,7 @@
   (input)="onInput($event)"
   [style.--pct]="pct"
 />
-<div class="slider-bounds">
+<div class="flex justify-between mt-[6px] font-mono text-[0.6rem] text-tx-dim">
   <span>{{ minLabel }}</span>
   <span>{{ maxLabel }}</span>
 </div>
