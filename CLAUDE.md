@@ -28,3 +28,7 @@ Single-page Angular 20 app (standalone components, no NgModules) that calculates
 **Tooltips**: Pure CSS using `data-tooltip` attributes and `::after` pseudo-elements — no JS tooltip library.
 
 **Styling**: Component-scoped SCSS at `src/app/app.scss`; global styles at `src/styles.scss`. Prettier is configured (100-char lines, single quotes) — run `npx prettier --write .` to format.
+
+
+## Dev Process
+Important: Whenever you need to find files, make sure to exclude the node_modules directory to avoid freezing the cli.
