@@ -47,6 +47,20 @@
         <div class="control-row">
           <div class="control-meta">
             <label class="control-label">
+              Down Payment
+              <span class="info-badge" data-tip="Cash paid upfront to reduce the net amount financed. Subtracts directly from the Starting Price to give the Adjusted Cap Cost.">?</span>
+            </label>
+            <span class="control-readout">${{downPayment | number:'1.0-0'}}</span>
+          </div>
+          <input type="range" class="slider" min="0" max="50000" step="100"
+                 [(ngModel)]="downPayment" (input)="scheduleUpdate()"
+                 [style.--pct]="getPct(downPayment, 0, 50000)" />
+          <div class="slider-bounds"><span>$0</span><span>$50k</span></div>
+        </div>
+
+        <div class="control-row">
+          <div class="control-meta">
+            <label class="control-label">
               Residual Value
               <span class="info-badge" data-tip="The estimated value of the car at the end of the lease, set by the leasing company. A higher residual value means lower monthly payments.">?</span>
             </label>
@@ -90,6 +104,10 @@
           <div class="quick-field">
             <span class="quick-label">Starting Price</span>
             <input type="number" class="num-input" [(ngModel)]="capitalizedCosts" (input)="scheduleUpdate()" />
+          </div>
+          <div class="quick-field">
+            <span class="quick-label">Down Payment</span>
+            <input type="number" class="num-input" [(ngModel)]="downPayment" (input)="scheduleUpdate()" />
           </div>
           <div class="quick-field">
             <span class="quick-label">Residual Value</span>

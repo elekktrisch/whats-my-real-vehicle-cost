@@ -56,8 +56,8 @@ export class App {
         borderColor: 'rgba(255,255,255,0.10)',
         borderWidth: 1,
         titleColor: '#dde3f0',
-        bodyColor: '#5a6a8a',
-        titleFont: { family: 'Outfit', size: 12, weight: '500' } as any,
+        bodyColor: '#8896b3',
+        titleFont: { family: 'Roboto', size: 12, weight: '500' } as any,
         bodyFont: { family: 'JetBrains Mono', size: 11 } as any,
         padding: 10,
         callbacks: {
@@ -71,7 +71,7 @@ export class App {
     scales: {
       x: {
         ticks: {
-          color: '#303d57',
+          color: '#5c6d8f',
           font: { family: 'JetBrains Mono', size: 10 } as any,
           maxTicksLimit: 7,
         },
@@ -80,7 +80,7 @@ export class App {
       },
       y: {
         ticks: {
-          color: '#303d57',
+          color: '#5c6d8f',
           font: { family: 'JetBrains Mono', size: 10 } as any,
           callback: (v: any) => `$${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}`,
         },
