@@ -1,5 +1,4 @@
 import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { ChartConfiguration } from 'chart.js';
@@ -13,19 +12,12 @@ import {
   Title,
   CategoryScale,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 } from 'chart.js';
 
-Chart.register(
-  LineController,
-  LineElement,
-  PointElement,
-  LinearScale,
-  Title,
-  CategoryScale,
-  Tooltip,
-  Legend
-);
+Chart.register(LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Tooltip, Legend, Filler);
+
 @Component({
   selector: 'app-root',
   imports: [FormsModule, BaseChartDirective, DecimalPipe],
@@ -35,52 +27,124 @@ Chart.register(
 export class App {
   protected readonly title = signal('car-leasing-chart');
 
-    capitalizedCosts = 34400;
-    downPayment = 15000;
-    residualPrice = 15300;
-    apr = 2.94;
-    months = 48;
+  capitalizedCosts = 34400;
+  downPayment = 15000;
+  residualPrice = 15300;
+  apr = 2.94;
+  months = 48;
 
-    get adjustedCapCost() { return this.capitalizedCosts - this.downPayment; }
-    get moneyFactor() { return this.apr / 2400; }
-    get depreciationFee() { return (this.adjustedCapCost - this.residualPrice) / this.months; }
-    get financeFee() { return this.capitalizedCosts * this.moneyFactor; }
-    get monthlyPayment() { return this.depreciationFee + this.financeFee; }
-    get debt() { return this.capitalizedCosts + this.financeFee + this.depreciationFee - this.downPayment; }
+  get adjustedCapCost() { return this.capitalizedCosts - this.downPayment; }
+  get moneyFactor() { return this.apr / 2400; }
+  get depreciationFee() { return (this.adjustedCapCost - this.residualPrice) / this.months; }
+  get financeFee() { return this.capitalizedCosts * this.moneyFactor; }
+  get monthlyPayment() { return this.depreciationFee + this.financeFee; }
+  get debt() { return this.capitalizedCosts + this.financeFee + this.depreciationFee - this.downPayment; }
 
-    activeTab: 'lease' | 'financing' | 'cash' = 'lease';
+  activeTab: 'lease' | 'financing' | 'cash' = 'lease';
 
-    chartData: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
+  chartData: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
 
-    private updateTimer: ReturnType<typeof setTimeout> | null = null;
-
-    scheduleUpdate() {
-      if (this.updateTimer) clearTimeout(this.updateTimer);
-      this.updateTimer = setTimeout(() => this.updateChart(), 200);
-    }
-
-    updateChart() {
-      const depreciation = (this.capitalizedCosts - this.residualPrice) / this.months;
-      const labels = [];
-      const data = [];
-      const data2 = [];
-
-      for (let i = 0; i <= this.months; i++) {
-        labels.push(`Month ${i}`);
-        data.push(this.debt - this.monthlyPayment * i);
-        data2.push(this.capitalizedCosts - depreciation * i);
+  readonly chartOptions: ChartConfiguration<'line'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: true,
+    animation: { duration: 280 },
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#141e33',
+        borderColor: 'rgba(255,255,255,0.10)',
+        borderWidth: 1,
+        titleColor: '#dde3f0',
+        bodyColor: '#5a6a8a',
+        titleFont: { family: 'Outfit', size: 12, weight: '500' } as any,
+        bodyFont: { family: 'JetBrains Mono', size: 11 } as any,
+        padding: 10,
+        callbacks: {
+          label: (ctx: any) => {
+            const val = ctx.parsed.y as number;
+            return `  $${Math.round(val).toLocaleString('en-US')}`;
+          }
+        }
       }
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: '#303d57',
+          font: { family: 'JetBrains Mono', size: 10 } as any,
+          maxTicksLimit: 7,
+        },
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        border: { color: 'rgba(255,255,255,0.07)' }
+      },
+      y: {
+        ticks: {
+          color: '#303d57',
+          font: { family: 'JetBrains Mono', size: 10 } as any,
+          callback: (v: any) => `$${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}`,
+        },
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        border: { color: 'rgba(255,255,255,0.07)' }
+      }
+    }
+  };
 
-      this.chartData = {
-        labels,
-        datasets: [
-          { data, label: 'Lease Debt Over Time', borderColor: '#ff95cd', fill: false },
-          { data: data2, label: 'Car Value Over Time', borderColor: '#3e95cd', fill: false },
-        ],
-      };
+  getPct(value: number, min: number, max: number): string {
+    return `${((value - min) / (max - min)) * 100}%`;
+  }
+
+  private updateTimer: ReturnType<typeof setTimeout> | null = null;
+
+  scheduleUpdate() {
+    if (this.updateTimer) clearTimeout(this.updateTimer);
+    this.updateTimer = setTimeout(() => this.updateChart(), 200);
+  }
+
+  updateChart() {
+    const depreciation = (this.capitalizedCosts - this.residualPrice) / this.months;
+    const labels: string[] = [];
+    const debtData: number[] = [];
+    const valueData: number[] = [];
+
+    for (let i = 0; i <= this.months; i++) {
+      labels.push(`Mo ${i}`);
+      debtData.push(this.debt - this.monthlyPayment * i);
+      valueData.push(this.capitalizedCosts - depreciation * i);
     }
 
-    ngOnInit() {
-      this.updateChart();
-    }
+    this.chartData = {
+      labels,
+      datasets: [
+        {
+          data: debtData,
+          label: 'Lease Debt',
+          borderColor: '#f4845f',
+          backgroundColor: 'rgba(244, 132, 95, 0.05)',
+          fill: true,
+          tension: 0.3,
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          pointHoverBackgroundColor: '#f4845f',
+        },
+        {
+          data: valueData,
+          label: 'Vehicle Value',
+          borderColor: '#4f8ef7',
+          backgroundColor: 'rgba(79, 142, 247, 0.05)',
+          fill: true,
+          tension: 0.3,
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          pointHoverBackgroundColor: '#4f8ef7',
+        },
+      ],
+    };
+  }
+
+  ngOnInit() {
+    this.updateChart();
+  }
 }

@@ -1,108 +1,191 @@
-<div style="max-width: 800px; margin: auto;">
-  <h2>🚗 Car Leasing Calculator</h2>
+<div class="app-shell">
 
-  <div class="tabs">
-    <button class="tab" [class.active]="activeTab === 'lease'" (click)="activeTab = 'lease'">Lease</button>
-    <button class="tab" [class.active]="activeTab === 'financing'" (click)="activeTab = 'financing'">Financing</button>
-    <button class="tab" [class.active]="activeTab === 'cash'" (click)="activeTab = 'cash'">Cash</button>
-  </div>
+  <header class="app-header">
+    <div class="header-brand">
+      <svg class="brand-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>
+      <span class="brand-name">LeasePro</span>
+    </div>
+    <span class="header-tag">Vehicle Finance Calculator</span>
+  </header>
 
-  <div class="tab-content">
+  <nav class="mode-nav">
+    <button class="mode-btn" [class.active]="activeTab === 'lease'" (click)="activeTab = 'lease'">
+      <span class="mode-dot"></span>Lease
+    </button>
+    <button class="mode-btn" [class.active]="activeTab === 'financing'" (click)="activeTab = 'financing'">
+      <span class="mode-dot"></span>Finance
+    </button>
+    <button class="mode-btn" [class.active]="activeTab === 'cash'" (click)="activeTab = 'cash'">
+      <span class="mode-dot"></span>Cash
+    </button>
+  </nav>
 
-    @if (activeTab === 'lease') {
-      <div class="controls">
-        <div class="field">
-          <label>
-            Starting Price
-            <span class="tip" data-tip="The negotiated purchase price of the car before any down payment is applied. Also called the gross capitalized cost.">ℹ</span>
-          </label>
-          <input type="range" min="5000" max="150000" step="100" [(ngModel)]="capitalizedCosts" (input)="scheduleUpdate()" />
-          <input type="number" [(ngModel)]="capitalizedCosts" (input)="scheduleUpdate()" />
-        </div>
-        <div class="field">
-          <label>
-            Residual Price
-            <span class="tip" data-tip="The estimated value of the car at the end of the lease, set by the leasing company. A higher residual value means lower monthly payments.">ℹ</span>
-          </label>
-          <input type="range" min="0" max="100000" step="100" [(ngModel)]="residualPrice" (input)="scheduleUpdate()" />
-          <input type="number" [(ngModel)]="residualPrice" (input)="scheduleUpdate()" />
-        </div>
-        <div class="field">
-          <label>
-            Interest Rate (%)
-            <span class="tip" data-tip="The annual percentage rate (APR) charged on the lease. Divide by 2400 to get the money factor used in lease calculations.">ℹ</span>
-          </label>
-          <input type="range" min="0" max="20" step="0.01" [(ngModel)]="apr" (input)="scheduleUpdate()" />
-          <input type="number" [(ngModel)]="apr" (input)="scheduleUpdate()" />
-        </div>
-        <div class="field">
-          <label>
-            Lease Duration (Months)
-            <span class="tip" data-tip="How long the lease runs in months. Common terms are 24, 36, 48, or 60 months. Longer leases lower monthly payments but increase total interest paid.">ℹ</span>
-          </label>
-          <input type="range" min="12" max="84" step="1" [(ngModel)]="months" (input)="scheduleUpdate()" />
-          <input type="number" [(ngModel)]="months" (input)="scheduleUpdate()" />
-        </div>
-      </div>
+  @if (activeTab === 'lease') {
+    <div class="workspace">
 
-      <div class="metrics">
-        <div class="metric">
-          <span class="metric-label">
-            Adjusted Cap Cost
-            <span class="tip" data-tip="Starting Price minus your down payment. This is the net amount the lease is calculated on.">ℹ</span>
-          </span>
-          <span class="metric-value">{{adjustedCapCost | number:'1.0-0'}}</span>
-        </div>
-        <div class="metric">
-          <span class="metric-label">
-            Money Factor
-            <span class="tip" data-tip="The interest rate expressed as a small decimal (APR ÷ 2400). Multiply by 2400 to convert back to an APR percentage.">ℹ</span>
-          </span>
-          <span class="metric-value">{{moneyFactor | number:'1.0-6'}}</span>
-        </div>
-        <div class="metric">
-          <span class="metric-label">
-            Depreciation Fee
-            <span class="tip" data-tip="The monthly portion of the car's value you pay for. Calculated as (Adjusted Cap Cost − Residual Price) ÷ Months.">ℹ</span>
-          </span>
-          <span class="metric-value">{{depreciationFee | number:'1.2-2'}}</span>
-        </div>
-        <div class="metric">
-          <span class="metric-label">
-            Finance Fee
-            <span class="tip" data-tip="The monthly interest charge. Calculated as Starting Price × Money Factor. Also called the rent charge.">ℹ</span>
-          </span>
-          <span class="metric-value">{{financeFee | number:'1.2-2'}}</span>
-        </div>
-        <div class="metric highlight">
-          <span class="metric-label">
-            Monthly Payment
-            <span class="tip" data-tip="Your total estimated monthly lease payment: Depreciation Fee + Finance Fee.">ℹ</span>
-          </span>
-          <span class="metric-value">{{monthlyPayment | number:'1.2-2'}}</span>
-        </div>
-      </div>
+      <aside class="controls-panel">
+        <div class="panel-heading">Parameters</div>
 
-      <canvas baseChart
-              [data]="chartData"
-              [type]="'line'"
-              [options]="{ responsive: true }">
-      </canvas>
-    }
+        <div class="control-row">
+          <div class="control-meta">
+            <label class="control-label">
+              Starting Price
+              <span class="info-badge" data-tip="The negotiated purchase price of the car before any down payment is applied. Also called the gross capitalized cost.">?</span>
+            </label>
+            <span class="control-readout">${{capitalizedCosts | number:'1.0-0'}}</span>
+          </div>
+          <input type="range" class="slider" min="5000" max="150000" step="100"
+                 [(ngModel)]="capitalizedCosts" (input)="scheduleUpdate()"
+                 [style.--pct]="getPct(capitalizedCosts, 5000, 150000)" />
+          <div class="slider-bounds"><span>$5k</span><span>$150k</span></div>
+        </div>
 
-    @if (activeTab === 'financing') {
-      <div class="placeholder">
-        <div class="placeholder-icon">🏦</div>
-        <div class="placeholder-text">Financing calculator coming soon</div>
-      </div>
-    }
+        <div class="control-row">
+          <div class="control-meta">
+            <label class="control-label">
+              Residual Value
+              <span class="info-badge" data-tip="The estimated value of the car at the end of the lease, set by the leasing company. A higher residual value means lower monthly payments.">?</span>
+            </label>
+            <span class="control-readout">${{residualPrice | number:'1.0-0'}}</span>
+          </div>
+          <input type="range" class="slider" min="0" max="100000" step="100"
+                 [(ngModel)]="residualPrice" (input)="scheduleUpdate()"
+                 [style.--pct]="getPct(residualPrice, 0, 100000)" />
+          <div class="slider-bounds"><span>$0</span><span>$100k</span></div>
+        </div>
 
-    @if (activeTab === 'cash') {
-      <div class="placeholder">
-        <div class="placeholder-icon">💵</div>
-        <div class="placeholder-text">Cash purchase calculator coming soon</div>
-      </div>
-    }
+        <div class="control-row">
+          <div class="control-meta">
+            <label class="control-label">
+              Interest Rate
+              <span class="info-badge" data-tip="The annual percentage rate (APR) charged on the lease. Divide by 2400 to get the money factor used in lease calculations.">?</span>
+            </label>
+            <span class="control-readout">{{apr | number:'1.2-2'}}%</span>
+          </div>
+          <input type="range" class="slider" min="0" max="20" step="0.01"
+                 [(ngModel)]="apr" (input)="scheduleUpdate()"
+                 [style.--pct]="getPct(apr, 0, 20)" />
+          <div class="slider-bounds"><span>0%</span><span>20%</span></div>
+        </div>
 
-  </div>
+        <div class="control-row">
+          <div class="control-meta">
+            <label class="control-label">
+              Lease Term
+              <span class="info-badge" data-tip="How long the lease runs in months. Common terms are 24, 36, 48, or 60 months. Longer leases lower monthly payments but increase total interest paid.">?</span>
+            </label>
+            <span class="control-readout">{{months}} mo</span>
+          </div>
+          <input type="range" class="slider" min="12" max="84" step="1"
+                 [(ngModel)]="months" (input)="scheduleUpdate()"
+                 [style.--pct]="getPct(months, 12, 84)" />
+          <div class="slider-bounds"><span>12 mo</span><span>84 mo</span></div>
+        </div>
+
+        <div class="quick-inputs">
+          <div class="quick-field">
+            <span class="quick-label">Starting Price</span>
+            <input type="number" class="num-input" [(ngModel)]="capitalizedCosts" (input)="scheduleUpdate()" />
+          </div>
+          <div class="quick-field">
+            <span class="quick-label">Residual Value</span>
+            <input type="number" class="num-input" [(ngModel)]="residualPrice" (input)="scheduleUpdate()" />
+          </div>
+          <div class="quick-field">
+            <span class="quick-label">APR %</span>
+            <input type="number" class="num-input" [(ngModel)]="apr" (input)="scheduleUpdate()" />
+          </div>
+          <div class="quick-field">
+            <span class="quick-label">Months</span>
+            <input type="number" class="num-input" [(ngModel)]="months" (input)="scheduleUpdate()" />
+          </div>
+        </div>
+      </aside>
+
+      <main class="results-panel">
+
+        <div class="hero-card">
+          <div class="hero-eyebrow">Monthly Payment</div>
+          <div class="hero-amount">
+            <span class="hero-currency">$</span><span class="hero-number">{{monthlyPayment | number:'1.2-2'}}</span>
+          </div>
+          <div class="hero-sub">{{months}}-month lease &nbsp;·&nbsp; {{apr | number:'1.2-2'}}% APR</div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">
+              Adj. Cap Cost
+              <span class="info-badge" data-tip="Starting Price minus your down payment. This is the net amount the lease is calculated on.">?</span>
+            </div>
+            <div class="kpi-value">${{adjustedCapCost | number:'1.0-0'}}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">
+              Money Factor
+              <span class="info-badge" data-tip="The interest rate expressed as a small decimal (APR ÷ 2400). Multiply by 2400 to convert back to an APR percentage.">?</span>
+            </div>
+            <div class="kpi-value">{{moneyFactor | number:'1.0-6'}}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">
+              Depreciation / mo
+              <span class="info-badge" data-tip="The monthly portion of the car's value you pay for. Calculated as (Adjusted Cap Cost − Residual Price) ÷ Months.">?</span>
+            </div>
+            <div class="kpi-value">${{depreciationFee | number:'1.2-2'}}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">
+              Finance Fee / mo
+              <span class="info-badge" data-tip="The monthly interest charge. Calculated as Starting Price × Money Factor. Also called the rent charge.">?</span>
+            </div>
+            <div class="kpi-value">${{financeFee | number:'1.2-2'}}</div>
+          </div>
+        </div>
+
+        <div class="chart-wrapper">
+          <div class="chart-header">
+            <span class="chart-title">Lease Debt vs. Vehicle Value</span>
+            <div class="chart-legend">
+              <span class="legend-item"><span class="legend-dot" style="background:#f4845f"></span>Lease Debt</span>
+              <span class="legend-item"><span class="legend-dot" style="background:#4f8ef7"></span>Vehicle Value</span>
+            </div>
+          </div>
+          <canvas baseChart
+                  [data]="chartData"
+                  [type]="'line'"
+                  [options]="chartOptions">
+          </canvas>
+        </div>
+
+      </main>
+    </div>
+  }
+
+  @if (activeTab === 'financing') {
+    <div class="coming-soon">
+      <svg class="coming-soon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+      <div class="coming-soon-title">Financing Calculator</div>
+      <div class="coming-soon-sub">Coming soon</div>
+    </div>
+  }
+
+  @if (activeTab === 'cash') {
+    <div class="coming-soon">
+      <svg class="coming-soon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+        <line x1="1" y1="10" x2="23" y2="10"/>
+      </svg>
+      <div class="coming-soon-title">Cash Purchase Calculator</div>
+      <div class="coming-soon-sub">Coming soon</div>
+    </div>
+  }
+
 </div>
