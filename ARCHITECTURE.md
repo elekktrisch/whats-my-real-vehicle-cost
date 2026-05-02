@@ -4,11 +4,12 @@ How [PRODUCT.md](./PRODUCT.md) and [USE_CASES.md](./USE_CASES.md) get built. Ang
 
 ## Progress (last updated 2026-05-02)
 
-Phases 1 and 2 are landed; the running app is still on the legacy single-tab Lease screen until Phase 3 wires the new shell.
+Phases 1–3 are landed. The running app is now the new TabPage shell wired to `ScenarioStore`, with a working Lease tab and a stacked-area TCO chart. Finance and Cash are placeholders until Phase 6.
 
 - **Phase 1 — Foundation: ✅ done.** `src/app/scenario/` holds `scenario.types.ts`, `locale.config.ts`, `scenario.defaults.ts`, `scenario.store.ts`, and `calculations/` (depreciation, msrp, category, financing, opportunity, fuel, tco, recommendation). 46 unit specs cover the calculations.
-- **Phase 2 — Atoms: ✅ done.** Existing atoms (`slider-control`, `kpi-card`, `info-badge`) migrated to signal-based `input()` / `model()` I/O at their original paths under `shared/`. Six new atoms added under `shared/atoms/`: `button`, `toggle`, `number-input`, `icon`, `label`, `divider`. The slider's readout was replaced with an inline editable value (prefix / suffix / fractionDigits), so the legacy lease-tab no longer renders the duplicate quick-input grid.
-- **Phases 3–8: ⏳ pending.** Build order below. Phase 3 is the first one that visibly changes the running UI.
+- **Phase 2 — Atoms: ✅ done.** Existing atoms (`slider-control`, `kpi-card`, `info-badge`) migrated to signal-based `input()` / `model()` I/O at their original paths under `shared/`. Six new atoms added under `shared/atoms/`: `button`, `toggle`, `number-input`, `icon`, `label`, `divider`. The slider's readout was replaced with an inline editable value (prefix / suffix / fractionDigits).
+- **Phase 3 — TabPage shell + LeaseTab refactor + TCO chart: ✅ done.** Five molecules added under `shared/molecules/`: `tab-strip`, `vehicle-context-bar`, `kpi-bar`, `lease-end-section`, `slider-group` (header-bar deferred to Phase 4 since it carries edit-answers / wizard hooks). `features/chart/tco-chart-desktop/` renders the 6-layer stacked-area Chart.js view. `features/lease-tab/` is the new store-wired lease tab (financing inputs + TCO inputs section using the override pattern + lease-end section). `features/finance-tab/` and `features/cash-tab/` exist as "Coming in phase 6" placeholders. `pages/tab-page/` assembles the shell. Legacy `lease-tab/` and `app.html` are removed; `app.ts` is now a 7-line shell that renders `<app-tab-page/>`.
+- **Phases 4–8: ⏳ pending.** Phase 4 (Splash + Wizard + routing) is next. Routing also unlocks the deferred `header-bar` molecule (edit-answers needs the wizard route).
 - **Doc note:** USE_CASES.md UC2 quotes a back-derived MSRP of ~€25k for a 4-yr-old €15k Golf, but the PRODUCT.md curve (20% yr1 + 15%/yr yr2-5) actually produces ~€30.5k. PRODUCT.md is canonical; UC2's narrative number is the one that drifts.
 
 ## Guiding principles
@@ -367,15 +368,15 @@ Use-case tests are the primary regression net. They walk a real user through the
 
 | Status | Current | Action | Target |
 |---|---|---|---|
-| ⏳ | `app.ts` (root with all state) | Refactor to a thin shell | `app.ts` = `<router-outlet/>` + boot logic |
-| ⏳ | `app.html` (tab toggle + placeholders) | Move tab toggle into `tab-strip` molecule; placeholders deleted | `pages/tab-page/` |
-| ⏳ | `lease-tab/lease-tab.ts` | Strip the chart + chart options out; keep financing math; add TCO inputs section + lease-end section | `features/lease-tab/` |
-| ⏳ | Chart definition (in lease-tab) | Replaced wholesale (different chart type) | `features/chart/tco-chart-desktop/` + `tco-chart-mobile/` |
+| ✅ | `app.ts` (root with all state) | Refactored to a thin shell rendering `<app-tab-page/>` (router-outlet swap-in is Phase 4) | `app.ts` = thin shell |
+| ✅ | `app.html` (tab toggle + placeholders) | Deleted; tab toggle is now the `tab-strip` molecule; placeholder Finance/Cash are full feature components | `pages/tab-page/` |
+| ✅ | `lease-tab/lease-tab.ts` | Rewritten on top of `ScenarioStore`; financing math now lives in `scenario/calculations/financing.ts`; TCO inputs section + lease-end section in place | `features/lease-tab/` |
+| 🟡 | Chart definition (in lease-tab) | Desktop stacked-area Chart.js renderer done; mobile composition is Phase 7 | `features/chart/tco-chart-desktop/` ✅, `tco-chart-mobile/` ⏳ |
 | ✅ | `shared/slider-control` | Migrated to signal `input()` / `model()`; readout is now an inline editable value (prefix / suffix / fractionDigits) | Same path |
 | ✅ | `shared/kpi-card` | Migrated to signal input | Same path |
 | ✅ | `shared/info-badge` | Migrated to signal input | Same path |
 | ✅ | (none) | New atoms: `button`, `toggle`, `number-input`, `icon`, `label`, `divider` | `shared/atoms/` |
-| ⏳ | (none) | New molecules: `header-bar`, `vehicle-context-bar`, `kpi-bar`, `lease-end-section`, `tab-strip`, `slider-group` | `shared/molecules/` |
+| 🟡 | (none) | New molecules: `tab-strip`, `vehicle-context-bar`, `kpi-bar`, `lease-end-section`, `slider-group` ✅; `header-bar` ⏳ (deferred to Phase 4 with edit-answers / wizard route) | `shared/molecules/` |
 | ✅ | (none) | New service: `ScenarioStore` | `scenario/` |
 | ✅ | (none) | New module: pure calculations + 46 unit specs | `scenario/calculations/` |
 | ⏳ | (none) | New routing setup | `app.routes.ts` |
@@ -386,7 +387,7 @@ Mirrors the use-case priority from USE_CASES.md:
 
 1. ✅ **Foundation:** types + `calculations/` + `ScenarioStore` (no UI yet, all unit-tested). Verify by inspecting computed values in tests.
 2. ✅ **Atoms migration:** `SliderControl`, `KpiCard`, `InfoBadge` migrated to signal I/O. Added `button`, `toggle`, `number-input`, `icon`, `label`, `divider`.
-3. ⏳ **TabPage shell + LeaseTab refactor:** rebuild lease tab as the first feature wired to the store. Add TCO inputs and lease-end section. New chart components (desktop only first). **First phase that visibly changes the running app.**
+3. ✅ **TabPage shell + LeaseTab refactor:** lease tab rebuilt on top of `ScenarioStore` with TCO inputs + lease-end section; desktop stacked-area chart renders. The new TabPage is what the app shows on load.
 4. ⏳ **Wizard + SplashPage + routing:** the entry-flow comes after the tab works, since the wizard's job is to populate store values that the tab already knows how to render.
 5. ⏳ **Persistence + URL sync:** layer on the effects; verify hydration with manual URL paste.
 6. ⏳ **Finance + Cash tabs:** with the lease tab as template, these are mostly variation on financing math.
