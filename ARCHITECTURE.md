@@ -13,6 +13,7 @@ Phases 1–4 are landed. The running app is the new routed TabPage shell with Sp
 - **Phase 4 calibration fixes (post-testing):**
     - **Rolling lease for hand-back:** previously the chart looked identical to "buy out" when keep > term because (a) `defaultScenario()` initialized `leaseEndChoice: 'handBack'` as an explicit override, suppressing auto-derive, and (b) the hand-back path in `tco.ts` flatlined lease costs after term while continuing to charge insurance/fuel/maintenance for a car the user no longer had. The new model: hand-back means rolling-lease across the full keep duration — lease payments continue, handback fees fire at every cycle boundary plus once at month=keep if it lands mid-cycle, down payment is charged once on the first cycle. `LeaseInputs.leaseEndChoice` is now nullable (null = auto-derive).
     - **Insurance recalibrated:** PRODUCT.md baselines were 5% US / 4% EU with luxury × 1.5 — produced €6k/yr for a 100k EU lux-tier car against ~€1600/yr real-world. New baselines are 2% US / 1.5% EU with luxury × 1.3, mid × 1.15. PRODUCT.md updated to match; the calc is the new ground truth.
+    - **TCO inputs lifted to global:** insurance / maintenance / fuel-efficiency / fuel-price / home-charger-install were originally per-tab in PRODUCT.md, but they're properties of the vehicle, not the financing decision — and per-tab overrides break the cross-tab comparison story. They now live in a single `running-costs-bar` molecule above the tab strip; the override pattern collapsed from `PerTabSignal<number | null>` to plain `signal<number | null>`; `setOverride(slot, value)` lost its tab parameter; `ScenarioSnapshot.overrides` is now a flat `TcoOverrides` (was `PerTabOverrides`). PRODUCT.md updated to "Global TCO inputs".
 - **Phases 5–8: ⏳ pending.** Phase 5 (Persistence + URL sync via `effect`s + APP_INITIALIZER hydration) is next.
 - **Doc note:** USE_CASES.md UC2 narrates ~€25k back-derived MSRP for a 4-yr-old €15k Golf and €600/yr insurance; the canonical PRODUCT.md curve produces ~€30.5k MSRP, which lands in Mid category, and the new insurance formula gives ~€260/yr. UC2 is annotated; the narrative was written against an older parameterization.
 
@@ -101,22 +102,31 @@ Three effects, all in `ScenarioStore` constructor (or initialized from `inject(D
 2. **`urlSyncEffect`** — reads the full state, calls `router.navigate([], { queryParams, replaceUrl: true })`. Same debounce. Uses a `private isHydrating` guard signal to avoid the URL-write → navigation-event → hydrate → URL-write loop.
 3. **`hydrationBootstrap`** — *not* an effect; runs once during APP_INITIALIZER (or in the root component's constructor). Reads URL query params first, then localStorage, then defaults. Sets all signals via `untracked()` to skip downstream effects during hydration. Sets `isHydrating = false` when done.
 
+### Why TCO inputs are global, not per-tab
+
+Insurance, maintenance, fuel-efficiency, fuel-price and home-charger-install are properties of the vehicle, not of the financing decision. Per-tab overrides would also defeat the whole point of the app: the cross-tab comparison only works if the running-cost assumptions are identical across tabs. They live in a single `running-costs-bar` molecule above the tab strip; the store exposes plain `insurance: Signal<number>` etc., not `insurance(tab)`.
+
 ### Why two-signal override (not `linkedSignal`)
 
 `linkedSignal` re-runs its computation whenever its source changes, including over a user-set value (unless you use the `previousValue` parameter and complex predicates). The two-signal pattern matches the desired UX more naturally:
 
 ```ts
-private insuranceOverrideLease = signal<number | null>(null);
-insuranceDefaultLease = computed(() =>
-  this.purchasePrice() * (this.locale() === 'US' ? 0.05 : 0.04)
-                       * this.categoryMultipliers().insurance,
-);
-insuranceLease = computed(() =>
-  this.insuranceOverrideLease() ?? this.insuranceDefaultLease(),
-);
+class ScenarioStore {
+  private _insuranceOverride = signal<number | null>(null);
+  private insuranceDefault = computed(
+    () =>
+      this.purchasePrice() *
+      this.localeConfig().insuranceRate *
+      this.categoryMultipliers().insurance,
+  );
+  readonly insurance = computed(
+    () => this._insuranceOverride() ?? this.insuranceDefault(),
+  );
 
-setInsuranceLease(v: number) { this.insuranceOverrideLease.set(v); }
-resetInsuranceLease()         { this.insuranceOverrideLease.set(null); }
+  setOverride(slot: TcoSlot, value: number | null) {
+    // routes value into the matching _xOverride signal
+  }
+}
 ```
 
 Once the user sets a value, it sticks. Resetting goes back to derived. Only the override (often `null`) gets serialized to URL — keeps URLs short.
@@ -295,10 +305,12 @@ export const routes: Routes = [
 `scenario.serializer.ts` exposes:
 
 ```ts
-toQueryParams(state: ScenarioSnapshot): Record<string, string>
-fromQueryParams(params: ParamMap): Partial<ScenarioSnapshot>
-toLocalStorage(state: ScenarioSnapshot): string         // JSON
-fromLocalStorage(raw: string): Partial<ScenarioSnapshot>
+interface ScenarioSerializer {
+  toQueryParams(state: ScenarioSnapshot): Record<string, string>;
+  fromQueryParams(params: ParamMap): Partial<ScenarioSnapshot>;
+  toLocalStorage(state: ScenarioSnapshot): string; // JSON
+  fromLocalStorage(raw: string): Partial<ScenarioSnapshot>;
+}
 ```
 
 Both encoders skip `null` overrides — keeps URLs short. Schema versioning: localStorage key includes `.v1`; if a future schema breaks, bump to `.v2` and ignore old payloads.
@@ -306,16 +318,18 @@ Both encoders skip `null` overrides — keeps URLs short. Schema versioning: loc
 ### Debouncing inside an effect
 
 ```ts
-constructor() {
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  effect(() => {
-    const snapshot = this.snapshot();          // touches all signals
-    if (this.isHydrating()) return;
-    untracked(() => {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => this.persist(snapshot), 200);
+class ScenarioStore {
+  constructor() {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    effect(() => {
+      const snapshot = this.snapshot(); // touches all signals
+      if (this.isHydrating()) return;
+      untracked(() => {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => this.persist(snapshot), 200);
+      });
     });
-  });
+  }
 }
 ```
 
@@ -374,13 +388,13 @@ Use-case tests are the primary regression net. They walk a real user through the
 |---|---|---|---|
 | ✅ | `app.ts` (root with all state) | Refactored to `<router-outlet/>` shell | `app.ts` = router-outlet shell |
 | ✅ | `app.html` (tab toggle + placeholders) | Deleted; tab toggle is now the `tab-strip` molecule; placeholder Finance/Cash are full feature components | `pages/tab-page/` |
-| ✅ | `lease-tab/lease-tab.ts` | Rewritten on top of `ScenarioStore`; financing math now lives in `scenario/calculations/financing.ts`; TCO inputs section + lease-end section in place | `features/lease-tab/` |
+| ✅ | `lease-tab/lease-tab.ts` | Rewritten on top of `ScenarioStore`; financing math now lives in `scenario/calculations/financing.ts`; lease-financing slider group + lease-end section. TCO inputs lifted to global `running-costs-bar` molecule. | `features/lease-tab/` |
 | 🟡 | Chart definition (in lease-tab) | Desktop stacked-area Chart.js renderer done; mobile composition is Phase 7 | `features/chart/tco-chart-desktop/` ✅, `tco-chart-mobile/` ⏳ |
 | ✅ | `shared/slider-control` | Migrated to signal `input()` / `model()`; readout is now an inline editable value (prefix / suffix / fractionDigits) | Same path |
 | ✅ | `shared/kpi-card` | Migrated to signal input | Same path |
 | ✅ | `shared/info-badge` | Migrated to signal input | Same path |
 | ✅ | (none) | New atoms: `button`, `toggle`, `number-input`, `icon`, `label`, `divider` | `shared/atoms/` |
-| ✅ | (none) | New molecules: `tab-strip`, `vehicle-context-bar`, `kpi-bar`, `lease-end-section`, `slider-group`, `header-bar` | `shared/molecules/` |
+| ✅ | (none) | New molecules: `tab-strip`, `vehicle-context-bar`, `running-costs-bar`, `kpi-bar`, `lease-end-section`, `slider-group`, `header-bar` | `shared/molecules/` |
 | ✅ | (none) | New service: `ScenarioStore` | `scenario/` |
 | ✅ | (none) | New module: pure calculations + 46 unit specs | `scenario/calculations/` |
 | ✅ | (none) | New routing setup with five lazy-loaded routes (`/`, `/wizard`, `/lease`, `/finance`, `/cash`) | `app.routes.ts` |

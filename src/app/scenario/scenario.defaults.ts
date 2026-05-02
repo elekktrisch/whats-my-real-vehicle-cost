@@ -40,11 +40,7 @@ export function defaultScenario(localeOverride?: Locale): ScenarioSnapshot {
     cash: {
       opportunityCostRate: 0.05,
     },
-    overrides: {
-      lease: { ...EMPTY_OVERRIDES },
-      finance: { ...EMPTY_OVERRIDES },
-      cash: { ...EMPTY_OVERRIDES },
-    },
+    overrides: { ...EMPTY_OVERRIDES },
   };
 }
 

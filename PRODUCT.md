@@ -57,11 +57,13 @@ User can override the recommendation by clicking a different tab.
 - Finance: APR, loan term
 - Cash: expected investment return (0–10%, default 5%) — drives opportunity-cost line in TCO
 
-**Per-tab TCO inputs** (defaults derived from globals; user can override on tab):
+**Global TCO inputs** (defaults derived from globals; user-overrideable; shared across all three tabs so the cross-tab comparison stays apples-to-apples):
 - Insurance / yr
 - Maintenance / yr
 - Fuel or electricity (price per unit + efficiency)
 - Home charger install (EV only, visible by default, $0 or ~$1500/€1200)
+
+These are properties of the *vehicle*, not of the financing decision — the same car costs the same to insure / fuel / maintain whether you lease, finance or pay cash.
 
 ## Lease-end mechanics
 

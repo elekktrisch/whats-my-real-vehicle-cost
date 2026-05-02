@@ -49,18 +49,12 @@ export interface TcoOverrides {
   homeChargerInstall: number | null;
 }
 
-export interface PerTabOverrides {
-  lease: TcoOverrides;
-  finance: TcoOverrides;
-  cash: TcoOverrides;
-}
-
 export interface ScenarioSnapshot {
   globals: Globals;
   lease: LeaseInputs;
   finance: FinanceInputs;
   cash: CashInputs;
-  overrides: PerTabOverrides;
+  overrides: TcoOverrides;
 }
 
 export type CostCategory =

@@ -13,27 +13,14 @@ import { backDeriveMsrp } from './calculations/msrp';
 import { categorize, categoryMultipliers } from './calculations/category';
 import { leasePayment } from './calculations/financing';
 import { recommendTab } from './calculations/recommendation';
-import {
-  costPerDistance,
-  effectiveMonthly,
-  tcoBreakdown,
-} from './calculations/tco';
+import { costPerDistance, effectiveMonthly, tcoBreakdown } from './calculations/tco';
 
-type TcoSlot = 'insurance' | 'maintenance' | 'fuelEfficiency' | 'fuelPrice' | 'homeChargerInstall';
-
-interface PerTabSignal<T> {
-  lease: ReturnType<typeof signal<T>>;
-  finance: ReturnType<typeof signal<T>>;
-  cash: ReturnType<typeof signal<T>>;
-}
-
-function makePerTab<T>(value: T): PerTabSignal<T> {
-  return {
-    lease: signal<T>(value),
-    finance: signal<T>(value),
-    cash: signal<T>(value),
-  };
-}
+export type TcoSlot =
+  | 'insurance'
+  | 'maintenance'
+  | 'fuelEfficiency'
+  | 'fuelPrice'
+  | 'homeChargerInstall';
 
 @Injectable({ providedIn: 'root' })
 export class ScenarioStore {
@@ -64,11 +51,15 @@ export class ScenarioStore {
 
   readonly opportunityCostRate = signal(this.initial.cash.opportunityCostRate);
 
-  private readonly _insuranceOverride = makePerTab<number | null>(null);
-  private readonly _maintenanceOverride = makePerTab<number | null>(null);
-  private readonly _fuelEfficiencyOverride = makePerTab<number | null>(null);
-  private readonly _fuelPriceOverride = makePerTab<number | null>(null);
-  private readonly _homeChargerOverride = makePerTab<number | null>(null);
+  private readonly _insuranceOverride = signal<number | null>(this.initial.overrides.insurance);
+  private readonly _maintenanceOverride = signal<number | null>(this.initial.overrides.maintenance);
+  private readonly _fuelEfficiencyOverride = signal<number | null>(
+    this.initial.overrides.fuelEfficiency,
+  );
+  private readonly _fuelPriceOverride = signal<number | null>(this.initial.overrides.fuelPrice);
+  private readonly _homeChargerOverride = signal<number | null>(
+    this.initial.overrides.homeChargerInstall,
+  );
 
   readonly hasHydrated = signal(false);
   private readonly _isHydrating = signal(false);
@@ -94,20 +85,17 @@ export class ScenarioStore {
   private fuelPriceDefaultSignal = computed(() =>
     fuelPriceDefault(this.locale(), this.powertrain()),
   );
-  private homeChargerDefault = computed(() =>
-    this.powertrain() === 'EV' ? 0 : 0,
-  );
+  private homeChargerDefault = computed(() => 0);
 
-  readonly insurance = (tab: Tab): Signal<number> =>
-    computed(() => this._insuranceOverride[tab]() ?? this.insuranceDefault());
-  readonly maintenance = (tab: Tab): Signal<number> =>
-    computed(() => this._maintenanceOverride[tab]() ?? this.maintenanceDefault());
-  readonly fuelEfficiency = (tab: Tab): Signal<number> =>
-    computed(() => this._fuelEfficiencyOverride[tab]() ?? this.fuelEfficiencyDefaultSignal());
-  readonly fuelPrice = (tab: Tab): Signal<number> =>
-    computed(() => this._fuelPriceOverride[tab]() ?? this.fuelPriceDefaultSignal());
-  readonly homeChargerInstall = (tab: Tab): Signal<number> =>
-    computed(() => this._homeChargerOverride[tab]() ?? this.homeChargerDefault());
+  readonly insurance = computed(() => this._insuranceOverride() ?? this.insuranceDefault());
+  readonly maintenance = computed(() => this._maintenanceOverride() ?? this.maintenanceDefault());
+  readonly fuelEfficiency = computed(
+    () => this._fuelEfficiencyOverride() ?? this.fuelEfficiencyDefaultSignal(),
+  );
+  readonly fuelPrice = computed(() => this._fuelPriceOverride() ?? this.fuelPriceDefaultSignal());
+  readonly homeChargerInstall = computed(
+    () => this._homeChargerOverride() ?? this.homeChargerDefault(),
+  );
 
   readonly recommendedTab = computed(() =>
     recommendTab({
@@ -157,11 +145,11 @@ export class ScenarioStore {
       annualMileage: this.annualMileage(),
       keepDurationYears: this.keepDuration(),
       downPayment: this.downPayment(),
-      insuranceAnnual: this.insurance('lease')(),
-      maintenanceAnnual: this.maintenance('lease')(),
-      fuelEfficiency: this.fuelEfficiency('lease')(),
-      fuelPrice: this.fuelPrice('lease')(),
-      homeChargerInstall: this.homeChargerInstall('lease')(),
+      insuranceAnnual: this.insurance(),
+      maintenanceAnnual: this.maintenance(),
+      fuelEfficiency: this.fuelEfficiency(),
+      fuelPrice: this.fuelPrice(),
+      homeChargerInstall: this.homeChargerInstall(),
       categoryMultipliers: this.categoryMultipliers(),
       apr: this.leaseApr(),
       leaseTermMonths: this.leaseTerm(),
@@ -184,11 +172,11 @@ export class ScenarioStore {
       annualMileage: this.annualMileage(),
       keepDurationYears: this.keepDuration(),
       downPayment: this.downPayment(),
-      insuranceAnnual: this.insurance('finance')(),
-      maintenanceAnnual: this.maintenance('finance')(),
-      fuelEfficiency: this.fuelEfficiency('finance')(),
-      fuelPrice: this.fuelPrice('finance')(),
-      homeChargerInstall: this.homeChargerInstall('finance')(),
+      insuranceAnnual: this.insurance(),
+      maintenanceAnnual: this.maintenance(),
+      fuelEfficiency: this.fuelEfficiency(),
+      fuelPrice: this.fuelPrice(),
+      homeChargerInstall: this.homeChargerInstall(),
       categoryMultipliers: this.categoryMultipliers(),
       apr: this.financeApr(),
       loanTermMonths: this.loanTerm(),
@@ -206,11 +194,11 @@ export class ScenarioStore {
       annualMileage: this.annualMileage(),
       keepDurationYears: this.keepDuration(),
       downPayment: this.downPayment(),
-      insuranceAnnual: this.insurance('cash')(),
-      maintenanceAnnual: this.maintenance('cash')(),
-      fuelEfficiency: this.fuelEfficiency('cash')(),
-      fuelPrice: this.fuelPrice('cash')(),
-      homeChargerInstall: this.homeChargerInstall('cash')(),
+      insuranceAnnual: this.insurance(),
+      maintenanceAnnual: this.maintenance(),
+      fuelEfficiency: this.fuelEfficiency(),
+      fuelPrice: this.fuelPrice(),
+      homeChargerInstall: this.homeChargerInstall(),
       categoryMultipliers: this.categoryMultipliers(),
       opportunityCostRate: this.opportunityCostRate(),
     }),
@@ -236,15 +224,15 @@ export class ScenarioStore {
     return this.cashBreakdown;
   }
 
-  setOverride(tab: Tab, slot: TcoSlot, value: number | null): void {
-    const map: Record<TcoSlot, PerTabSignal<number | null>> = {
+  setOverride(slot: TcoSlot, value: number | null): void {
+    const map: Record<TcoSlot, ReturnType<typeof signal<number | null>>> = {
       insurance: this._insuranceOverride,
       maintenance: this._maintenanceOverride,
       fuelEfficiency: this._fuelEfficiencyOverride,
       fuelPrice: this._fuelPriceOverride,
       homeChargerInstall: this._homeChargerOverride,
     };
-    map[slot][tab].set(value);
+    map[slot].set(value);
   }
 
   setLeaseEndChoice(value: LeaseEndChoice | null): void {
@@ -269,11 +257,7 @@ export class ScenarioStore {
       lease: { ...this.initial.lease, ...(snap.lease ?? {}) },
       finance: { ...this.initial.finance, ...(snap.finance ?? {}) },
       cash: { ...this.initial.cash, ...(snap.cash ?? {}) },
-      overrides: {
-        lease: { ...this.initial.overrides.lease, ...(snap.overrides?.lease ?? {}) },
-        finance: { ...this.initial.overrides.finance, ...(snap.overrides?.finance ?? {}) },
-        cash: { ...this.initial.overrides.cash, ...(snap.overrides?.cash ?? {}) },
-      },
+      overrides: { ...this.initial.overrides, ...(snap.overrides ?? {}) },
     };
     this._isHydrating.set(true);
     try {
@@ -299,34 +283,17 @@ export class ScenarioStore {
       this.loanTerm.set(merged.finance.loanTerm);
       this.opportunityCostRate.set(merged.cash.opportunityCostRate);
 
-      const tabs: Tab[] = ['lease', 'finance', 'cash'];
-      for (const tab of tabs) {
-        this._insuranceOverride[tab].set(merged.overrides[tab].insurance);
-        this._maintenanceOverride[tab].set(merged.overrides[tab].maintenance);
-        this._fuelEfficiencyOverride[tab].set(merged.overrides[tab].fuelEfficiency);
-        this._fuelPriceOverride[tab].set(merged.overrides[tab].fuelPrice);
-        this._homeChargerOverride[tab].set(merged.overrides[tab].homeChargerInstall);
-      }
+      this._insuranceOverride.set(merged.overrides.insurance);
+      this._maintenanceOverride.set(merged.overrides.maintenance);
+      this._fuelEfficiencyOverride.set(merged.overrides.fuelEfficiency);
+      this._fuelPriceOverride.set(merged.overrides.fuelPrice);
+      this._homeChargerOverride.set(merged.overrides.homeChargerInstall);
     } finally {
       this._isHydrating.set(false);
     }
   }
 
   snapshot(): ScenarioSnapshot {
-    const tabs: Tab[] = ['lease', 'finance', 'cash'];
-    const overrides = tabs.reduce(
-      (acc, tab) => {
-        acc[tab] = {
-          insurance: this._insuranceOverride[tab](),
-          maintenance: this._maintenanceOverride[tab](),
-          fuelEfficiency: this._fuelEfficiencyOverride[tab](),
-          fuelPrice: this._fuelPriceOverride[tab](),
-          homeChargerInstall: this._homeChargerOverride[tab](),
-        };
-        return acc;
-      },
-      {} as ScenarioSnapshot['overrides'],
-    );
     return {
       globals: {
         locale: this.locale(),
@@ -355,7 +322,13 @@ export class ScenarioStore {
       cash: {
         opportunityCostRate: this.opportunityCostRate(),
       },
-      overrides,
+      overrides: {
+        insurance: this._insuranceOverride(),
+        maintenance: this._maintenanceOverride(),
+        fuelEfficiency: this._fuelEfficiencyOverride(),
+        fuelPrice: this._fuelPriceOverride(),
+        homeChargerInstall: this._homeChargerOverride(),
+      },
     };
   }
 

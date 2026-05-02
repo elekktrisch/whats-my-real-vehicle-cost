@@ -5,6 +5,7 @@ import { ScenarioStore } from '../../scenario/scenario.store';
 import { TabStrip } from '../../shared/molecules/tab-strip/tab-strip';
 import { HeaderBar } from '../../shared/molecules/header-bar/header-bar';
 import { VehicleContextBar } from '../../shared/molecules/vehicle-context-bar/vehicle-context-bar';
+import { RunningCostsBar } from '../../shared/molecules/running-costs-bar/running-costs-bar';
 import { KpiBar, KpiSpec } from '../../shared/molecules/kpi-bar/kpi-bar';
 import { LeaseTab } from '../../features/lease-tab/lease-tab';
 import { FinanceTab } from '../../features/finance-tab/finance-tab';
@@ -19,6 +20,7 @@ import type { Tab } from '../../scenario/scenario.types';
     HeaderBar,
     TabStrip,
     VehicleContextBar,
+    RunningCostsBar,
     KpiBar,
     LeaseTab,
     FinanceTab,
@@ -31,6 +33,7 @@ import type { Tab } from '../../scenario/scenario.types';
 
       <div class="flex flex-col gap-5 mt-5">
         <app-vehicle-context-bar />
+        <app-running-costs-bar />
 
         <app-tab-strip
           [active]="store.activeTab()"
