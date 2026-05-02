@@ -1,5 +1,4 @@
 import { Component } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { ChartConfiguration } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
@@ -32,7 +31,7 @@ Chart.register(
 
 @Component({
   selector: 'app-lease-tab',
-  imports: [FormsModule, BaseChartDirective, DecimalPipe, SliderControl, KpiCard],
+  imports: [BaseChartDirective, DecimalPipe, SliderControl, KpiCard],
   templateUrl: './lease-tab.html',
 })
 export class LeaseTab {

@@ -1,21 +1,42 @@
-<div class="flex justify-between items-baseline mb-[10px]">
+<div class="flex justify-between items-baseline mb-[10px] gap-3">
   <label class="flex items-center gap-[5px] text-[0.78rem] font-medium text-tx-muted">
-    {{ label }}
-    <app-info-badge [tip]="tip" />
+    {{ label() }}
+    <app-info-badge [tip]="tip()" />
   </label>
-  <span class="font-mono text-[0.88rem] font-medium text-tx tracking-[-0.01em]">{{ readout }}</span>
+
+  <div
+    class="slider-readout group inline-flex items-baseline gap-[2px] font-mono text-[0.88rem] font-medium text-tx tracking-[-0.01em] rounded-md px-[6px] py-[2px] transition-colors duration-150 focus-within:bg-elevated focus-within:ring-1 focus-within:ring-accent/40"
+  >
+    @if (prefix()) {
+      <span class="text-tx-muted/80 group-focus-within:text-tx-muted">{{ prefix() }}</span>
+    }
+    <input
+      type="text"
+      inputmode="decimal"
+      class="num-input bg-transparent border-none outline-none text-right text-tx font-mono tracking-[-0.01em] w-[7ch] caret-accent"
+      [value]="display()"
+      (focus)="focused.set(true)"
+      (blur)="onBlur($event)"
+      (input)="onTyped($event)"
+    />
+    @if (suffix()) {
+      <span class="text-tx-muted/80 group-focus-within:text-tx-muted">{{ suffix() }}</span>
+    }
+  </div>
 </div>
+
 <input
   type="range"
   class="slider"
-  [min]="min"
-  [max]="max"
-  [step]="step"
-  [value]="value"
-  (input)="onInput($event)"
-  [style.--pct]="pct"
+  [min]="min()"
+  [max]="max()"
+  [step]="step()"
+  [value]="value()"
+  (input)="onSlider($event)"
+  [style.--pct]="pct()"
 />
+
 <div class="flex justify-between mt-[6px] font-mono text-[0.6rem] text-tx-dim">
-  <span>{{ minLabel }}</span>
-  <span>{{ maxLabel }}</span>
+  <span>{{ minLabel() }}</span>
+  <span>{{ maxLabel() }}</span>
 </div>

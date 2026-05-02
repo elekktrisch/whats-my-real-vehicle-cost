@@ -1,5 +1,5 @@
 <div class="flex items-center gap-1 text-[0.7rem] font-medium text-tx-muted mb-[9px] whitespace-nowrap">
-  {{ label }}
-  <app-info-badge [tip]="tip" />
+  {{ label() }}
+  <app-info-badge [tip]="tip()" />
 </div>
-<div class="font-mono text-[1.02rem] font-medium text-tx tracking-[-0.02em]">{{ value }}</div>
+<div class="font-mono text-[1.02rem] font-medium text-tx tracking-[-0.02em]">{{ value() }}</div>

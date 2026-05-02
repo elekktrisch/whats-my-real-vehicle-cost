@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { InfoBadge } from '../info-badge/info-badge';
 
 @Component({
@@ -11,7 +11,7 @@ import { InfoBadge } from '../info-badge/info-badge';
   },
 })
 export class KpiCard {
-  @Input({ required: true }) label!: string;
-  @Input({ required: true }) tip!: string;
-  @Input({ required: true }) value!: string;
+  readonly label = input.required<string>();
+  readonly tip = input.required<string>();
+  readonly value = input.required<string>();
 }

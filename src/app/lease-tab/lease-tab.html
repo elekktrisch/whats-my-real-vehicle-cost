@@ -10,9 +10,9 @@
       tip="The negotiated purchase price of the car before any down payment is applied. Also called the gross capitalized cost."
       [min]="5000" [max]="150000" [step]="100"
       minLabel="$5k" maxLabel="$150k"
-      [readout]="'$' + (capitalizedCosts | number:'1.0-0')"
-      [value]="capitalizedCosts"
-      (valueChange)="capitalizedCosts = $event; scheduleUpdate()"
+      prefix="$"
+      [(value)]="capitalizedCosts"
+      (valueChange)="scheduleUpdate()"
     />
 
     <app-slider-control
@@ -20,9 +20,9 @@
       tip="Cash paid upfront to reduce the net amount financed. Subtracts directly from the Starting Price to give the Adjusted Cap Cost."
       [min]="0" [max]="50000" [step]="100"
       minLabel="$0" maxLabel="$50k"
-      [readout]="'$' + (downPayment | number:'1.0-0')"
-      [value]="downPayment"
-      (valueChange)="downPayment = $event; scheduleUpdate()"
+      prefix="$"
+      [(value)]="downPayment"
+      (valueChange)="scheduleUpdate()"
     />
 
     <app-slider-control
@@ -30,9 +30,9 @@
       tip="The estimated value of the car at the end of the lease, set by the leasing company. A higher residual value means lower monthly payments."
       [min]="0" [max]="100000" [step]="100"
       minLabel="$0" maxLabel="$100k"
-      [readout]="'$' + (residualPrice | number:'1.0-0')"
-      [value]="residualPrice"
-      (valueChange)="residualPrice = $event; scheduleUpdate()"
+      prefix="$"
+      [(value)]="residualPrice"
+      (valueChange)="scheduleUpdate()"
     />
 
     <app-slider-control
@@ -40,9 +40,10 @@
       tip="The annual percentage rate (APR) charged on the lease. Divide by 2400 to get the money factor used in lease calculations."
       [min]="0" [max]="20" [step]="0.01"
       minLabel="0%" maxLabel="20%"
-      [readout]="(apr | number:'1.2-2') + '%'"
-      [value]="apr"
-      (valueChange)="apr = $event; scheduleUpdate()"
+      suffix="%"
+      [fractionDigits]="2"
+      [(value)]="apr"
+      (valueChange)="scheduleUpdate()"
     />
 
     <app-slider-control
@@ -50,38 +51,10 @@
       tip="How long the lease runs in months. Common terms are 24, 36, 48, or 60 months. Longer leases lower monthly payments but increase total interest paid."
       [min]="12" [max]="84" [step]="1"
       minLabel="12 mo" maxLabel="84 mo"
-      [readout]="months + ' mo'"
-      [value]="months"
-      (valueChange)="months = $event; scheduleUpdate()"
+      suffix=" mo"
+      [(value)]="months"
+      (valueChange)="scheduleUpdate()"
     />
-
-    <div class="grid grid-cols-2 gap-[10px] mt-[22px] pt-[18px] border-t border-border">
-      <div class="flex flex-col gap-[5px]">
-        <span class="text-[0.62rem] font-medium tracking-[0.07em] uppercase text-tx-dim">Starting Price</span>
-        <input type="number" class="num-input bg-elevated border border-border rounded-[7px] py-[7px] px-[10px] text-tx font-mono text-[0.8rem] outline-none w-full transition-[border-color,box-shadow] duration-150 focus:border-accent focus:shadow-[0_0_0_3px_var(--color-accent-soft)]"
-               [(ngModel)]="capitalizedCosts" (input)="scheduleUpdate()" />
-      </div>
-      <div class="flex flex-col gap-[5px]">
-        <span class="text-[0.62rem] font-medium tracking-[0.07em] uppercase text-tx-dim">Down Payment</span>
-        <input type="number" class="num-input bg-elevated border border-border rounded-[7px] py-[7px] px-[10px] text-tx font-mono text-[0.8rem] outline-none w-full transition-[border-color,box-shadow] duration-150 focus:border-accent focus:shadow-[0_0_0_3px_var(--color-accent-soft)]"
-               [(ngModel)]="downPayment" (input)="scheduleUpdate()" />
-      </div>
-      <div class="flex flex-col gap-[5px]">
-        <span class="text-[0.62rem] font-medium tracking-[0.07em] uppercase text-tx-dim">Residual Value</span>
-        <input type="number" class="num-input bg-elevated border border-border rounded-[7px] py-[7px] px-[10px] text-tx font-mono text-[0.8rem] outline-none w-full transition-[border-color,box-shadow] duration-150 focus:border-accent focus:shadow-[0_0_0_3px_var(--color-accent-soft)]"
-               [(ngModel)]="residualPrice" (input)="scheduleUpdate()" />
-      </div>
-      <div class="flex flex-col gap-[5px]">
-        <span class="text-[0.62rem] font-medium tracking-[0.07em] uppercase text-tx-dim">APR %</span>
-        <input type="number" class="num-input bg-elevated border border-border rounded-[7px] py-[7px] px-[10px] text-tx font-mono text-[0.8rem] outline-none w-full transition-[border-color,box-shadow] duration-150 focus:border-accent focus:shadow-[0_0_0_3px_var(--color-accent-soft)]"
-               [(ngModel)]="apr" (input)="scheduleUpdate()" />
-      </div>
-      <div class="flex flex-col gap-[5px]">
-        <span class="text-[0.62rem] font-medium tracking-[0.07em] uppercase text-tx-dim">Months</span>
-        <input type="number" class="num-input bg-elevated border border-border rounded-[7px] py-[7px] px-[10px] text-tx font-mono text-[0.8rem] outline-none w-full transition-[border-color,box-shadow] duration-150 focus:border-accent focus:shadow-[0_0_0_3px_var(--color-accent-soft)]"
-               [(ngModel)]="months" (input)="scheduleUpdate()" />
-      </div>
-    </div>
   </aside>
 
   <main class="flex flex-col gap-[14px]">
