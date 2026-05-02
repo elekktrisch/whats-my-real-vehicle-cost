@@ -342,7 +342,7 @@ export class ScenarioStore {
       lease: {
         apr: this.leaseApr(),
         leaseTerm: this.leaseTerm(),
-        leaseEndChoice: this._leaseEndOverride() ?? this.leaseEndChoice(),
+        leaseEndChoice: this._leaseEndOverride(),
         dispositionFee: this._dispositionFeeOverride(),
         mileageOverageRate: this._mileageOverageRateOverride(),
         excessWearEstimate: this._excessWearOverride(),

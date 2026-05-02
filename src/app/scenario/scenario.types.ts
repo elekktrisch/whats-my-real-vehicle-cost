@@ -24,7 +24,8 @@ export interface Globals {
 export interface LeaseInputs {
   apr: number;
   leaseTerm: number;
-  leaseEndChoice: LeaseEndChoice;
+  /** null = auto-derive from keep-duration vs. lease term. Set by the user toggle. */
+  leaseEndChoice: LeaseEndChoice | null;
   dispositionFee: number | null;
   mileageOverageRate: number | null;
   excessWearEstimate: number | null;

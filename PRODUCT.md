@@ -65,16 +65,15 @@ User can override the recommendation by clicking a different tab.
 
 ## Lease-end mechanics
 
-The Lease tab includes an "End of lease" section, **auto-derived** from keep-duration vs. lease term and overrideable:
+The Lease tab includes an "End of lease" section, **auto-derived** from keep-duration vs. lease term and overrideable. Both modes work for any keep-duration:
 
-- If keep-duration ≤ lease term → **Hand back** auto-selected
+- **Hand back** (rolling lease) — auto-selected when keep ≤ term, but valid for any keep
   - Sliders: disposition fee, mileage overage rate, expected excess wear/tear ($0–$3000, with tooltip "≈$500–$1500 typical 3-yr wear; $2000+ with kids/pets/city parking")
-- If keep-duration > lease term → **Buy out** auto-selected
+  - When keep > term we assume the user signs a fresh, comparable lease at every term boundary. Lease payments continue throughout the keep duration; handback fees fire at every cycle boundary (and once more at month=keep if it lands mid-cycle). Down payment is charged once, on the first cycle.
+- **Buy out** — auto-selected when keep > term
   - Buyout fee slider; residual (already in globals) becomes the buyout price
   - Buyout assumed paid in cash (no buyout-loan modeling in v1)
-  - Chart extends past lease-end with continued ownership costs (no more lease payments)
-
-Flipping the toggle adjusts keep-duration to stay logically consistent.
+  - Chart extends past lease-end with continued ownership costs (no more lease payments, but depreciation, insurance, fuel and maintenance keep accruing)
 
 ## TCO model — 5 cost categories
 
@@ -83,7 +82,7 @@ Flipping the toggle adjusts keep-duration to stay logically consistent.
 | Depreciation / Lease cost | Financing math | Different per tab |
 | Financing cost | APR / money factor / opportunity cost | Different per tab |
 | Fuel or electricity | Price × efficiency × mileage | Powertrain-conditional input |
-| Insurance | `purchase_price × {0.05 US, 0.04 EU} × categoryMult` | Annual |
+| Insurance | `purchase_price × {0.02 US, 0.015 EU} × categoryMult` | Annual |
 | Maintenance | `MSRP × {1.5% ICE, 0.7% EV} × (1 + age × 0.1) × categoryMult` | Annual |
 
 **MSRP back-derivation:**
@@ -98,8 +97,8 @@ else:         msrp = purchase_price / depreciationFactor(age)
 | MSRP band (US / EU) | Category | Maintenance × | Insurance × |
 |---|---|---|---|
 | <$35k / <€30k | Economy | 1.0 | 1.0 |
-| $35–70k / €30–60k | Mid | 1.3 | 1.2 |
-| >$70k / >€60k | Luxury | 1.8 | 1.5 |
+| $35–70k / €30–60k | Mid | 1.3 | 1.15 |
+| >$70k / >€60k | Luxury | 1.8 | 1.3 |
 
 **Explicitly out of scope for v1:** registration fees (too noisy), separate sales tax (folded into purchase price as all-in), battery replacement (too speculative), tire replacement separately (folded into maintenance), EV-specific depreciation curve (residual slider lets the user handle it), PHEV (not modeled — Hybrid users select ICE and dial in their MPG).
 
@@ -116,7 +115,7 @@ else:         msrp = purchase_price / depreciationFactor(age)
 | Fuel price | $/gal | €/L |
 | Electricity | $/kWh | €/kWh |
 | Lease label | "Money factor" | "Leasingfaktor" |
-| Insurance baseline | 5% of purchase price | 4% of purchase price |
+| Insurance baseline | 2% of purchase price | 1.5% of purchase price |
 
 Underlying lease math is identical (money factor = APR/2400); only labels differ.
 

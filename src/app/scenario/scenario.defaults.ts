@@ -27,7 +27,7 @@ export function defaultScenario(localeOverride?: Locale): ScenarioSnapshot {
     lease: {
       apr: 4.5,
       leaseTerm: 36,
-      leaseEndChoice: 'handBack',
+      leaseEndChoice: null,
       dispositionFee: null,
       mileageOverageRate: null,
       excessWearEstimate: null,

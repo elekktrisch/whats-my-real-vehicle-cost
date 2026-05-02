@@ -132,46 +132,62 @@ function summarize(series: MonthlyTcoPoint[]): CostBreakdown {
 function leaseTco(input: LeaseTcoInputs): CostBreakdown {
   const series = buildCommonSeries(input);
   const totalMonths = series.length - 1;
+  const term = Math.max(input.leaseTermMonths, 1);
   const lease = leasePayment({
     capCost: input.purchasePrice,
     downPayment: input.downPayment,
     residualValue: input.residualValue,
     apr: input.apr,
-    termMonths: input.leaseTermMonths,
+    termMonths: term,
   });
-  const leasePeriod = Math.min(input.leaseTermMonths, totalMonths);
   const buyOut = input.leaseEndChoice === 'buyOut';
 
+  if (buyOut) {
+    const leasePeriod = Math.min(term, totalMonths);
+    for (let m = 1; m <= leasePeriod; m++) {
+      const prev = series[m - 1];
+      series[m].depreciationOrLease =
+        prev.depreciationOrLease + lease.depreciationFee + input.downPayment / leasePeriod;
+      series[m].financing = prev.financing + lease.financeFee;
+    }
+    const buyoutTotal = input.residualValue + input.buyoutFee;
+    if (leasePeriod <= totalMonths) {
+      for (let m = leasePeriod; m <= totalMonths; m++) {
+        series[m].leaseEnd = buyoutTotal;
+      }
+    }
+    if (totalMonths > leasePeriod) {
+      const ownedMonths = totalMonths - leasePeriod;
+      const ownedDepreciation = Math.max(input.residualValue - input.residualValue * 0.6, 0);
+      const perMonth = ownedDepreciation / ownedMonths;
+      for (let m = leasePeriod + 1; m <= totalMonths; m++) {
+        const prev = series[m - 1];
+        series[m].depreciationOrLease = prev.depreciationOrLease + perMonth;
+        series[m].financing = prev.financing;
+      }
+    }
+    return summarize(series);
+  }
+
+  // Hand back: rolling lease across the full keep duration.
+  // Each lease cycle = `term` months at the same monthly payment; partial final
+  // cycle still pays handback at month=totalMonths.
+  const firstTermCap = Math.min(term, totalMonths);
   for (let m = 1; m <= totalMonths; m++) {
     const prev = series[m - 1];
-    const inLease = m <= leasePeriod;
+    const downContrib = m <= firstTermCap ? input.downPayment / firstTermCap : 0;
     series[m].depreciationOrLease =
-      prev.depreciationOrLease + (inLease ? lease.depreciationFee + input.downPayment / leasePeriod : 0);
-    series[m].financing = prev.financing + (inLease ? lease.financeFee : 0);
+      prev.depreciationOrLease + lease.depreciationFee + downContrib;
+    series[m].financing = prev.financing + lease.financeFee;
   }
-
-  const handBackFees =
-    !buyOut && totalMonths >= leasePeriod
-      ? input.dispositionFee + input.excessWearEstimate
-      : 0;
-  const buyOutFees = buyOut ? input.residualValue + input.buyoutFee : 0;
-  const leaseEndTotal = handBackFees + buyOutFees;
-
-  if (leaseEndTotal > 0 && leasePeriod <= totalMonths) {
-    for (let m = leasePeriod; m <= totalMonths; m++) {
-      series[m].leaseEnd = leaseEndTotal;
-    }
+  const handbackFee = input.dispositionFee + input.excessWearEstimate;
+  let cum = 0;
+  for (let m = 1; m <= totalMonths; m++) {
+    const onCycleBoundary = m % term === 0;
+    const finalPartial = m === totalMonths && totalMonths % term !== 0;
+    if (onCycleBoundary || finalPartial) cum += handbackFee;
+    series[m].leaseEnd = cum;
   }
-
-  if (buyOut && totalMonths > leasePeriod) {
-    const ownedMonths = totalMonths - leasePeriod;
-    const ownedDepreciation = Math.max(input.residualValue - input.residualValue * 0.6, 0);
-    const perMonth = ownedDepreciation / ownedMonths;
-    for (let m = leasePeriod + 1; m <= totalMonths; m++) {
-      series[m].depreciationOrLease = series[m - 1].depreciationOrLease + perMonth;
-    }
-  }
-
   return summarize(series);
 }
 

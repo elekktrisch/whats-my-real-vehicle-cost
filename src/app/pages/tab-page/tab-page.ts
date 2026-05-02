@@ -1,22 +1,25 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ScenarioStore } from '../../scenario/scenario.store';
 import { TabStrip } from '../../shared/molecules/tab-strip/tab-strip';
+import { HeaderBar } from '../../shared/molecules/header-bar/header-bar';
 import { VehicleContextBar } from '../../shared/molecules/vehicle-context-bar/vehicle-context-bar';
 import { KpiBar, KpiSpec } from '../../shared/molecules/kpi-bar/kpi-bar';
-import { Icon } from '../../shared/atoms/icon/icon';
 import { LeaseTab } from '../../features/lease-tab/lease-tab';
 import { FinanceTab } from '../../features/finance-tab/finance-tab';
 import { CashTab } from '../../features/cash-tab/cash-tab';
 import { TcoChartDesktop } from '../../features/chart/tco-chart-desktop/tco-chart-desktop';
 import { formatCurrency } from '../../scenario/locale.config';
+import type { Tab } from '../../scenario/scenario.types';
 
 @Component({
   selector: 'app-tab-page',
   imports: [
+    HeaderBar,
     TabStrip,
     VehicleContextBar,
     KpiBar,
-    Icon,
     LeaseTab,
     FinanceTab,
     CashTab,
@@ -24,28 +27,14 @@ import { formatCurrency } from '../../scenario/locale.config';
   ],
   template: `
     <div class="max-w-[1200px] mx-auto px-7 pb-[72px] relative z-[1]">
-      <header
-        class="flex items-center justify-between pt-7 pb-[22px] border-b border-border mb-5 gap-3 flex-wrap"
-      >
-        <div class="flex items-center gap-2.5">
-          <app-icon name="logo" [size]="22" ariaLabel="WhatsMyVehicleCost" />
-          <span
-            class="font-ui text-[1.3rem] font-bold tracking-[0.03em] text-tx"
-            >WhatsMyVehicleCost</span
-          >
-        </div>
-        <span
-          class="font-ui text-[0.65rem] tracking-[0.12em] uppercase text-tx-dim"
-          >Total cost of ownership · {{ recommendedLabel() }}</span
-        >
-      </header>
+      <app-header-bar />
 
-      <div class="flex flex-col gap-5">
+      <div class="flex flex-col gap-5 mt-5">
         <app-vehicle-context-bar />
 
         <app-tab-strip
           [active]="store.activeTab()"
-          (activeChange)="store.activeTab.set($event)"
+          (activeChange)="onTabChange($event)"
           [recommended]="store.recommendedTab().tab"
         />
 
@@ -72,11 +61,19 @@ import { formatCurrency } from '../../scenario/locale.config';
 })
 export class TabPage {
   protected readonly store = inject(ScenarioStore);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
-  protected readonly recommendedLabel = computed(() => {
-    const tab = this.store.recommendedTab().tab;
-    return tab.charAt(0).toUpperCase() + tab.slice(1) + ' recommended';
-  });
+  private readonly routeData = toSignal(this.route.data, { initialValue: this.route.snapshot.data });
+
+  constructor() {
+    effect(() => {
+      const tab = this.routeData()['tab'] as Tab | undefined;
+      if (tab && tab !== this.store.activeTab()) {
+        this.store.activeTab.set(tab);
+      }
+    });
+  }
 
   protected readonly kpis = computed<KpiSpec[]>(() => {
     const tab = this.store.activeTab();
@@ -112,4 +109,8 @@ export class TabPage {
       },
     ];
   });
+
+  protected onTabChange(tab: Tab): void {
+    this.router.navigate(['/', tab]);
+  }
 }

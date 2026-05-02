@@ -73,6 +73,41 @@ describe('tcoBreakdown', () => {
     expect(afterBuyout).toBeGreaterThan(beforeBuyout);
   });
 
+  it('hand back + keep > term rolls into a fresh lease cycle (rolling lease model)', () => {
+    const r = tcoBreakdown({
+      ...usLeaseShared,
+      keepDurationYears: 6,
+      leaseTermMonths: 36,
+      leaseEndChoice: 'handBack',
+    });
+    // Lease/financing keep accruing past the first term — we sign another lease.
+    const lateLease = r.series[60].depreciationOrLease - r.series[36].depreciationOrLease;
+    expect(lateLease).toBeGreaterThan(0);
+    const lateFinance = r.series[60].financing - r.series[36].financing;
+    expect(lateFinance).toBeGreaterThan(0);
+    // A handback fee fires at every cycle boundary — months 36 and 72 here.
+    expect(r.series[36].leaseEnd).toBeGreaterThan(r.series[35].leaseEnd);
+    expect(r.series[72].leaseEnd).toBeGreaterThan(r.series[71].leaseEnd);
+  });
+
+  it('hand back + keep > term has roughly 2× the cost of a single-term lease', () => {
+    const oneCycle = tcoBreakdown({
+      ...usLeaseShared,
+      keepDurationYears: 3,
+      leaseTermMonths: 36,
+      leaseEndChoice: 'handBack',
+    });
+    const twoCycles = tcoBreakdown({
+      ...usLeaseShared,
+      keepDurationYears: 6,
+      leaseTermMonths: 36,
+      leaseEndChoice: 'handBack',
+    });
+    const ratio = twoCycles.total / oneCycle.total;
+    expect(ratio).toBeGreaterThan(1.7);
+    expect(ratio).toBeLessThan(2.3);
+  });
+
   it('cash tab opportunity-cost grows with the rate', () => {
     const lo = tcoBreakdown({
       tab: 'cash',

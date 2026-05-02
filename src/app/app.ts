@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
-import { TabPage } from './pages/tab-page/tab-page';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
-  imports: [TabPage],
-  template: `<app-tab-page />`,
+  imports: [RouterOutlet],
+  template: `<router-outlet />`,
 })
 export class App {}

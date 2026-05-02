@@ -1,12 +1,10 @@
 import { Component, computed, inject } from '@angular/core';
 import { ScenarioStore } from '../../../scenario/scenario.store';
-import { Toggle } from '../../atoms/toggle/toggle';
 import { SliderControl } from '../../slider-control/slider-control';
-import type { Locale, Powertrain } from '../../../scenario/scenario.types';
 
 @Component({
   selector: 'app-vehicle-context-bar',
-  imports: [Toggle, SliderControl],
+  imports: [SliderControl],
   template: `
     <section
       class="bg-surface border border-border rounded-[14px] p-[22px] flex flex-col gap-[18px]"
@@ -15,19 +13,10 @@ import type { Locale, Powertrain } from '../../../scenario/scenario.types';
         <div class="font-ui text-[0.62rem] font-medium tracking-[0.15em] uppercase text-tx-dim">
           Vehicle context
         </div>
-        <div class="flex items-center gap-2">
-          <app-toggle
-            [options]="localeOptions"
-            [value]="locale()"
-            (valueChange)="setLocale($event)"
-            ariaLabel="Locale"
-          />
-          <app-toggle
-            [options]="powertrainOptions"
-            [value]="powertrain()"
-            (valueChange)="setPowertrain($event)"
-            ariaLabel="Powertrain"
-          />
+        <div
+          class="font-mono text-[0.62rem] tracking-[0.05em] text-tx-muted normal-case"
+        >
+          MSRP {{ msrpDisplay() }} · {{ category() }}
         </div>
       </header>
 
@@ -114,19 +103,6 @@ import type { Locale, Powertrain } from '../../../scenario/scenario.types';
 export class VehicleContextBar {
   protected readonly store = inject(ScenarioStore);
 
-  protected readonly locale = this.store.locale;
-  protected readonly powertrain = this.store.powertrain;
-
-  protected readonly localeOptions = [
-    { value: 'US', label: 'US' },
-    { value: 'EU', label: 'EU' },
-  ] as const;
-
-  protected readonly powertrainOptions = [
-    { value: 'ICE', label: 'ICE' },
-    { value: 'EV', label: 'EV' },
-  ] as const;
-
   protected readonly currencyPrefix = computed(() =>
     this.store.localeConfig().currencyAfter ? '' : this.store.localeConfig().currencySymbol,
   );
@@ -137,6 +113,18 @@ export class VehicleContextBar {
     () => ' ' + this.store.localeConfig().distanceUnit,
   );
 
+  protected readonly msrpDisplay = computed(() => {
+    const msrp = Math.round(this.store.msrp());
+    const cfg = this.store.localeConfig();
+    const formatted = msrp.toLocaleString();
+    return cfg.currencyAfter ? `${formatted} ${cfg.currencySymbol}` : `${cfg.currencySymbol}${formatted}`;
+  });
+
+  protected readonly category = computed(() => {
+    const c = this.store.vehicleCategory();
+    return c.charAt(0).toUpperCase() + c.slice(1);
+  });
+
   protected lo(value: number): string {
     const cfg = this.store.localeConfig();
     const k = value >= 1000 ? `${value / 1000}k` : String(value);
@@ -146,12 +134,5 @@ export class VehicleContextBar {
   protected distance(value: number): string {
     const k = value >= 1000 ? `${value / 1000}k` : String(value);
     return `${k} ${this.store.localeConfig().distanceUnit}`;
-  }
-
-  protected setLocale(v: string): void {
-    this.store.locale.set(v as Locale);
-  }
-  protected setPowertrain(v: string): void {
-    this.store.powertrain.set(v as Powertrain);
   }
 }
