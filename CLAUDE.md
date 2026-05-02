@@ -17,9 +17,9 @@ The user runs the dev server themselves — don't background-launch `ng serve`. 
 
 Mid-rebuild from a single-component lease calculator into the full TCO app described in [PRODUCT.md](./PRODUCT.md). See [ARCHITECTURE.md](./ARCHITECTURE.md#progress-last-updated-2026-05-02) for the canonical progress block. As of 2026-05-02:
 
-- **Phases 1–3 done:** scenario module + 46 specs, signal-based atoms (existing migrated + 6 new), and the new TabPage shell with a store-wired LeaseTab and stacked-area TCO chart.
-- **Phase 4 next:** Splash + Wizard + routing. Phase 4 also unlocks the deferred `header-bar` molecule (edit-answers needs the wizard route).
-- **Visible app:** the new TabPage shell. Lease tab fully working; Finance and Cash are placeholder components that ship in Phase 6.
+- **Phases 1–4 done:** scenario module + 48 specs, signal-based atoms (existing migrated + 6 new), the new TabPage shell with a store-wired LeaseTab and stacked-area TCO chart, lazy-loaded routing with Splash + Wizard entry-flow, and a `header-bar` molecule with locale/powertrain toggles + Edit-answers button.
+- **Phase 5 next:** persistence (localStorage debounced effect) + URL sync (queryParams + replaceUrl effect) + APP_INITIALIZER hydration. The `hasHydrated()` skip seam on SplashPage is already wired but always false until Phase 5.
+- **Visible app:** `/` splash → `/wizard` (six questions + live recommendation) → `/lease | /finance | /cash`. Lease tab fully working; Finance and Cash are placeholder components that ship in Phase 6.
 
 ## Architecture
 
@@ -32,7 +32,7 @@ shared/
   kpi-card/                  existing atom — signal-based
   info-badge/                existing atom — signal-based
   atoms/                     new atoms: button, toggle, number-input, icon, label, divider
-  molecules/                 tab-strip, vehicle-context-bar, kpi-bar, lease-end-section, slider-group
+  molecules/                 tab-strip, vehicle-context-bar, kpi-bar, lease-end-section, slider-group, header-bar
 features/
   lease-tab/                 wired to ScenarioStore: hero monthly-payment card + financing/TCO slider groups + lease-end section
   finance-tab/               placeholder until Phase 6
@@ -40,19 +40,31 @@ features/
   chart/
     tco-chart-desktop/       stacked-area Chart.js renderer (mobile variant pending Phase 7)
 pages/
-  tab-page/                  shell: header + vehicle-context-bar + tab-strip + kpi-bar + active-tab + chart
-app.ts                       7-line shell that renders <app-tab-page/> (becomes <router-outlet/> in Phase 4)
+  splash-page/               bold intro + "Get started" → /wizard, hasHydrated() skip seam (active in Phase 5)
+  wizard-page/               6 numbered questions + live recommendation card
+  tab-page/                  shell: header-bar + vehicle-context-bar + tab-strip + kpi-bar + active-tab + chart
+app.ts                       <router-outlet/>
+app.routes.ts                lazy-loaded routes: '', wizard, lease, finance, cash, ** → ''
 ```
 
 ### Scenario module — `src/app/scenario/`
 
 Pure data + math + state, no Angular UI dependencies in the calc layer. Built to be unit-testable without TestBed.
 
-- `scenario.types.ts` — domain types (Locale, Powertrain, Tab, ScenarioSnapshot, CostBreakdown, …).
-- `locale.config.ts` — US/EU defaults, units, formatters, `detectLocaleFromBrowser()`.
-- `scenario.defaults.ts` — `defaultScenario()` factory; lease-end fallback constants.
+- `scenario.types.ts` — domain types (Locale, Powertrain, Tab, ScenarioSnapshot, CostBreakdown, …). `LeaseInputs.leaseEndChoice` is `LeaseEndChoice | null` — null means auto-derive from keep-duration vs. lease term.
+- `locale.config.ts` — US/EU defaults, units, formatters, `detectLocaleFromBrowser()`. Insurance baselines: 2% US / 1.5% EU.
+- `scenario.defaults.ts` — `defaultScenario()` factory (leaseEndChoice defaults to null so auto-derive fires); lease-end fallback constants.
 - `scenario.store.ts` — `ScenarioStore` (`providedIn: 'root'`). Holds writable signals for globals + per-tab inputs; exposes `computed` derivations (msrp, vehicle category, insurance/maintenance defaults, lease/finance/cash breakdowns, effective monthly, cost per distance). Uses the **two-signal override pattern** (`_xOverride: signal<T | null>` + `xDefault: computed<T>` + public `x: computed<T>` returning `override ?? default`) for sticky overrides that serialize cleanly. `applySnapshot()` and `snapshot()` are the hydration / serialization seams; `isHydrating` guards downstream effects (Phase 5).
-- `calculations/` — pure functions, one file per concern: `depreciation`, `msrp`, `category`, `financing` (lease + amortized loan), `opportunity`, `fuel`, `recommendation`, `tco` (the aggregator). Co-located `*.spec.ts` files.
+- `calculations/` — pure functions, one file per concern: `depreciation`, `msrp`, `category` (luxury × 1.3 insurance / × 1.8 maintenance), `financing` (lease + amortized loan), `opportunity`, `fuel`, `recommendation`, `tco` (the aggregator). Co-located `*.spec.ts` files.
+
+### Lease TCO model
+
+Two modes, auto-derived from keep-duration vs. lease term, user-overrideable:
+
+- **Hand back (rolling lease):** lease payments accrue across the full keep duration. Handback fees fire at every cycle boundary (m % term === 0) and once more at month=keep if it lands mid-cycle. Down payment is charged once on the first cycle (amortized across `min(term, keep)` months). Insurance/fuel/maintenance accrue throughout because the user always has a (rolling) car.
+- **Buy out:** lease payments accrue for the lease term only; at month=term we charge `residualValue + buyoutFee` as a one-time step in the leaseEnd layer, then continue depreciation for the owned-car portion of keep without any further financing.
+
+Auto-selection: keep ≤ term → handback, keep > term → buyout. The user can flip the toggle either way; both modes work for any keep duration.
 
 ### Atoms — `src/app/shared/`
 
@@ -82,6 +94,16 @@ Atoms expose writable two-way slots via `model()`. The store exposes both writab
 
 This avoids accidentally exposing raw store internals to the template, and works the same way for direct writable signals and override-pattern setters.
 
+### Routing
+
+Five lazy-loaded routes in `app.routes.ts`:
+
+- `/` → `SplashPage` (intro card)
+- `/wizard` → `WizardPage` (six questions + live recommendation)
+- `/lease | /finance | /cash` → `TabPage` with `data: { tab }`
+
+`TabPage` reads `route.data` via `toSignal` and pushes the tab to `store.activeTab` in an `effect`. Tab clicks call `router.navigate(['/', tab])`, which re-fires the data subscription. Single source of truth = the route.
+
 ## Conventions
 
 - **Signals everywhere.** Readable signals on the store, `computed` derivations, no manual change detection. Side effects (persistence, URL sync) will be `effect()`s in Phase 5 — don't add them earlier.
@@ -93,4 +115,4 @@ This avoids accidentally exposing raw store internals to the template, and works
 
 ## Open inconsistencies
 
-- USE_CASES.md UC2 narrates ~€25k back-derived MSRP for a 4-yr-old €15k Golf, but the canonical PRODUCT.md depreciation curve produces ~€30.5k. Tests follow PRODUCT.md.
+- USE_CASES.md UC2 narrates ~€25k back-derived MSRP and €600/yr insurance for a 4-yr-old €15k Golf, but the current PRODUCT.md curve + insurance formula produce ~€30.5k MSRP (Mid category, not Economy) and ~€260/yr insurance. The narrative is annotated; tests follow the canonical math.
