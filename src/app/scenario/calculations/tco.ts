@@ -39,6 +39,7 @@ export interface LeaseTcoInputs extends TcoBaseInputs {
   mileageOverageRate: number;
   excessWearEstimate: number;
   buyoutFee: number;
+  opportunityCostRate: number;
 }
 
 export interface FinanceTcoInputs extends TcoBaseInputs {
@@ -133,6 +134,7 @@ function leaseTco(input: LeaseTcoInputs): CostBreakdown {
   const series = buildCommonSeries(input);
   const totalMonths = series.length - 1;
   const term = Math.max(input.leaseTermMonths, 1);
+  const monthlyOppCost = (input.downPayment * input.opportunityCostRate) / 12;
   const lease = leasePayment({
     capCost: input.purchasePrice,
     downPayment: input.downPayment,
@@ -149,7 +151,7 @@ function leaseTco(input: LeaseTcoInputs): CostBreakdown {
       const prev = series[m - 1];
       series[m].depreciationOrLease =
         prev.depreciationOrLease + lease.depreciationFee + input.downPayment / leasePeriod;
-      series[m].financing = prev.financing + lease.financeFee;
+      series[m].financing = prev.financing + lease.financeFee + monthlyOppCost;
     }
     const buyoutTotal = input.residualValue + input.buyoutFee;
     if (leasePeriod <= totalMonths) {
@@ -164,7 +166,7 @@ function leaseTco(input: LeaseTcoInputs): CostBreakdown {
       for (let m = leasePeriod + 1; m <= totalMonths; m++) {
         const prev = series[m - 1];
         series[m].depreciationOrLease = prev.depreciationOrLease + perMonth;
-        series[m].financing = prev.financing;
+        series[m].financing = prev.financing + monthlyOppCost;
       }
     }
     return summarize(series);
@@ -179,7 +181,7 @@ function leaseTco(input: LeaseTcoInputs): CostBreakdown {
     const downContrib = m <= firstTermCap ? input.downPayment / firstTermCap : 0;
     series[m].depreciationOrLease =
       prev.depreciationOrLease + lease.depreciationFee + downContrib;
-    series[m].financing = prev.financing + lease.financeFee;
+    series[m].financing = prev.financing + lease.financeFee + monthlyOppCost;
   }
   const handbackFee = input.dispositionFee + input.excessWearEstimate;
   let cum = 0;

@@ -103,6 +103,19 @@ import { fuelCostOverYears } from '../../scenario/calculations/fuel';
             [value]="store.leaseTerm()"
             (valueChange)="store.leaseTerm.set($event)"
           />
+          <app-slider-control
+            label="Opportunity cost rate"
+            tip="What you'd earn per year if you invested the down payment instead of parking it in the lease. Adds downPayment × rate ÷ 12 to the monthly running costs above."
+            [min]="0"
+            [max]="15"
+            [step]="0.25"
+            minLabel="0%"
+            maxLabel="15%"
+            suffix="%"
+            [fractionDigits]="2"
+            [value]="store.opportunityCostRate() * 100"
+            (valueChange)="store.opportunityCostRate.set($event / 100)"
+          />
         </app-slider-group>
 
         <app-lease-end-section />
@@ -141,7 +154,9 @@ export class LeaseTab {
       powertrain: this.store.powertrain(),
       locale: this.store.locale(),
     });
-    const monthly = (this.store.insurance() + this.store.maintenance() + annualFuel) / 12;
+    const annualOpportunity = this.store.downPayment() * this.store.opportunityCostRate();
+    const monthly =
+      (this.store.insurance() + this.store.maintenance() + annualFuel + annualOpportunity) / 12;
     return monthly.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,

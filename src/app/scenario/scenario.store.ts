@@ -165,6 +165,7 @@ export class ScenarioStore {
       mileageOverageRate: this.mileageOverageRate(),
       excessWearEstimate: this.excessWearEstimate(),
       buyoutFee: this.buyoutFee(),
+      opportunityCostRate: this.opportunityCostRate(),
     }),
   );
 

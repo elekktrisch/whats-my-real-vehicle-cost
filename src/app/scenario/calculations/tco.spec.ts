@@ -27,6 +27,7 @@ const usLeaseShared = {
   mileageOverageRate: 0.25,
   excessWearEstimate: 800,
   buyoutFee: 300,
+  opportunityCostRate: 0,
 };
 
 describe('tcoBreakdown', () => {
@@ -106,6 +107,15 @@ describe('tcoBreakdown', () => {
     const ratio = twoCycles.total / oneCycle.total;
     expect(ratio).toBeGreaterThan(1.7);
     expect(ratio).toBeLessThan(2.3);
+  });
+
+  it('lease tab opportunity-cost on down payment grows with the rate', () => {
+    const lo = tcoBreakdown({ ...usLeaseShared, opportunityCostRate: 0 });
+    const hi = tcoBreakdown({ ...usLeaseShared, opportunityCostRate: 0.08 });
+    expect(hi.totals.financing).toBeGreaterThan(lo.totals.financing);
+    // Linear: total opportunity cost = downPayment * rate * years.
+    const expectedExtra = usLeaseShared.downPayment * 0.08 * usLeaseShared.keepDurationYears;
+    expect(hi.totals.financing - lo.totals.financing).toBeCloseTo(expectedExtra, 4);
   });
 
   it('cash tab opportunity-cost grows with the rate', () => {
