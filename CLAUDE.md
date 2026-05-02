@@ -17,9 +17,9 @@ The user runs the dev server themselves — don't background-launch `ng serve`. 
 
 Mid-rebuild from a single-component lease calculator into the full TCO app described in [PRODUCT.md](./PRODUCT.md). See [ARCHITECTURE.md](./ARCHITECTURE.md#progress-last-updated-2026-05-02) for the canonical progress block. As of 2026-05-02:
 
-- **Phases 1–4 done:** scenario module + 48 specs, signal-based atoms (existing migrated + 6 new), the new TabPage shell with a store-wired LeaseTab and stacked-area TCO chart, lazy-loaded routing with Splash + Wizard entry-flow, and a `header-bar` molecule with locale/powertrain toggles + Edit-answers button.
-- **Phase 5 next:** persistence (localStorage debounced effect) + URL sync (queryParams + replaceUrl effect) + APP_INITIALIZER hydration. The `hasHydrated()` skip seam on SplashPage is already wired but always false until Phase 5.
-- **Visible app:** `/` splash → `/wizard` (six questions + live recommendation) → `/lease | /finance | /cash`. Lease tab fully working; Finance and Cash are placeholder components that ship in Phase 6.
+- **Phases 1–5 done:** scenario module + 61 specs, signal-based atoms (existing migrated + 6 new), the TabPage shell with a store-wired LeaseTab + stacked-area TCO chart + global running-costs-bar, lazy-loaded routing with Splash + Wizard entry-flow, persistence + URL sync via a single debounced autosave `effect`, APP_INITIALIZER hydration from URL → localStorage → defaults.
+- **Phase 6 next:** Finance + Cash tab features (each tab has its own financing math but shares all running-cost inputs).
+- **Visible app:** `/` splash → `/wizard` (six questions + live recommendation) → `/lease | /finance | /cash`. Lease tab fully working with shareable URLs; Finance and Cash are placeholder components that ship in Phase 6.
 
 ## Architecture
 
@@ -54,7 +54,8 @@ Pure data + math + state, no Angular UI dependencies in the calc layer. Built to
 - `scenario.types.ts` — domain types (Locale, Powertrain, Tab, ScenarioSnapshot, CostBreakdown, …). `LeaseInputs.leaseEndChoice` is `LeaseEndChoice | null` — null means auto-derive from keep-duration vs. lease term.
 - `locale.config.ts` — US/EU defaults, units, formatters, `detectLocaleFromBrowser()`. Insurance baselines: 2% US / 1.5% EU.
 - `scenario.defaults.ts` — `defaultScenario()` factory (leaseEndChoice defaults to null so auto-derive fires); lease-end fallback constants.
-- `scenario.store.ts` — `ScenarioStore` (`providedIn: 'root'`). Holds writable signals for globals + per-tab inputs; exposes `computed` derivations (msrp, vehicle category, insurance/maintenance defaults, lease/finance/cash breakdowns, effective monthly, cost per distance). Uses the **two-signal override pattern** (`_xOverride: signal<T | null>` + `xDefault: computed<T>` + public `x: computed<T>` returning `override ?? default`) for sticky overrides that serialize cleanly. `applySnapshot()` and `snapshot()` are the hydration / serialization seams; `isHydrating` guards downstream effects (Phase 5).
+- `scenario.store.ts` — `ScenarioStore` (`providedIn: 'root'`). Holds writable signals for globals + per-tab inputs; exposes `computed` derivations (msrp, vehicle category, insurance/maintenance defaults, lease/finance/cash breakdowns, effective monthly, cost per distance). Uses the **two-signal override pattern** (`_xOverride: signal<T | null>` + `xDefault: computed<T>` + public `x: computed<T>` returning `override ?? default`) for sticky overrides that serialize cleanly. `applySnapshot()` and `snapshot()` are the hydration / serialization seams. Single autosave `effect` reads the snapshot, gates on `isHydrating()` and `hasHydrated()`, debounces 200ms, then writes to localStorage AND URL queryParams (via `Location.replaceState` of a parsed router tree — no navigation event fires).
+- `scenario.serializer.ts` — `toQueryParams` / `fromQueryParams` (URL: short keys, skips null overrides, leaves activeTab to the route path), `toLocalStorage` / `fromLocalStorage` (full JSON), `tabFromPath`, `hasAnyParams`. Storage key is `whatsmycost.v1`.
 - `calculations/` — pure functions, one file per concern: `depreciation`, `msrp`, `category` (luxury × 1.3 insurance / × 1.8 maintenance), `financing` (lease + amortized loan), `opportunity`, `fuel`, `recommendation`, `tco` (the aggregator). Co-located `*.spec.ts` files.
 
 ### Lease TCO model
@@ -106,7 +107,7 @@ Five lazy-loaded routes in `app.routes.ts`:
 
 ## Conventions
 
-- **Signals everywhere.** Readable signals on the store, `computed` derivations, no manual change detection. Side effects (persistence, URL sync) will be `effect()`s in Phase 5 — don't add them earlier.
+- **Signals everywhere.** Readable signals on the store, `computed` derivations, no manual change detection. The single autosave `effect` in `ScenarioStore` covers persistence + URL sync — don't add component-level effects for either; let the store own that boundary.
 - **Atoms are dumb.** No business logic, no internal state beyond view-only derivations (focus tracking, percentage display). All I/O via `input()` / `output()` / `model()`.
 - **Pure calc functions take plain objects, not signals.** Signals call them via `computed()`.
 - **Tailwind utility classes inline**, using existing color/font tokens (`bg-surface`, `text-tx`, `font-mono`, etc.) defined in `src/styles.css`.

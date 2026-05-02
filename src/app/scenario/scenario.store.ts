@@ -64,7 +64,10 @@ export class ScenarioStore {
     this.initial.overrides.homeChargerInstall,
   );
 
+  /** Autosave gate — true once APP_INITIALIZER finishes, regardless of cold/warm boot. */
   readonly hasHydrated = signal(false);
+  /** Splash skip seam — true only if URL or localStorage carried user state. */
+  readonly hasReturningState = signal(false);
   private readonly _isHydrating = signal(false);
   readonly isHydrating = this._isHydrating.asReadonly();
 
@@ -335,7 +338,8 @@ export class ScenarioStore {
     };
   }
 
-  markHydrated(): void {
+  markHydrated(opts: { hadReturningState: boolean } = { hadReturningState: false }): void {
+    this.hasReturningState.set(opts.hadReturningState);
     this.hasHydrated.set(true);
   }
 

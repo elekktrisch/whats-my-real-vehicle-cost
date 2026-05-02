@@ -70,7 +70,7 @@ export class SplashPage {
 
   constructor() {
     effect(() => {
-      if (this.store.hasHydrated()) {
+      if (this.store.hasHydrated() && this.store.hasReturningState()) {
         this.router.navigate(['/', this.store.activeTab()], { replaceUrl: true });
       }
     });

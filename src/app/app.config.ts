@@ -13,6 +13,7 @@ import {
   STORAGE_KEY,
   fromLocalStorage,
   fromQueryParams,
+  hasAnyParams,
   tabFromPath,
 } from './scenario/scenario.serializer';
 import type { ScenarioSnapshot } from './scenario/scenario.types';
@@ -54,8 +55,9 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => {
       const store = inject(ScenarioStore);
       const params = readSearchParams();
+      const lsRaw = readLocalStorage();
       const fromUrl = fromQueryParams(params);
-      const fromLs = fromLocalStorage(readLocalStorage());
+      const fromLs = fromLocalStorage(lsRaw);
       // URL wins over localStorage (sharing-via-link is the headline use case).
       const merged = merge(fromLs, fromUrl);
 
@@ -70,7 +72,7 @@ export const appConfig: ApplicationConfig = {
       }
 
       store.applySnapshot(merged);
-      store.markHydrated();
+      store.markHydrated({ hadReturningState: hasAnyParams(params, lsRaw) || !!pathTab });
     }),
   ],
 };
