@@ -1,13 +1,9 @@
-import { Component, signal } from '@angular/core';
-import { LeaseTab } from './lease-tab/lease-tab';
+import { Component } from '@angular/core';
+import { TabPage } from './pages/tab-page/tab-page';
 
 @Component({
   selector: 'app-root',
-  imports: [LeaseTab],
-  templateUrl: './app.html',
+  imports: [TabPage],
+  template: `<app-tab-page />`,
 })
-export class App {
-  protected readonly title = signal('car-leasing-chart');
-
-  activeTab: 'lease' | 'financing' | 'cash' = 'lease';
-}
+export class App {}
