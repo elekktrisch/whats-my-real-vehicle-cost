@@ -12,7 +12,7 @@ import { formatCurrency } from '../../../scenario/locale.config';
     >
       <header class="flex items-center justify-between gap-3 flex-wrap">
         <div class="font-ui text-[0.62rem] font-medium tracking-[0.15em] uppercase text-tx-dim">
-          Running costs · same across tabs
+          Running costs
         </div>
         <div class="font-mono text-[0.62rem] tracking-[0.05em] text-tx-muted">
           ≈ {{ totalAnnual() }} / yr before financing

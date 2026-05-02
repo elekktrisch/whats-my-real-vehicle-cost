@@ -1,4 +1,6 @@
-import { Injectable, Signal, computed, signal } from '@angular/core';
+import { Injectable, Signal, computed, effect, inject, signal } from '@angular/core';
+import { Location } from '@angular/common';
+import { Router } from '@angular/router';
 import { LOCALE_CONFIG, fuelEfficiencyDefault, fuelPriceDefault } from './locale.config';
 import { LEASE_END_DEFAULTS, defaultScenario } from './scenario.defaults';
 import type {
@@ -14,6 +16,7 @@ import { categorize, categoryMultipliers } from './calculations/category';
 import { leasePayment } from './calculations/financing';
 import { recommendTab } from './calculations/recommendation';
 import { costPerDistance, effectiveMonthly, tcoBreakdown } from './calculations/tco';
+import { STORAGE_KEY, toLocalStorage, toQueryParams } from './scenario.serializer';
 
 export type TcoSlot =
   | 'insurance'
@@ -334,5 +337,33 @@ export class ScenarioStore {
 
   markHydrated(): void {
     this.hasHydrated.set(true);
+  }
+
+  private readonly router = inject(Router);
+  private readonly location = inject(Location);
+
+  constructor() {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    effect(() => {
+      const snap = this.snapshot();
+      if (this.isHydrating() || !this.hasHydrated()) return;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => this.persist(snap), 200);
+    });
+  }
+
+  private persist(snap: ScenarioSnapshot): void {
+    try {
+      localStorage.setItem(STORAGE_KEY, toLocalStorage(snap));
+    } catch {
+      // storage unavailable (private mode, quota); silent.
+    }
+    try {
+      const tree = this.router.parseUrl(this.router.url);
+      tree.queryParams = toQueryParams(snap);
+      this.location.replaceState(this.router.serializeUrl(tree));
+    } catch {
+      // router/location not ready; URL sync skipped.
+    }
   }
 }
