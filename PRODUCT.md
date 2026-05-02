@@ -119,7 +119,7 @@ else:         msrp = purchase_price / depreciationFactor(age)
 | Lease label | "Money factor" | "Leasingfaktor" |
 | Insurance baseline | 2% of purchase price | 1.5% of purchase price |
 
-Underlying lease math is identical (money factor = APR/2400); only labels differ.
+Money factor = APR/2400 in both locales, but the finance-fee base differs: US charges interest on `(adjCap + residual) × MF` (the average lease balance), while EU charges interest on `adjCap × MF` only (residual is the lessor's risk). This matches typical Swiss/German contracts where the advertised "Effektiver Jahreszins" produces a lower monthly than the US formula would.
 
 Two more locales (UK, France/Italy) deferred. EU = Germany defaults is acknowledged as an approximation.
 

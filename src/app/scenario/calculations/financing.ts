@@ -1,9 +1,12 @@
+import type { Locale } from '../scenario.types';
+
 export interface LeasePaymentInputs {
   capCost: number;
   downPayment: number;
   residualValue: number;
   apr: number;
   termMonths: number;
+  locale: Locale;
 }
 
 export interface LeasePaymentResult {
@@ -19,7 +22,13 @@ export function leasePayment(input: LeasePaymentInputs): LeasePaymentResult {
   const moneyFactor = input.apr / 2400;
   const term = Math.max(input.termMonths, 1);
   const depreciationFee = Math.max((adjustedCapCost - input.residualValue) / term, 0);
-  const financeFee = (adjustedCapCost + input.residualValue) * moneyFactor;
+  // US "money factor" charges interest on the average balance over the lease
+  // (cap + residual). Typical EU/Swiss contracts charge interest only on the
+  // financed amount — the residual is the lessor's risk, not a balance the
+  // lessee pays interest on.
+  const financeFeeBasis =
+    input.locale === 'EU' ? adjustedCapCost : adjustedCapCost + input.residualValue;
+  const financeFee = financeFeeBasis * moneyFactor;
   return {
     adjustedCapCost,
     moneyFactor,

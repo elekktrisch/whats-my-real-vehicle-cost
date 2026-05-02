@@ -139,6 +139,7 @@ function leaseTco(input: LeaseTcoInputs): CostBreakdown {
     residualValue: input.residualValue,
     apr: input.apr,
     termMonths: term,
+    locale: input.locale,
   });
   const buyOut = input.leaseEndChoice === 'buyOut';
 

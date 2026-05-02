@@ -137,6 +137,7 @@ export class ScenarioStore {
       residualValue: this.residualValue(),
       apr: this.leaseApr(),
       termMonths: this.leaseTerm(),
+      locale: this.locale(),
     }),
   );
 
