@@ -66,7 +66,7 @@ export function fuelPriceDefault(locale: Locale, powertrain: Powertrain): number
 }
 
 export function detectLocaleFromBrowser(): Locale {
-  if (typeof navigator === 'undefined') return 'US';
+  if (typeof navigator === 'undefined') return 'EU';
   const lang = navigator.language?.toLowerCase() ?? 'en-us';
   return lang.startsWith('en-us') || lang === 'en' ? 'US' : 'EU';
 }

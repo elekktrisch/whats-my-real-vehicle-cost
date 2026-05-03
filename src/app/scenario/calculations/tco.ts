@@ -173,23 +173,29 @@ function leaseTco(input: LeaseTcoInputs): CostBreakdown {
   }
 
   // Hand back: rolling lease across the full keep duration.
-  // Each lease cycle = `term` months at the same monthly payment; partial final
-  // cycle still pays handback at month=totalMonths.
-  const firstTermCap = Math.min(term, totalMonths);
+  // Each lease cycle = `term` months at the same monthly payment, plus a fresh
+  // down payment that amortizes across that cycle's actual length (the final
+  // cycle may be partial). Opportunity cost grows on every down payment paid
+  // so far, so the financing line steepens at each cycle boundary.
+  const handbackFee = input.dispositionFee + input.excessWearEstimate;
+  let cumulativeDownPaid = 0;
+  let cumLeaseEnd = 0;
   for (let m = 1; m <= totalMonths; m++) {
     const prev = series[m - 1];
-    const downContrib = m <= firstTermCap ? input.downPayment / firstTermCap : 0;
+    const cycleIdx = Math.floor((m - 1) / term);
+    const cycleStart = cycleIdx * term + 1;
+    const cycleEnd = Math.min(cycleStart + term - 1, totalMonths);
+    const cycleLen = cycleEnd - cycleStart + 1;
+    if (m === cycleStart) cumulativeDownPaid += input.downPayment;
+    const downContrib = input.downPayment / cycleLen;
+    const monthlyOpp = (cumulativeDownPaid * input.opportunityCostRate) / 12;
     series[m].depreciationOrLease =
       prev.depreciationOrLease + lease.depreciationFee + downContrib;
-    series[m].financing = prev.financing + lease.financeFee + monthlyOppCost;
-  }
-  const handbackFee = input.dispositionFee + input.excessWearEstimate;
-  let cum = 0;
-  for (let m = 1; m <= totalMonths; m++) {
+    series[m].financing = prev.financing + lease.financeFee + monthlyOpp;
     const onCycleBoundary = m % term === 0;
     const finalPartial = m === totalMonths && totalMonths % term !== 0;
-    if (onCycleBoundary || finalPartial) cum += handbackFee;
-    series[m].leaseEnd = cum;
+    if (onCycleBoundary || finalPartial) cumLeaseEnd += handbackFee;
+    series[m].leaseEnd = cumLeaseEnd;
   }
   return summarize(series);
 }
