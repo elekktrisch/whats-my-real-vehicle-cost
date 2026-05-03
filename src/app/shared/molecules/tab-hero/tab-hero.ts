@@ -77,11 +77,20 @@ export class TabHero {
     return (principal * this.store.opportunityCostRate()) / 12;
   });
 
-  private readonly monthlyRunningCosts = computed(
-    () =>
-      (this.store.insurance() + this.store.maintenance() + this.annualFuel()) / 12 +
-      this.monthlyOppCost(),
+  private readonly monthlyVehicleCosts = computed(
+    () => (this.store.insurance() + this.store.maintenance() + this.annualFuel()) / 12,
   );
+  private readonly monthlyRunningCosts = computed(
+    () => this.monthlyVehicleCosts() + this.monthlyOppCost(),
+  );
+
+  /** Subtitle for the running-costs slot — splits insurance/maint/fuel from
+   * the opportunity-cost share so the user can see what's "real" outflow vs.
+   * forgone investment return. */
+  private readonly runningCostsSubtitle = computed(() => {
+    const sym = this.currencySymbol();
+    return `${sym}${this.fmt2(this.monthlyVehicleCosts())} vehicle · ${sym}${this.fmt2(this.monthlyOppCost())} opportunity`;
+  });
 
   private readonly category = computed(() => {
     const c = this.store.vehicleCategory();
@@ -98,7 +107,11 @@ export class TabHero {
           value: this.fmt2(this.store.leasePaymentDetails().monthlyPayment),
           accent: true,
         },
-        { label: 'Monthly running costs', value: this.fmt2(this.monthlyRunningCosts()) },
+        {
+          label: 'Monthly running costs',
+          value: this.fmt2(this.monthlyRunningCosts()),
+          subtitle: this.runningCostsSubtitle(),
+        },
       ];
     }
     if (tab === 'finance') {
@@ -125,7 +138,11 @@ export class TabHero {
           accent: true,
           subtitle: `${sym}${this.fmt2(avgEquity)} builds equity · ${sym}${this.fmt2(avgInterest)} interest`,
         },
-        { label: 'Monthly running costs', value: this.fmt2(this.monthlyRunningCosts()) },
+        {
+          label: 'Monthly running costs',
+          value: this.fmt2(this.monthlyRunningCosts()),
+          subtitle: this.runningCostsSubtitle(),
+        },
       ];
     }
     // cash
