@@ -172,11 +172,11 @@ function leaseTco(input: LeaseTcoInputs): CostBreakdown {
     return summarize(series);
   }
 
-  // Hand back: rolling lease across the full keep duration.
-  // Each lease cycle = `term` months at the same monthly payment, plus a fresh
-  // down payment that amortizes across that cycle's actual length (the final
-  // cycle may be partial). Opportunity cost grows on every down payment paid
-  // so far, so the financing line steepens at each cycle boundary.
+  // Renew lease: rolling lease across the full keep duration. Each cycle =
+  // `term` months at the same monthly payment, plus a fresh down payment that
+  // amortizes across that cycle's actual length (the final cycle may be
+  // partial). Opportunity cost grows on every down payment paid so far, so the
+  // financing line steepens at each cycle boundary.
   const handbackFee = input.dispositionFee + input.excessWearEstimate;
   let cumulativeDownPaid = 0;
   let cumLeaseEnd = 0;

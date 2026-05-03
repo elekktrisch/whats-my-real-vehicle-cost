@@ -91,6 +91,36 @@ describe('tcoBreakdown', () => {
     expect(r.series[72].leaseEnd).toBeGreaterThan(r.series[71].leaseEnd);
   });
 
+  it('renew lease pays a fresh down payment per cycle (no shallowing after first cycle)', () => {
+    const r = tcoBreakdown({
+      ...usLeaseShared,
+      keepDurationYears: 6,
+      leaseTermMonths: 36,
+      leaseEndChoice: 'handBack',
+    });
+    // depreciationOrLease slope (= lease.depreciationFee + downPayment/term) should
+    // be roughly the same in cycle 2 (months 37-72) as in cycle 1 (months 1-36).
+    const cycle1Slope = (r.series[36].depreciationOrLease - r.series[0].depreciationOrLease) / 36;
+    const cycle2Slope = (r.series[72].depreciationOrLease - r.series[36].depreciationOrLease) / 36;
+    expect(cycle2Slope).toBeCloseTo(cycle1Slope, 4);
+  });
+
+  it('renew lease grows opportunity cost step-wise at each cycle boundary', () => {
+    const r = tcoBreakdown({
+      ...usLeaseShared,
+      keepDurationYears: 6,
+      leaseTermMonths: 36,
+      leaseEndChoice: 'handBack',
+      opportunityCostRate: 0.06,
+    });
+    const cycle1Slope = (r.series[36].financing - r.series[0].financing) / 36;
+    const cycle2Slope = (r.series[72].financing - r.series[36].financing) / 36;
+    // After cycle 2 starts, cumulative down payment doubles → opp cost slope
+    // grows by downPayment * rate / 12.
+    const expectedDelta = (usLeaseShared.downPayment * 0.06) / 12;
+    expect(cycle2Slope - cycle1Slope).toBeCloseTo(expectedDelta, 4);
+  });
+
   it('hand back + keep > term has roughly 2× the cost of a single-term lease', () => {
     const oneCycle = tcoBreakdown({
       ...usLeaseShared,

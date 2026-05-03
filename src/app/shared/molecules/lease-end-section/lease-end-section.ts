@@ -23,8 +23,9 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
 
       @if (choice() === 'handBack') {
         <p class="font-ui text-[0.7rem] text-tx-muted mb-4 leading-relaxed">
-          You hand the car back. Disposition fee and any wear or mileage overage are paid at the
-          end of the lease.
+          You switch for a new car at lease-end and sign a new lease for the new car. Disposition
+          fee and any wear or mileage overage are paid at every cycle boundary; each new cycle also
+          requires a fresh down payment.
         </p>
         <app-slider-control
           label="Disposition fee"
@@ -94,7 +95,7 @@ export class LeaseEndSection {
   protected readonly store = inject(ScenarioStore);
 
   protected readonly choices = [
-    { value: 'handBack', label: 'Hand back' },
+    { value: 'handBack', label: 'Renew lease' },
     { value: 'buyOut', label: 'Buy out' },
   ] as const;
 
