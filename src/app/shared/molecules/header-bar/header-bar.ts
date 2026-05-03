@@ -63,10 +63,10 @@ export class HeaderBar {
   ] as const;
 
   protected setLocale(v: string): void {
-    this.store.locale.set(v as Locale);
+    this.store.setLocale(v as Locale);
   }
   protected setPowertrain(v: string): void {
-    this.store.powertrain.set(v as Powertrain);
+    this.store.setPowertrain(v as Powertrain);
   }
   protected editAnswers(): void {
     this.router.navigate(['/wizard']);

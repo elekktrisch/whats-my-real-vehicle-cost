@@ -232,6 +232,31 @@ export class ScenarioStore {
     return this.cashBreakdown;
   }
 
+  /**
+   * Drop every running-cost override so the next read returns the locale/powertrain
+   * default. Called when the user switches US/EU or ICE/EV — the existing override
+   * (e.g. $2000 US insurance, 28 mpg, $3.5/gal) is meaningless under the new combo.
+   */
+  clearRunningCostOverrides(): void {
+    this._insuranceOverride.set(null);
+    this._maintenanceOverride.set(null);
+    this._fuelEfficiencyOverride.set(null);
+    this._fuelPriceOverride.set(null);
+    this._homeChargerOverride.set(null);
+  }
+
+  setLocale(v: Locale): void {
+    if (this.locale() === v) return;
+    this.locale.set(v);
+    this.clearRunningCostOverrides();
+  }
+
+  setPowertrain(v: Powertrain): void {
+    if (this.powertrain() === v) return;
+    this.powertrain.set(v);
+    this.clearRunningCostOverrides();
+  }
+
   setOverride(slot: TcoSlot, value: number | null): void {
     const map: Record<TcoSlot, ReturnType<typeof signal<number | null>>> = {
       insurance: this._insuranceOverride,
