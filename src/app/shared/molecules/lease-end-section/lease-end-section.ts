@@ -29,39 +29,41 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
         </p>
         <app-slider-control
           label="Disposition fee"
-          tip="One-time fee paid when you return the leased car. Typical range $300–$500."
+          tip="One-time fee paid when you return the leased car. Typical range 300–500."
           [min]="0"
           [max]="1000"
           [step]="25"
-          minLabel="$0"
-          maxLabel="$1k"
-          prefix="$"
+          [minLabel]="money(0)"
+          [maxLabel]="money(1000)"
+          [prefix]="currencyPrefix()"
+          [suffix]="currencySuffix()"
           [value]="store.dispositionFee()"
           (valueChange)="store.setDispositionFee($event)"
         />
         <app-slider-control
           label="Excess wear estimate"
-          tip="A rough buffer for end-of-lease wear charges. ~$500–$1500 typical for a 3-yr lease; $2000+ with kids, pets or city parking."
+          tip="A rough buffer for end-of-lease wear charges. ~500–1500 typical for a 3-yr lease; 2000+ with kids, pets or city parking."
           [min]="0"
           [max]="3000"
           [step]="50"
-          minLabel="$0"
-          maxLabel="$3k"
-          prefix="$"
+          [minLabel]="money(0)"
+          [maxLabel]="money(3000)"
+          [prefix]="currencyPrefix()"
+          [suffix]="currencySuffix()"
           [value]="store.excessWearEstimate()"
           (valueChange)="store.setExcessWearEstimate($event)"
         />
         <app-slider-control
-          label="Mileage overage rate"
-          tip="Per-mile charge for going over the lease's mileage cap. Typically $0.15–$0.30 per mile."
+          [label]="'Mileage overage rate (per ' + distanceUnit() + ')'"
+          tip="Per-distance charge for going over the lease's mileage cap. Typically 0.15–0.30 per mile / 0.10–0.20 per km."
           [min]="0"
           [max]="1"
           [step]="0.01"
           [fractionDigits]="2"
-          minLabel="$0"
-          maxLabel="$1"
-          prefix="$"
-          suffix=" /mi"
+          [minLabel]="money(0)"
+          [maxLabel]="money(1)"
+          [prefix]="currencyPrefix()"
+          [suffix]="mileageOverageSuffix()"
           [value]="store.mileageOverageRate()"
           (valueChange)="store.setMileageOverageRate($event)"
         />
@@ -77,13 +79,14 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
         </div>
         <app-slider-control
           label="Buyout fee"
-          tip="One-time administrative fee charged on top of the residual value when you exercise the lease buyout. Typical $300–$500."
+          tip="One-time administrative fee charged on top of the residual value when you exercise the lease buyout. Typical 300–500."
           [min]="0"
           [max]="1000"
           [step]="25"
-          minLabel="$0"
-          maxLabel="$1k"
-          prefix="$"
+          [minLabel]="money(0)"
+          [maxLabel]="money(1000)"
+          [prefix]="currencyPrefix()"
+          [suffix]="currencySuffix()"
           [value]="store.buyoutFee()"
           (valueChange)="store.setBuyoutFee($event)"
         />
@@ -96,13 +99,14 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
       >
         <app-slider-control
           label="Early termination penalty"
-          tip="Total amount the lessor charges when you exit before the lease term ends. Defaults to a depreciation-based approximation of typical lessor tables ((term − keep) / term × total depreciation); override with the exact figure from your contract's early-exit table. Applies to both renew-lease and buy-out modes."
+          tip="Total amount the lessor charges when you exit before the lease term ends. Defaults to a depreciation-based approximation of typical lessor tables ((term − keep) / term × total depreciation); override with the exact figure from your contract's early-exit table. Capped at 90% of the financed portion. Applies to both renew-lease and buy-out modes."
           [min]="0"
           [max]="store.earlyTerminationFeeMax()"
           [step]="50"
-          minLabel="$0"
-          [maxLabel]="maxLabel()"
-          prefix="$"
+          [minLabel]="money(0)"
+          [maxLabel]="money(store.earlyTerminationFeeMax())"
+          [prefix]="currencyPrefix()"
+          [suffix]="currencySuffix()"
           [value]="store.earlyTerminationFee()"
           (valueChange)="store.setEarlyTerminationFee($event)"
         />
@@ -136,12 +140,24 @@ export class LeaseEndSection {
     () => this.store.keepDuration() * 12 < this.store.leaseTerm(),
   );
 
-  protected readonly maxLabel = computed(() => {
-    const max = this.store.earlyTerminationFeeMax();
-    const k = max >= 1000 ? `${Math.round(max / 100) / 10}k` : String(Math.round(max));
+  protected readonly currencyPrefix = computed(() =>
+    this.store.localeConfig().currencyAfter ? '' : this.store.localeConfig().currencySymbol,
+  );
+  protected readonly currencySuffix = computed(() =>
+    this.store.localeConfig().currencyAfter ? ' ' + this.store.localeConfig().currencySymbol : '',
+  );
+  protected readonly distanceUnit = computed(() => this.store.localeConfig().distanceUnit);
+  protected readonly mileageOverageSuffix = computed(() => {
     const cfg = this.store.localeConfig();
-    return cfg.currencyAfter ? `${k} ${cfg.currencySymbol}` : `${cfg.currencySymbol}${k}`;
+    const unit = ` /${cfg.distanceUnit}`;
+    return cfg.currencyAfter ? `${unit} ${cfg.currencySymbol}` : unit;
   });
+
+  protected money(value: number): string {
+    const cfg = this.store.localeConfig();
+    const k = value >= 1000 ? `${Math.round(value / 100) / 10}k` : String(Math.round(value * 100) / 100);
+    return cfg.currencyAfter ? `${k} ${cfg.currencySymbol}` : `${cfg.currencySymbol}${k}`;
+  }
 
   protected onChoice(v: string): void {
     this.store.setLeaseEndChoice(v as LeaseEndChoice);
