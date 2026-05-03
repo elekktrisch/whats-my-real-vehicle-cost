@@ -141,12 +141,12 @@ import type { Locale, Powertrain, Tab } from '../../scenario/scenario.types';
               </div>
               <app-slider-control
                 label="What will the car be worth at the end?"
-                tip="Used for the lease residual and the depreciation curve. Defaults to ~50% of purchase price; lower it for high-mileage or beat-up cars."
+                tip="Used for the lease residual and the depreciation curve. Defaults to ~50% of purchase price; lower it for high-mileage or beat-up cars. Capped at the purchase price."
                 [min]="0"
-                [max]="100000"
+                [max]="residualMax()"
                 [step]="500"
                 [minLabel]="moneyLabel(0)"
-                [maxLabel]="moneyLabel(100000)"
+                [maxLabel]="moneyLabel(residualMax())"
                 [prefix]="currencyPrefix()"
                 [suffix]="currencySuffix()"
                 [value]="store.residualValue()"
@@ -160,12 +160,12 @@ import type { Locale, Powertrain, Tab } from '../../scenario/scenario.types';
               </div>
               <app-slider-control
                 label="How much cash can you put toward this?"
-                tip="At ≥ 80% of purchase price we'll recommend Cash. Otherwise drives cap-cost reduction or the loan principal."
+                tip="At ≥ 80% of purchase price we'll recommend Cash. Otherwise drives cap-cost reduction or the loan principal. Capped at the purchase price."
                 [min]="0"
-                [max]="80000"
+                [max]="downPaymentMax()"
                 [step]="500"
                 [minLabel]="moneyLabel(0)"
-                [maxLabel]="moneyLabel(80000)"
+                [maxLabel]="moneyLabel(downPaymentMax())"
                 [prefix]="currencyPrefix()"
                 [suffix]="currencySuffix()"
                 [value]="store.downPayment()"
@@ -272,6 +272,9 @@ export class WizardPage {
   protected readonly currencySuffix = computed(() =>
     this.store.localeConfig().currencyAfter ? ' ' + this.store.localeConfig().currencySymbol : '',
   );
+
+  protected readonly downPaymentMax = computed(() => Math.min(80000, this.store.purchasePrice()));
+  protected readonly residualMax = computed(() => Math.min(100000, this.store.purchasePrice()));
 
   protected setLocale(v: string): void {
     this.store.setLocale(v as Locale);

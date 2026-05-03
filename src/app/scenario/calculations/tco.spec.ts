@@ -27,6 +27,7 @@ const usLeaseShared = {
   mileageOverageRate: 0.25,
   excessWearEstimate: 800,
   buyoutFee: 300,
+  earlyTerminationFee: 400,
   opportunityCostRate: 0,
 };
 
@@ -89,6 +90,62 @@ describe('tcoBreakdown', () => {
     // A handback fee fires at every cycle boundary — months 36 and 72 here.
     expect(r.series[36].leaseEnd).toBeGreaterThan(r.series[35].leaseEnd);
     expect(r.series[72].leaseEnd).toBeGreaterThan(r.series[71].leaseEnd);
+  });
+
+  it('renew lease + keep < term applies early termination penalty (single partial cycle)', () => {
+    const aligned = tcoBreakdown({
+      ...usLeaseShared,
+      keepDurationYears: 3,
+      leaseTermMonths: 36,
+      leaseEndChoice: 'handBack',
+      earlyTerminationFee: 400,
+    });
+    const partial = tcoBreakdown({
+      ...usLeaseShared,
+      keepDurationYears: 2,
+      leaseTermMonths: 36,
+      leaseEndChoice: 'handBack',
+      earlyTerminationFee: 400,
+    });
+    expect(partial.totals.leaseEnd).toBeGreaterThan(aligned.totals.leaseEnd);
+  });
+
+  it('renew lease + keep > term + partial final cycle does NOT add early termination (shorter last cycle assumed)', () => {
+    const noEtf = tcoBreakdown({
+      ...usLeaseShared,
+      keepDurationYears: 5,
+      leaseTermMonths: 36,
+      leaseEndChoice: 'handBack',
+      earlyTerminationFee: 0,
+    });
+    const withEtf = tcoBreakdown({
+      ...usLeaseShared,
+      keepDurationYears: 5,
+      leaseTermMonths: 36,
+      leaseEndChoice: 'handBack',
+      earlyTerminationFee: 1000,
+    });
+    // Final partial cycle (24 of 36 mo in cycle 2) is treated as a shorter
+    // last lease — early-termination fee should be irrelevant here.
+    expect(withEtf.totals.leaseEnd).toBeCloseTo(noEtf.totals.leaseEnd, 4);
+  });
+
+  it('buy out + keep < term applies early termination penalty on top of the buyout', () => {
+    const noEtf = tcoBreakdown({
+      ...usLeaseShared,
+      keepDurationYears: 2,
+      leaseTermMonths: 36,
+      leaseEndChoice: 'buyOut',
+      earlyTerminationFee: 0,
+    });
+    const withEtf = tcoBreakdown({
+      ...usLeaseShared,
+      keepDurationYears: 2,
+      leaseTermMonths: 36,
+      leaseEndChoice: 'buyOut',
+      earlyTerminationFee: 500,
+    });
+    expect(withEtf.totals.leaseEnd - noEtf.totals.leaseEnd).toBeCloseTo(500, 4);
   });
 
   it('renew lease pays a fresh down payment per cycle (no shallowing after first cycle)', () => {

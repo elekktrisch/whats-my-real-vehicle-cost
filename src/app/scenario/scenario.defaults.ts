@@ -32,6 +32,7 @@ export function defaultScenario(localeOverride?: Locale): ScenarioSnapshot {
       mileageOverageRate: null,
       excessWearEstimate: null,
       buyoutFee: null,
+      earlyTerminationFee: null,
     },
     finance: {
       apr: 6.0,
@@ -49,4 +50,5 @@ export const LEASE_END_DEFAULTS = {
   mileageOverageRate: 0.25,
   excessWearEstimate: 800,
   buyoutFee: 300,
+  earlyTerminationFee: 400,
 };

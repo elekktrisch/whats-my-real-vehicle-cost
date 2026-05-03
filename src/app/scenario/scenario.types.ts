@@ -30,6 +30,7 @@ export interface LeaseInputs {
   mileageOverageRate: number | null;
   excessWearEstimate: number | null;
   buyoutFee: number | null;
+  earlyTerminationFee: number | null;
 }
 
 export interface FinanceInputs {

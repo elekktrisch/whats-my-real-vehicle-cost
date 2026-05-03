@@ -36,12 +36,12 @@ import { SliderControl } from '../../slider-control/slider-control';
         />
         <app-slider-control
           label="Residual value"
-          tip="What the car is worth at the end of your keep-duration. Sets the lease residual and the depreciation curve."
+          tip="What the car is worth at the end of your keep-duration. Sets the lease residual and the depreciation curve. Capped at the purchase price."
           [min]="0"
-          [max]="100000"
+          [max]="residualMax()"
           [step]="500"
           [minLabel]="lo(0)"
-          [maxLabel]="lo(100000)"
+          [maxLabel]="lo(residualMax())"
           [prefix]="currencyPrefix()"
           [suffix]="currencySuffix()"
           [value]="store.residualValue()"
@@ -49,12 +49,12 @@ import { SliderControl } from '../../slider-control/slider-control';
         />
         <app-slider-control
           label="Down payment / cash on hand"
-          tip="Cash you'll put down or have available. ≥ 80% of price recommends Cash; smaller amounts adjust lease/finance math."
+          tip="Cash you'll put down or have available. ≥ 80% of price recommends Cash; smaller amounts adjust lease/finance math. Capped at the purchase price."
           [min]="0"
-          [max]="80000"
+          [max]="downPaymentMax()"
           [step]="500"
           [minLabel]="lo(0)"
-          [maxLabel]="lo(80000)"
+          [maxLabel]="lo(downPaymentMax())"
           [prefix]="currencyPrefix()"
           [suffix]="currencySuffix()"
           [value]="store.downPayment()"
@@ -112,6 +112,9 @@ export class VehicleContextBar {
   protected readonly distanceSuffix = computed(
     () => ' ' + this.store.localeConfig().distanceUnit,
   );
+
+  protected readonly downPaymentMax = computed(() => Math.min(80000, this.store.purchasePrice()));
+  protected readonly residualMax = computed(() => Math.min(100000, this.store.purchasePrice()));
 
   protected readonly msrpDisplay = computed(() => {
     const msrp = Math.round(this.store.msrp());

@@ -55,6 +55,7 @@ export function toQueryParams(snap: ScenarioSnapshot): Record<string, string> {
   setOpt(q, 'milRate', snap.lease.mileageOverageRate);
   setOpt(q, 'wear', snap.lease.excessWearEstimate);
   setOpt(q, 'bo', snap.lease.buyoutFee);
+  setOpt(q, 'etf', snap.lease.earlyTerminationFee);
 
   setNum(q, 'finApr', snap.finance.apr);
   setNum(q, 'loan', snap.finance.loanTerm);
@@ -107,6 +108,8 @@ export function fromQueryParams(params: URLSearchParams): Partial<ScenarioSnapsh
   if (wear !== undefined) lease.excessWearEstimate = wear;
   const bo = n(params.get('bo'));
   if (bo !== undefined) lease.buyoutFee = bo;
+  const etf = n(params.get('etf'));
+  if (etf !== undefined) lease.earlyTerminationFee = etf;
   if (Object.keys(lease).length > 0) snap.lease = lease as LeaseInputs;
 
   const finance: Partial<FinanceInputs> = {};

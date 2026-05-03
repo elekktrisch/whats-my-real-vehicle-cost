@@ -88,6 +88,31 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
           (valueChange)="store.setBuyoutFee($event)"
         />
       }
+
+      <div
+        [class.opacity-50]="!earlyTerminationApplies()"
+        [class.pointer-events-none]="!earlyTerminationApplies()"
+        class="mt-2"
+      >
+        <app-slider-control
+          label="Early termination fee"
+          tip="Admin fee charged on top of the remaining lease payments when you exit the lease before the term ends. Applies to both renew-lease and buy-out modes when the keep duration is shorter than one full lease term."
+          [min]="0"
+          [max]="2000"
+          [step]="25"
+          minLabel="$0"
+          maxLabel="$2k"
+          prefix="$"
+          [value]="store.earlyTerminationFee()"
+          (valueChange)="store.setEarlyTerminationFee($event)"
+        />
+        @if (!earlyTerminationApplies()) {
+          <div class="font-ui text-[0.65rem] text-tx-dim -mt-3 leading-relaxed">
+            Not applicable: keep duration ({{ store.keepDuration() }} yr) is at or beyond the lease
+            term ({{ store.leaseTerm() }} mo) — no early exit happens.
+          </div>
+        }
+      </div>
     </section>
   `,
 })
@@ -106,6 +131,10 @@ export class LeaseEndSection {
     const v = this.store.residualValue().toLocaleString();
     return cfg.currencyAfter ? `${v} ${cfg.currencySymbol}` : `${cfg.currencySymbol}${v}`;
   });
+
+  protected readonly earlyTerminationApplies = computed(
+    () => this.store.keepDuration() * 12 < this.store.leaseTerm(),
+  );
 
   protected onChoice(v: string): void {
     this.store.setLeaseEndChoice(v as LeaseEndChoice);

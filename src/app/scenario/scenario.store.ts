@@ -48,6 +48,9 @@ export class ScenarioStore {
   );
   private readonly _excessWearOverride = signal<number | null>(this.initial.lease.excessWearEstimate);
   private readonly _buyoutFeeOverride = signal<number | null>(this.initial.lease.buyoutFee);
+  private readonly _earlyTerminationFeeOverride = signal<number | null>(
+    this.initial.lease.earlyTerminationFee,
+  );
 
   readonly financeApr = signal(this.initial.finance.apr);
   readonly loanTerm = signal(this.initial.finance.loanTerm);
@@ -129,6 +132,9 @@ export class ScenarioStore {
     () => this._excessWearOverride() ?? LEASE_END_DEFAULTS.excessWearEstimate,
   );
   readonly buyoutFee = computed(() => this._buyoutFeeOverride() ?? LEASE_END_DEFAULTS.buyoutFee);
+  readonly earlyTerminationFee = computed(
+    () => this._earlyTerminationFeeOverride() ?? LEASE_END_DEFAULTS.earlyTerminationFee,
+  );
 
   readonly leasePaymentDetails = computed(() =>
     leasePayment({
@@ -165,6 +171,7 @@ export class ScenarioStore {
       mileageOverageRate: this.mileageOverageRate(),
       excessWearEstimate: this.excessWearEstimate(),
       buyoutFee: this.buyoutFee(),
+      earlyTerminationFee: this.earlyTerminationFee(),
       opportunityCostRate: this.opportunityCostRate(),
     }),
   );
@@ -283,6 +290,9 @@ export class ScenarioStore {
   setBuyoutFee(value: number | null): void {
     this._buyoutFeeOverride.set(value);
   }
+  setEarlyTerminationFee(value: number | null): void {
+    this._earlyTerminationFeeOverride.set(value);
+  }
 
   applySnapshot(snap: Partial<ScenarioSnapshot>): void {
     const merged: ScenarioSnapshot = {
@@ -311,6 +321,7 @@ export class ScenarioStore {
       this._mileageOverageRateOverride.set(merged.lease.mileageOverageRate);
       this._excessWearOverride.set(merged.lease.excessWearEstimate);
       this._buyoutFeeOverride.set(merged.lease.buyoutFee);
+      this._earlyTerminationFeeOverride.set(merged.lease.earlyTerminationFee);
 
       this.financeApr.set(merged.finance.apr);
       this.loanTerm.set(merged.finance.loanTerm);
@@ -347,6 +358,7 @@ export class ScenarioStore {
         mileageOverageRate: this._mileageOverageRateOverride(),
         excessWearEstimate: this._excessWearOverride(),
         buyoutFee: this._buyoutFeeOverride(),
+        earlyTerminationFee: this._earlyTerminationFeeOverride(),
       },
       finance: {
         apr: this.financeApr(),
@@ -380,6 +392,15 @@ export class ScenarioStore {
       if (this.isHydrating() || !this.hasHydrated()) return;
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => this.persist(snap), 200);
+    });
+
+    // Cross-field invariants: down payment and residual value can never exceed
+    // the purchase price. Re-clamp whenever purchase price moves down.
+    effect(() => {
+      const price = this.purchasePrice();
+      if (this.isHydrating()) return;
+      if (this.downPayment() > price) this.downPayment.set(price);
+      if (this.residualValue() > price) this.residualValue.set(price);
     });
   }
 

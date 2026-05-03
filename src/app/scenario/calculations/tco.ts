@@ -39,6 +39,7 @@ export interface LeaseTcoInputs extends TcoBaseInputs {
   mileageOverageRate: number;
   excessWearEstimate: number;
   buyoutFee: number;
+  earlyTerminationFee: number;
   opportunityCostRate: number;
 }
 
@@ -153,7 +154,13 @@ function leaseTco(input: LeaseTcoInputs): CostBreakdown {
         prev.depreciationOrLease + lease.depreciationFee + input.downPayment / leasePeriod;
       series[m].financing = prev.financing + lease.financeFee + monthlyOppCost;
     }
-    const buyoutTotal = input.residualValue + input.buyoutFee;
+    // Early exit: buying out before the lease term ends owes the remaining
+    // months of payments plus an admin fee on top of the residual buyout.
+    const earlyExitPenalty =
+      totalMonths < term
+        ? (term - totalMonths) * lease.monthlyPayment + input.earlyTerminationFee
+        : 0;
+    const buyoutTotal = input.residualValue + input.buyoutFee + earlyExitPenalty;
     if (leasePeriod <= totalMonths) {
       for (let m = leasePeriod; m <= totalMonths; m++) {
         series[m].leaseEnd = buyoutTotal;
@@ -195,6 +202,14 @@ function leaseTco(input: LeaseTcoInputs): CostBreakdown {
     const onCycleBoundary = m % term === 0;
     const finalPartial = m === totalMonths && totalMonths % term !== 0;
     if (onCycleBoundary || finalPartial) cumLeaseEnd += handbackFee;
+    // Early termination only applies for a single partial cycle (keep < term —
+    // the user signed a longer lease than they're keeping). When keep > term
+    // and the FINAL cycle is partial, we assume the user just signs a shorter
+    // last lease, so no penalty fires there.
+    if (finalPartial && totalMonths < term) {
+      const remainingMonths = term - totalMonths;
+      cumLeaseEnd += remainingMonths * lease.monthlyPayment + input.earlyTerminationFee;
+    }
     series[m].leaseEnd = cumLeaseEnd;
   }
   return summarize(series);
