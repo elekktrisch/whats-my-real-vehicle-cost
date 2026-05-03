@@ -47,6 +47,7 @@ export interface FinanceTcoInputs extends TcoBaseInputs {
   tab: 'finance';
   apr: number;
   loanTermMonths: number;
+  opportunityCostRate: number;
 }
 
 export interface CashTcoInputs extends TcoBaseInputs {
@@ -224,6 +225,10 @@ function financeTco(input: FinanceTcoInputs): CostBreakdown {
     termMonths: input.loanTermMonths,
   });
   const monthlyInterestRate = input.apr / 100 / 12;
+  // Linear opportunity cost on the down payment — same shape as the lease tab.
+  // Without this, "100% down on a loan" would look cheaper than cash, which it
+  // isn't (same capital tied up).
+  const monthlyOppCost = (input.downPayment * input.opportunityCostRate) / 12;
 
   let balance = principal;
   for (let m = 1; m <= totalMonths; m++) {
@@ -237,7 +242,7 @@ function financeTco(input: FinanceTcoInputs): CostBreakdown {
     }
     series[m].depreciationOrLease =
       prev.depreciationOrLease + principalPart + (m === 1 ? input.downPayment : 0);
-    series[m].financing = prev.financing + interestPart;
+    series[m].financing = prev.financing + interestPart + monthlyOppCost;
   }
 
   const totalDepreciation = Math.max(input.purchasePrice - input.residualValue, 0);

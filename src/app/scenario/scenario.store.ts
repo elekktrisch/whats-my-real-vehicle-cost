@@ -123,17 +123,19 @@ export class ScenarioStore {
     () => this._homeChargerOverride() ?? this.homeChargerDefault(),
   );
 
-  readonly recommendedTab = computed(() =>
-    recommendTab({
-      purchasePrice: this.purchasePrice(),
-      // Recommendation uses the lease down payment as the "cash on hand" proxy
-      // (it's the value the wizard captures and the user sees first).
-      downPayment: this.leaseDownPayment(),
-      keepDuration: this.keepDuration(),
-      annualMileage: this.annualMileage(),
+  readonly recommendedTab = computed(() => {
+    const annualMiles = this.annualMileage();
+    const years = this.keepDuration();
+    return recommendTab({
+      costPerDistance: {
+        lease: costPerDistance(this.leaseBreakdown(), annualMiles, years),
+        finance: costPerDistance(this.financeBreakdown(), annualMiles, years),
+        cash: costPerDistance(this.cashBreakdown(), annualMiles, years),
+      },
       locale: this.locale(),
-    }),
-  );
+      distanceUnit: this.localeConfig().distanceUnit,
+    });
+  });
 
   readonly leaseEndChoice = computed<LeaseEndChoice>(() => {
     const override = this._leaseEndOverride();
@@ -233,6 +235,7 @@ export class ScenarioStore {
       categoryMultipliers: this.categoryMultipliers(),
       apr: this.financeApr(),
       loanTermMonths: this.loanTerm(),
+      opportunityCostRate: this.opportunityCostRate(),
     }),
   );
 

@@ -40,7 +40,7 @@ import type { Locale, Powertrain, Tab } from '../../scenario/scenario.types';
           <div
             class="font-ui text-[0.62rem] font-medium tracking-[0.16em] uppercase text-accent mb-2"
           >
-            Setup · 6 questions
+            Setup · 7 questions
           </div>
           <h1
             class="font-ui text-[1.6rem] sm:text-[1.9rem] font-medium tracking-[-0.02em] text-tx leading-[1.1] mb-2"
@@ -175,7 +175,29 @@ import type { Locale, Powertrain, Tab } from '../../scenario/scenario.types';
 
             <li class="wizard-question">
               <div class="font-ui text-[0.62rem] tracking-[0.14em] uppercase text-tx-dim mb-1">
-                06 · Vehicle age
+                06 · What's your spare cash doing?
+              </div>
+              <div class="flex flex-col gap-2 pt-1">
+                <p class="font-ui text-[0.78rem] text-tx-muted leading-snug max-w-[520px]">
+                  If you didn't put cash into this car, where would it sit? Sets the
+                  opportunity-cost rate used in the running-costs comparison across tabs.
+                </p>
+                <app-toggle
+                  [options]="investmentStyleOptions"
+                  [value]="investmentStyle()"
+                  (valueChange)="setInvestmentStyle($event)"
+                  ariaLabel="Investment style"
+                />
+                <span class="font-mono text-[0.62rem] text-tx-dim">
+                  Currently {{ (store.opportunityCostRate() * 100).toFixed(1) }}% / yr — adjust
+                  freely on any tab.
+                </span>
+              </div>
+            </li>
+
+            <li class="wizard-question">
+              <div class="font-ui text-[0.62rem] tracking-[0.14em] uppercase text-tx-dim mb-1">
+                07 · Vehicle age
               </div>
               <app-slider-control
                 label="How old is the car?"
@@ -262,6 +284,15 @@ export class WizardPage {
     { value: 'ICE', label: 'ICE' },
     { value: 'EV', label: 'EV' },
   ] as const;
+  protected readonly investmentStyleOptions = [
+    { value: 'savings', label: 'Sits in savings (1%)' },
+    { value: 'investing', label: 'Goes to investments (6%)' },
+  ] as const;
+  /** Threshold for "is the user currently in investing mode?" — anything above
+   * 3% lands closer to investment territory than to a savings account. */
+  protected readonly investmentStyle = computed(() =>
+    this.store.opportunityCostRate() >= 0.03 ? 'investing' : 'savings',
+  );
   protected readonly tabs: readonly Tab[] = ['lease', 'finance', 'cash'];
 
   protected readonly distanceUnit = computed(() => this.store.localeConfig().distanceUnit);
@@ -275,6 +306,10 @@ export class WizardPage {
 
   protected readonly downPaymentMax = computed(() => Math.min(80000, this.store.purchasePrice()));
   protected readonly residualMax = computed(() => Math.min(100000, this.store.purchasePrice()));
+
+  protected setInvestmentStyle(style: string): void {
+    this.store.opportunityCostRate.set(style === 'investing' ? 0.06 : 0.01);
+  }
 
   protected setBothDownPayments(value: number): void {
     // Wizard captures one "cash on hand" number; mirror it into both per-tab

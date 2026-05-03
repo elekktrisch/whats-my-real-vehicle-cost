@@ -244,6 +244,69 @@ describe('tcoBreakdown', () => {
     });
     expect(hi.totals.financing).toBeGreaterThan(lo.totals.financing);
   });
+
+  it('finance tab applies opportunity cost on the down payment', () => {
+    const base = {
+      tab: 'finance' as const,
+      locale: 'US' as const,
+      powertrain: 'ICE' as const,
+      purchasePrice: 35000,
+      residualValue: 17500,
+      vehicleAge: 0,
+      annualMileage: 12000,
+      keepDurationYears: 5,
+      downPayment: 5000,
+      insuranceAnnual: 1750,
+      maintenanceAnnual: 525,
+      fuelEfficiency: 28,
+      fuelPrice: 3.5,
+      homeChargerInstall: 0,
+      categoryMultipliers: baseMultipliers,
+      apr: 6,
+      loanTermMonths: 60,
+    };
+    const noOpp = tcoBreakdown({ ...base, opportunityCostRate: 0 });
+    const withOpp = tcoBreakdown({ ...base, opportunityCostRate: 0.08 });
+    // Linear: total opportunity cost = downPayment * rate * years.
+    const expectedExtra = base.downPayment * 0.08 * base.keepDurationYears;
+    expect(withOpp.totals.financing - noOpp.totals.financing).toBeCloseTo(expectedExtra, 4);
+  });
+
+  it('finance with 100% down ≈ cash for the same scenario (same capital tied up)', () => {
+    const shared = {
+      locale: 'US' as const,
+      powertrain: 'ICE' as const,
+      purchasePrice: 35000,
+      residualValue: 17500,
+      vehicleAge: 0,
+      annualMileage: 12000,
+      keepDurationYears: 10,
+      insuranceAnnual: 1750,
+      maintenanceAnnual: 525,
+      fuelEfficiency: 28,
+      fuelPrice: 3.5,
+      homeChargerInstall: 0,
+      categoryMultipliers: baseMultipliers,
+      opportunityCostRate: 0.05,
+    };
+    const finance = tcoBreakdown({
+      ...shared,
+      tab: 'finance',
+      downPayment: 35000,
+      apr: 6,
+      loanTermMonths: 60,
+    });
+    const cash = tcoBreakdown({
+      ...shared,
+      tab: 'cash',
+      downPayment: 0,
+    });
+    // Linear (finance) vs compound monthly (cash) opp-cost shapes don't match
+    // exactly, but they should be in the same ballpark — a 10% delta is plenty
+    // of room for the finance-side simplification.
+    expect(finance.total).toBeGreaterThan(cash.total * 0.9);
+    expect(finance.total).toBeLessThan(cash.total * 1.1);
+  });
 });
 
 describe('effectiveMonthly', () => {

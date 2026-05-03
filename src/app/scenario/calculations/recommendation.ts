@@ -1,11 +1,10 @@
-import type { Tab } from '../scenario.types';
+import { formatCurrency } from '../locale.config';
+import type { Locale, Tab } from '../scenario.types';
 
 export interface RecommendationInputs {
-  purchasePrice: number;
-  downPayment: number;
-  keepDuration: number;
-  annualMileage: number;
-  locale: 'US' | 'EU';
+  costPerDistance: Record<Tab, number>;
+  locale: Locale;
+  distanceUnit: 'mi' | 'km';
 }
 
 export interface Recommendation {
@@ -13,28 +12,25 @@ export interface Recommendation {
   reason: string;
 }
 
-export function recommendTab(input: RecommendationInputs): Recommendation {
-  const milesCap = input.locale === 'US' ? 12000 : 15000;
-  const distanceLabel = input.locale === 'US' ? 'mi/yr' : 'km/yr';
+const TABS: readonly Tab[] = ['lease', 'finance', 'cash'];
+const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Finance', cash: 'Cash' };
 
-  if (input.purchasePrice > 0 && input.downPayment / input.purchasePrice >= 0.8) {
-    return {
-      tab: 'cash',
-      reason: 'Picked Cash because you have enough on hand to cover the purchase.',
-    };
-  }
-  if (input.keepDuration <= 3 && input.annualMileage <= milesCap) {
-    return {
-      tab: 'lease',
-      reason: `Picked Lease because you plan to keep the car ${input.keepDuration} year${
-        input.keepDuration === 1 ? '' : 's'
-      } and drive ${input.annualMileage.toLocaleString()} ${distanceLabel}.`,
-    };
-  }
+/**
+ * Picks the tab with the lowest cost per distance unit. Reactive — every input
+ * change to any tab's breakdown re-runs this and the wizard updates live.
+ */
+export function recommendTab(input: RecommendationInputs): Recommendation {
+  const winner = TABS.reduce((best, t) =>
+    input.costPerDistance[t] < input.costPerDistance[best] ? t : best,
+  );
+  const fmt = (v: number) => formatCurrency(v, input.locale, 2);
+  const others = TABS.filter((t) => t !== winner)
+    .map((t) => `${LABEL[t]} ${fmt(input.costPerDistance[t])}`)
+    .join(', ');
   return {
-    tab: 'finance',
-    reason: `Picked Finance because you plan to keep the car ${input.keepDuration} year${
-      input.keepDuration === 1 ? '' : 's'
-    }.`,
+    tab: winner,
+    reason: `${LABEL[winner]} has the lowest cost per ${input.distanceUnit} at ${fmt(
+      input.costPerDistance[winner],
+    )}/${input.distanceUnit} — vs ${others}.`,
   };
 }

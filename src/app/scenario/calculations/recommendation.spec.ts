@@ -1,58 +1,62 @@
 import { recommendTab } from './recommendation';
 
 describe('recommendTab', () => {
-  it('UC1 — short keep + low miles → Lease', () => {
+  it('picks the tab with the lowest cost per distance', () => {
     const rec = recommendTab({
-      purchasePrice: 42000,
-      downPayment: 5000,
-      keepDuration: 3,
-      annualMileage: 12000,
+      costPerDistance: { lease: 0.5, finance: 0.4, cash: 0.45 },
       locale: 'US',
+      distanceUnit: 'mi',
+    });
+    expect(rec.tab).toBe('finance');
+  });
+
+  it('picks lease when it is the cheapest', () => {
+    const rec = recommendTab({
+      costPerDistance: { lease: 0.3, finance: 0.45, cash: 0.5 },
+      locale: 'US',
+      distanceUnit: 'mi',
     });
     expect(rec.tab).toBe('lease');
   });
 
-  it('UC2 — long keep → Finance', () => {
+  it('picks cash when it wins', () => {
     const rec = recommendTab({
-      purchasePrice: 15000,
-      downPayment: 3000,
-      keepDuration: 5,
-      annualMileage: 15000,
+      costPerDistance: { lease: 0.5, finance: 0.45, cash: 0.32 },
       locale: 'EU',
-    });
-    expect(rec.tab).toBe('finance');
-  });
-
-  it('UC3 — down payment ≥ 80% of price → Cash', () => {
-    const rec = recommendTab({
-      purchasePrice: 40000,
-      downPayment: 40000,
-      keepDuration: 7,
-      annualMileage: 10000,
-      locale: 'US',
+      distanceUnit: 'km',
     });
     expect(rec.tab).toBe('cash');
   });
 
-  it('cash recommendation reason mentions cash', () => {
+  it('reason mentions the winner, the unit and the other tabs for comparison', () => {
     const rec = recommendTab({
-      purchasePrice: 40000,
-      downPayment: 40000,
-      keepDuration: 7,
-      annualMileage: 10000,
+      costPerDistance: { lease: 0.5, finance: 0.4, cash: 0.45 },
       locale: 'US',
+      distanceUnit: 'mi',
     });
-    expect(rec.reason.toLowerCase()).toContain('cash');
+    expect(rec.reason).toContain('Finance');
+    expect(rec.reason).toContain('Lease');
+    expect(rec.reason).toContain('Cash');
+    expect(rec.reason).toContain('mi');
+    expect(rec.reason).toContain('$0.40');
   });
 
-  it('high mileage flips a short keep from Lease to Finance', () => {
+  it('uses EU formatting when locale is EU', () => {
     const rec = recommendTab({
-      purchasePrice: 35000,
-      downPayment: 4000,
-      keepDuration: 3,
-      annualMileage: 25000,
-      locale: 'US',
+      costPerDistance: { lease: 0.5, finance: 0.4, cash: 0.45 },
+      locale: 'EU',
+      distanceUnit: 'km',
     });
-    expect(rec.tab).toBe('finance');
+    expect(rec.reason).toContain('€');
+    expect(rec.reason).toContain('km');
+  });
+
+  it('breaks ties deterministically by preferring earlier tab in lease > finance > cash order', () => {
+    const rec = recommendTab({
+      costPerDistance: { lease: 0.4, finance: 0.4, cash: 0.4 },
+      locale: 'US',
+      distanceUnit: 'mi',
+    });
+    expect(rec.tab).toBe('lease');
   });
 });
