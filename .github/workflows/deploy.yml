@@ -1,3 +1,4 @@
+# Build the Angular app and deploy it to GitHub Pages.
 name: Deploy to GitHub Pages
 
 on:
@@ -10,42 +11,52 @@ permissions:
   pages: write
   id-token: write
 
+# Allow one concurrent deployment; let in-progress runs finish.
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  build:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      - run: npm ci
-      - run: npm test -- --watch=false --browsers=ChromeHeadless
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test -- --watch=false --browsers=ChromeHeadless
+
       # Repo is served at https://<owner>.github.io/whats-my-real-vehicle-cost/
       # so the base href has to match — otherwise asset URLs 404.
-      - run: npm run build -- --base-href=/whats-my-real-vehicle-cost/
+      - name: Build
+        run: npm run build -- --base-href=/whats-my-real-vehicle-cost/
 
       # GitHub Pages serves the requested path verbatim. SPA routes like /lease
       # would 404 on hard reload; copying index.html → 404.html lets GitHub
       # serve our app for any unknown path and Angular's router takes over.
-      - run: cp dist/car-leasing-chart/browser/index.html dist/car-leasing-chart/browser/404.html
+      - name: SPA fallback
+        run: cp dist/car-leasing-chart/browser/index.html dist/car-leasing-chart/browser/404.html
 
-      - uses: actions/upload-pages-artifact@v3
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
           path: dist/car-leasing-chart/browser
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
