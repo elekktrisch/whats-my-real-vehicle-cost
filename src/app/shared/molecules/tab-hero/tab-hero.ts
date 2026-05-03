@@ -21,13 +21,20 @@ interface HeroSlot {
           <div [class]="slotWrapperClass(i)">
             <div [class]="slotLabelClass(slot.accent)">{{ slot.label }}</div>
             <div class="flex items-baseline gap-[4px]">
-              <span class="font-mono text-[1.1rem] font-medium text-tx-muted leading-none">{{
-                currencySymbol()
-              }}</span>
+              @if (!currencyAfter()) {
+                <span class="font-mono text-[1.1rem] font-medium text-tx-muted leading-none">{{
+                  currencySymbol()
+                }}</span>
+              }
               <span
                 class="font-mono text-[2rem] font-medium text-tx leading-none tracking-[-0.02em]"
                 >{{ slot.value }}</span
               >
+              @if (currencyAfter()) {
+                <span class="font-mono text-[1.1rem] font-medium text-tx-muted leading-none">{{
+                  currencySymbol()
+                }}</span>
+              }
             </div>
             @if (slot.subtitle) {
               <div class="font-ui text-[0.62rem] text-tx-dim leading-snug mt-[2px]">
@@ -54,6 +61,13 @@ export class TabHero {
   protected readonly store = inject(ScenarioStore);
 
   protected readonly currencySymbol = computed(() => this.store.localeConfig().currencySymbol);
+  protected readonly currencyAfter = computed(() => this.store.localeConfig().currencyAfter);
+
+  /** Format a money amount with the locale's currency-symbol placement. */
+  private money(v: string): string {
+    const sym = this.currencySymbol();
+    return this.currencyAfter() ? `${v} ${sym}` : `${sym}${v}`;
+  }
 
   private readonly months = computed(() => Math.max(this.store.keepDuration() * 12, 1));
 

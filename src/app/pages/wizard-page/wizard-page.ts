@@ -80,10 +80,10 @@ import type { Tab } from '../../scenario/scenario.types';
                 label="How long do you plan to keep the car?"
                 tip="Your full ownership horizon — sets the chart x-axis and the tab recommendation."
                 [min]="1"
-                [max]="10"
+                [max]="15"
                 [step]="1"
                 minLabel="1 yr"
-                maxLabel="10 yr"
+                maxLabel="15 yr"
                 suffix=" yr"
                 [value]="store.keepDuration()"
                 (valueChange)="store.keepDuration.set($event)"
@@ -320,5 +320,9 @@ export class WizardPage {
 
   protected startOver(): void {
     this.store.applySnapshot(defaultScenario());
+    // Splash auto-redirects when hasReturningState is true — reset so the
+    // user actually lands on the splash screen instead of bouncing to a tab.
+    this.store.hasReturningState.set(false);
+    this.router.navigate(['/']);
   }
 }
