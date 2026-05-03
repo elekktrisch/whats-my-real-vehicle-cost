@@ -65,10 +65,69 @@ export function fuelPriceDefault(locale: Locale, powertrain: Powertrain): number
   return powertrain === 'EV' ? cfg.defaultElectricityPrice : cfg.defaultIceFuelPrice;
 }
 
+/** All 29 IANA timezones inside the United States (including HI/AK). Used to
+ * decide locale from physical location rather than browser language — handy
+ * for e.g. an en-US browser used in Europe. */
+const US_TIMEZONES = new Set<string>([
+  'America/New_York',
+  'America/Detroit',
+  'America/Kentucky/Louisville',
+  'America/Kentucky/Monticello',
+  'America/Indiana/Indianapolis',
+  'America/Indiana/Vincennes',
+  'America/Indiana/Winamac',
+  'America/Indiana/Marengo',
+  'America/Indiana/Petersburg',
+  'America/Indiana/Vevay',
+  'America/Indiana/Tell_City',
+  'America/Indiana/Knox',
+  'America/Chicago',
+  'America/Menominee',
+  'America/North_Dakota/Center',
+  'America/North_Dakota/New_Salem',
+  'America/North_Dakota/Beulah',
+  'America/Denver',
+  'America/Boise',
+  'America/Phoenix',
+  'America/Los_Angeles',
+  'America/Anchorage',
+  'America/Juneau',
+  'America/Sitka',
+  'America/Metlakatla',
+  'America/Yakutat',
+  'America/Nome',
+  'America/Adak',
+  'Pacific/Honolulu',
+]);
+
+/** Pure: maps an IANA timezone to a locale, or null if it's neither US nor EU. */
+export function localeFromTimezone(tz: string | null | undefined): Locale | null {
+  if (!tz) return null;
+  if (US_TIMEZONES.has(tz)) return 'US';
+  if (tz.startsWith('Europe/')) return 'EU';
+  return null;
+}
+
+/** Pure: maps a BCP-47 language tag to a locale. Used as a fallback. */
+export function localeFromLanguage(lang: string | null | undefined): Locale {
+  const l = (lang ?? 'en-us').toLowerCase();
+  return l.startsWith('en-us') || l === 'en' ? 'US' : 'EU';
+}
+
 export function detectLocaleFromBrowser(): Locale {
+  // Timezone is "where you are" — beats navigator.language which is just
+  // "what content you like" (e.g. an en-US browser configured globally).
+  try {
+    if (typeof Intl !== 'undefined') {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const fromTz = localeFromTimezone(tz);
+      if (fromTz) return fromTz;
+    }
+  } catch {
+    // Intl unavailable in some sandboxed envs — fall through to language.
+  }
   if (typeof navigator === 'undefined') return 'EU';
-  const lang = navigator.language?.toLowerCase() ?? 'en-us';
-  return lang.startsWith('en-us') || lang === 'en' ? 'US' : 'EU';
+  return localeFromLanguage(navigator.language);
 }
 
 export function formatCurrency(value: number, locale: Locale, fractionDigits = 0): string {

@@ -1,13 +1,12 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { ScenarioStore } from '../../../scenario/scenario.store';
-import { Toggle } from '../../atoms/toggle/toggle';
 import { Icon } from '../../atoms/icon/icon';
-import type { Locale, Powertrain } from '../../../scenario/scenario.types';
+import { LocaleSelector } from '../locale-selector/locale-selector';
+import { PowertrainSelector } from '../powertrain-selector/powertrain-selector';
 
 @Component({
   selector: 'app-header-bar',
-  imports: [Toggle, Icon],
+  imports: [Icon, LocaleSelector, PowertrainSelector],
   template: `
     <header
       class="flex items-center justify-between gap-3 flex-wrap pt-7 pb-[18px] border-b border-border"
@@ -24,18 +23,8 @@ import type { Locale, Powertrain } from '../../../scenario/scenario.types';
       </div>
 
       <div class="flex items-center gap-3">
-        <app-toggle
-          [options]="localeOptions"
-          [value]="store.locale()"
-          (valueChange)="setLocale($event)"
-          ariaLabel="Locale"
-        />
-        <app-toggle
-          [options]="powertrainOptions"
-          [value]="store.powertrain()"
-          (valueChange)="setPowertrain($event)"
-          ariaLabel="Powertrain"
-        />
+        <app-locale-selector />
+        <app-powertrain-selector />
 
         <button
           type="button"
@@ -50,24 +39,8 @@ import type { Locale, Powertrain } from '../../../scenario/scenario.types';
   `,
 })
 export class HeaderBar {
-  protected readonly store = inject(ScenarioStore);
   private readonly router = inject(Router);
 
-  protected readonly localeOptions = [
-    { value: 'US', label: 'US' },
-    { value: 'EU', label: 'EU' },
-  ] as const;
-  protected readonly powertrainOptions = [
-    { value: 'ICE', label: 'ICE / Hybrid' },
-    { value: 'EV', label: '100% EV' },
-  ] as const;
-
-  protected setLocale(v: string): void {
-    this.store.setLocale(v as Locale);
-  }
-  protected setPowertrain(v: string): void {
-    this.store.setPowertrain(v as Powertrain);
-  }
   protected editAnswers(): void {
     this.router.navigate(['/wizard']);
   }

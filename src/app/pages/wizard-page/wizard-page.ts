@@ -6,11 +6,13 @@ import { Button } from '../../shared/atoms/button/button';
 import { Toggle } from '../../shared/atoms/toggle/toggle';
 import { Icon } from '../../shared/atoms/icon/icon';
 import { SliderControl } from '../../shared/slider-control/slider-control';
-import type { Locale, Powertrain, Tab } from '../../scenario/scenario.types';
+import { LocaleSelector } from '../../shared/molecules/locale-selector/locale-selector';
+import { PowertrainSelector } from '../../shared/molecules/powertrain-selector/powertrain-selector';
+import type { Tab } from '../../scenario/scenario.types';
 
 @Component({
   selector: 'app-wizard-page',
-  imports: [Button, Toggle, Icon, SliderControl],
+  imports: [Button, Toggle, Icon, SliderControl, LocaleSelector, PowertrainSelector],
   template: `
     <main class="min-h-[100dvh] flex flex-col items-center px-6 py-10 relative">
       <div
@@ -57,23 +59,13 @@ import type { Locale, Powertrain, Tab } from '../../scenario/scenario.types';
               <span class="font-ui text-[0.62rem] tracking-[0.13em] uppercase text-tx-dim"
                 >Locale</span
               >
-              <app-toggle
-                [options]="localeOptions"
-                [value]="store.locale()"
-                (valueChange)="setLocale($event)"
-                ariaLabel="Locale"
-              />
+              <app-locale-selector />
             </div>
             <div class="flex items-center gap-2">
               <span class="font-ui text-[0.62rem] tracking-[0.13em] uppercase text-tx-dim"
                 >Powertrain</span
               >
-              <app-toggle
-                [options]="powertrainOptions"
-                [value]="store.powertrain()"
-                (valueChange)="setPowertrain($event)"
-                ariaLabel="Powertrain"
-              />
+              <app-powertrain-selector />
             </div>
           </div>
         </section>
@@ -276,14 +268,6 @@ export class WizardPage {
   protected readonly store = inject(ScenarioStore);
   private readonly router = inject(Router);
 
-  protected readonly localeOptions = [
-    { value: 'US', label: 'US' },
-    { value: 'EU', label: 'EU' },
-  ] as const;
-  protected readonly powertrainOptions = [
-    { value: 'ICE', label: 'ICE / Hybrid' },
-    { value: 'EV', label: '100% EV' },
-  ] as const;
   protected readonly investmentStyleOptions = [
     { value: 'savings', label: 'Sits in savings (1%)' },
     { value: 'investing', label: 'Goes to investments (6%)' },
@@ -316,13 +300,6 @@ export class WizardPage {
     // signals so the user sees the same starting value if they switch tabs.
     this.store.leaseDownPayment.set(value);
     this.store.financeDownPayment.set(value);
-  }
-
-  protected setLocale(v: string): void {
-    this.store.setLocale(v as Locale);
-  }
-  protected setPowertrain(v: string): void {
-    this.store.setPowertrain(v as Powertrain);
   }
 
   protected moneyLabel(v: number): string {
