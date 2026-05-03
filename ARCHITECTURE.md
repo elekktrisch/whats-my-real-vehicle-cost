@@ -2,9 +2,9 @@
 
 How [PRODUCT.md](./PRODUCT.md) and [USE_CASES.md](./USE_CASES.md) get built. Angular 20.1, standalone components, signals everywhere, no NgModules.
 
-## Progress (last updated 2026-05-02)
+## Progress (last updated 2026-05-03)
 
-Phases 1–5 are landed. The running app is the new routed TabPage shell with Splash + Wizard entry-flow, fully wired to `ScenarioStore`, with a working Lease tab, a stacked-area TCO chart, and full URL + localStorage round-tripping (sharing a configuration is just copy-paste a URL). Finance and Cash are placeholders until Phase 6.
+Phases 1–6 are landed. The running app is the new routed TabPage shell with Splash + Wizard entry-flow, fully wired to `ScenarioStore`, with three working tabs (Lease, Finance, Cash) sharing a single hero card and stacked-area TCO chart at the top. Down payment is per-tab (Lease and Finance track separately; Cash uses full purchase price). Wizard's recommendation is a real cost-per-distance comparison across all three tabs. CI deploys to GitHub Pages on every push to `master`.
 
 - **Phase 1 — Foundation: ✅ done.** `src/app/scenario/` holds `scenario.types.ts`, `locale.config.ts`, `scenario.defaults.ts`, `scenario.store.ts`, and `calculations/` (depreciation, msrp, category, financing, opportunity, fuel, tco, recommendation). 48 unit specs cover the calculations (incl. rolling-lease coverage).
 - **Phase 2 — Atoms: ✅ done.** Existing atoms (`slider-control`, `kpi-card`, `info-badge`) migrated to signal-based `input()` / `model()` I/O at their original paths under `shared/`. Six new atoms added under `shared/atoms/`: `button`, `toggle`, `number-input`, `icon`, `label`, `divider`. The slider's readout was replaced with an inline editable value (prefix / suffix / fractionDigits).
@@ -15,7 +15,15 @@ Phases 1–5 are landed. The running app is the new routed TabPage shell with Sp
     - **Insurance recalibrated:** PRODUCT.md baselines were 5% US / 4% EU with luxury × 1.5 — produced €6k/yr for a 100k EU lux-tier car against ~€1600/yr real-world. New baselines are 2% US / 1.5% EU with luxury × 1.3, mid × 1.15. PRODUCT.md updated to match; the calc is the new ground truth.
     - **TCO inputs lifted to global:** insurance / maintenance / fuel-efficiency / fuel-price / home-charger-install were originally per-tab in PRODUCT.md, but they're properties of the vehicle, not the financing decision — and per-tab overrides break the cross-tab comparison story. They now live in a single `running-costs-bar` molecule above the tab strip; the override pattern collapsed from `PerTabSignal<number | null>` to plain `signal<number | null>`; `setOverride(slot, value)` lost its tab parameter; `ScenarioSnapshot.overrides` is now a flat `TcoOverrides` (was `PerTabOverrides`). PRODUCT.md updated to "Global TCO inputs".
 - **Phase 5 — Persistence + URL sync: ✅ done.** `scenario/scenario.serializer.ts` exposes `toQueryParams` / `fromQueryParams` (URL: short keys, skips null overrides, leaves activeTab to the route path), `toLocalStorage` / `fromLocalStorage` (full JSON, includes activeTab), plus `tabFromPath` and `hasAnyParams` helpers. The store gained a single autosave `effect` that reads `snapshot()`, debounces 200ms, and writes both localStorage and URL queryParams (via `Location.replaceState` of a `Router.parseUrl`-mutated tree, so route path is preserved without a router navigation event). `provideAppInitializer` in `app.config.ts` hydrates from URL → localStorage → defaults at boot, with URL winning. Two seams now exist: `hasHydrated` (autosave gate, true after boot regardless) and `hasReturningState` (splash skip seam, true only when URL/localStorage carried real state). 13 new specs cover round-trip, garbage handling, and override skip behavior.
-- **Phases 6–8: ⏳ pending.** Phase 6 (Finance + Cash tabs) is next.
+- **Phase 6 — Finance + Cash tabs: ✅ done.** All three tabs wired to the store and sharing a single `tab-hero` molecule at the top of `TabPage` (per-tab monthly numbers + caption, switches on `store.activeTab()`). Each hero column carries a small subtitle: lease shows `$X depreciation · $Y interest`; finance shows `$X builds equity · $Y interest`; running-costs slot shows `$X vehicle · $Y opportunity`. `LeaseTab` is now just sliders (lease-financing group + lease-end section); `FinanceTab` is a loan-financing group (APR, loan term, opportunity-cost rate); `CashTab` is a single-input group (just opportunity-cost rate). KPI bar and chart moved up to sit alongside the hero; the chart is wired for all three tabs via `activeBreakdown()`. Finance now applies opportunity cost on its own down payment (parity with lease/cash — without it, "100% down on a loan" looked artificially cheaper than cash).
+- **Phase 6 — per-tab refinements:**
+    - **Per-tab down payment:** `Globals.downPayment` was lifted out and replaced with `LeaseInputs.downPayment` and `FinanceInputs.downPayment`. Defaults: lease $5k US / €4k EU; finance $0 (both locales). Cash uses `purchasePrice` directly (`downPayment: 0` is passed into the calc). The wizard captures one "cash on hand" answer and mirrors it into both per-tab signals; the user can split them later. The vehicle-context-bar's down-payment slider binds to `activeDownPayment` and is hidden on the cash tab.
+    - **Locale-aware lease-end labels:** disposition fee, excess wear, buyout fee, mileage overage rate, and early termination penalty all use `currencyPrefix` / `currencySuffix` plus a `money()` helper. EU renders `1k €` / `0.25 €/km`; US renders `$1k` / `$0.25 /mi`.
+    - **Smart, reactive recommendation:** `recommendTab()` now compares actual cost-per-distance across all three tabs (no more heuristics). Updates on the fly because it depends on the three breakdown computeds. Locale-aware reason text. The previous threshold-based logic could occasionally point at a tab that wasn't actually cheapest in the user's scenario.
+    - **Investment-style wizard question:** Q6 is a binary toggle ("Sits in savings 1%" / "Goes to investments 6%") that sets `opportunityCostRate`. Toggle's selected state derives from the rate so it stays in sync with later slider edits.
+    - **Lessor-table early termination:** the early-termination slider now represents the WHOLE penalty per the lessor's table (no auto-added remaining payments). Default tracks `((term−keep)/term) × (price − residual)` to approximate typical depreciation-based tables; user overrides with the actual figure. Capped at 90% of the financed portion.
+- **Phase 6.5 — CI + deploy: ✅ done.** `.github/workflows/deploy.yml` builds, runs the test suite, and deploys to GitHub Pages on every push to `master` via `actions/deploy-pages`. Build uses `--base-href=/whats-my-real-vehicle-cost/` for the project subpath; `index.html` is copied to `404.html` so SPA deep links survive a hard reload. One-time manual setup: enable Pages-from-Actions in the repo settings.
+- **Phases 7–8: ⏳ pending.** Phase 7 is mobile chart + responsive polish; Phase 8 is i18n.
 - **Doc note:** USE_CASES.md UC2 narrates ~€25k back-derived MSRP for a 4-yr-old €15k Golf and €600/yr insurance; the canonical PRODUCT.md curve produces ~€30.5k MSRP, which lands in Mid category, and the new insurance formula gives ~€260/yr. UC2 is annotated; the narrative was written against an older parameterization.
 
 ## Guiding principles
@@ -42,32 +50,38 @@ ScenarioStore (signals)
 │   ├── vehicleAge: signal<number>           // 0–10
 │   ├── annualMileage: signal<number>
 │   ├── keepDuration: signal<number>          // years
-│   ├── downPayment: signal<number>
 │   └── activeTab: signal<'lease' | 'finance' | 'cash'>
 │
 ├── Lease tab
-│   ├── apr: signal<number>
-│   ├── leaseTerm: signal<number>             // months: 24/36/48/60
-│   ├── leaseEndChoice: signal<'handBack' | 'buyOut'>
+│   ├── leaseApr: signal<number>
+│   ├── leaseTerm: signal<number>             // months
+│   ├── leaseDownPayment: signal<number>      // per-tab
+│   ├── leaseEndChoice: signal<'handBack' | 'buyOut' | null>  // null = auto-derive
 │   ├── dispositionFee: signal<number | null>
 │   ├── mileageOverageRate: signal<number | null>
 │   ├── excessWearEstimate: signal<number | null>
-│   └── buyoutFee: signal<number | null>
+│   ├── buyoutFee: signal<number | null>
+│   └── earlyTerminationFee: signal<number | null>  // null = depreciation-based default
 │
 ├── Finance tab
 │   ├── financeApr: signal<number>
-│   └── loanTerm: signal<number>              // months
+│   ├── loanTerm: signal<number>              // months
+│   └── financeDownPayment: signal<number>    // per-tab; defaults to 0
 │
-├── Cash tab
-│   └── opportunityCostRate: signal<number>   // 0–0.10
+├── Cash tab (purchase = full purchasePrice; no separate downPayment)
 │
-└── TCO overrides (per tab; each tab has its own override slot)
-    ├── insuranceOverride: { lease, finance, cash }: signal<number | null>
-    ├── maintenanceOverride: { ... }
-    ├── fuelEfficiencyOverride: { ... }
-    ├── fuelPriceOverride: { ... }
-    └── homeChargerInstallOverride: { ... }
+├── Cross-tab
+│   └── opportunityCostRate: signal<number>   // shared by lease/finance (on down payment) and cash (on full price)
+│
+└── TCO overrides (global — running costs are vehicle properties, not tab-specific)
+    ├── insuranceOverride:        signal<number | null>
+    ├── maintenanceOverride:      signal<number | null>
+    ├── fuelEfficiencyOverride:   signal<number | null>
+    ├── fuelPriceOverride:        signal<number | null>
+    └── homeChargerInstallOverride: signal<number | null>
 ```
+
+Plus a derived `activeDownPayment = computed(...)` that returns the lease/finance value or `purchasePrice` for cash, with a paired `setActiveDownPayment(value)` setter — used by the vehicle-context-bar slider so editing it tracks the active tab.
 
 ### Computed layer
 
@@ -390,7 +404,11 @@ Use-case tests are the primary regression net. They walk a real user through the
 | ✅ | `app.ts` (root with all state) | Refactored to `<router-outlet/>` shell | `app.ts` = router-outlet shell |
 | ✅ | `app.html` (tab toggle + placeholders) | Deleted; tab toggle is now the `tab-strip` molecule; placeholder Finance/Cash are full feature components | `pages/tab-page/` |
 | ✅ | `lease-tab/lease-tab.ts` | Rewritten on top of `ScenarioStore`; financing math now lives in `scenario/calculations/financing.ts`; lease-financing slider group + lease-end section. TCO inputs lifted to global `running-costs-bar` molecule. | `features/lease-tab/` |
-| 🟡 | Chart definition (in lease-tab) | Desktop stacked-area Chart.js renderer done; mobile composition is Phase 7 | `features/chart/tco-chart-desktop/` ✅, `tco-chart-mobile/` ⏳ |
+| ✅ | Chart wired only to lease tab | Now wired to all three tabs via `activeBreakdown()` computed in TabPage | `features/chart/tco-chart-desktop/` ✅, `tco-chart-mobile/` ⏳ |
+| ✅ | Hero card embedded in `LeaseTab` | Extracted to `tab-hero` molecule at the top of `TabPage`, switches per active tab | `shared/molecules/tab-hero/` |
+| ✅ | Finance + Cash placeholder components | Built out: `FinanceTab` (loan-financing slider group), `CashTab` (opportunity-cost slider) | `features/finance-tab/`, `features/cash-tab/` |
+| ✅ | Heuristic-based recommendation | Now a real cost-per-distance comparison across all three tabs | `scenario/calculations/recommendation.ts` |
+| ✅ | (none) | CI workflow that deploys to GitHub Pages on push to master | `.github/workflows/deploy.yml` |
 | ✅ | `shared/slider-control` | Migrated to signal `input()` / `model()`; readout is now an inline editable value (prefix / suffix / fractionDigits) | Same path |
 | ✅ | `shared/kpi-card` | Migrated to signal input | Same path |
 | ✅ | `shared/info-badge` | Migrated to signal input | Same path |
@@ -408,8 +426,8 @@ Mirrors the use-case priority from USE_CASES.md:
 2. ✅ **Atoms migration:** `SliderControl`, `KpiCard`, `InfoBadge` migrated to signal I/O. Added `button`, `toggle`, `number-input`, `icon`, `label`, `divider`.
 3. ✅ **TabPage shell + LeaseTab refactor:** lease tab rebuilt on top of `ScenarioStore` with TCO inputs + lease-end section; desktop stacked-area chart renders. The new TabPage is what the app shows on load.
 4. ✅ **Wizard + SplashPage + routing:** entry-flow at `/` (splash) → `/wizard` → `/lease|/finance|/cash`. Five lazy-loaded routes; tab clicks navigate; route data drives `store.activeTab`. Deferred `header-bar` molecule added.
-5. ⏳ **Persistence + URL sync:** layer on the effects; verify hydration with manual URL paste.
-6. ⏳ **Finance + Cash tabs:** with the lease tab as template, these are mostly variation on financing math.
+5. ✅ **Persistence + URL sync:** debounced autosave effect + APP_INITIALIZER hydration.
+6. ✅ **Finance + Cash tabs:** all three tabs share a top-positioned `tab-hero` molecule; per-tab down payment; reactive cost-per-distance recommendation; CI deploy to GitHub Pages.
 7. ⏳ **Mobile chart + responsive layout polish.**
 8. ⏳ **i18n scaffold:** centralize remaining strings.
 
