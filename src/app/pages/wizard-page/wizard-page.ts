@@ -48,7 +48,7 @@ import type { Locale, Powertrain, Tab } from '../../scenario/scenario.types';
             Tell us about the car.
           </h1>
           <p class="font-ui text-[0.85rem] text-tx-muted leading-[1.6] max-w-[520px]">
-            Locale and powertrain are pre-selected. Drag the sliders to your real numbers — we
+            Select where you plan to buy, and what kind of drivetrain will be in the car. Drag the sliders to your real numbers — we
             recommend a tab and you can override.
           </p>
 
@@ -281,8 +281,8 @@ export class WizardPage {
     { value: 'EU', label: 'EU' },
   ] as const;
   protected readonly powertrainOptions = [
-    { value: 'ICE', label: 'ICE' },
-    { value: 'EV', label: 'EV' },
+    { value: 'ICE', label: 'ICE / Hybrid' },
+    { value: 'EV', label: '100% EV' },
   ] as const;
   protected readonly investmentStyleOptions = [
     { value: 'savings', label: 'Sits in savings (1%)' },

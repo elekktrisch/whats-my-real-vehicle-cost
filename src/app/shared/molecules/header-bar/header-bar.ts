@@ -58,8 +58,8 @@ export class HeaderBar {
     { value: 'EU', label: 'EU' },
   ] as const;
   protected readonly powertrainOptions = [
-    { value: 'ICE', label: 'ICE' },
-    { value: 'EV', label: 'EV' },
+    { value: 'ICE', label: 'ICE / Hybrid' },
+    { value: 'EV', label: '100% EV' },
   ] as const;
 
   protected setLocale(v: string): void {
