@@ -17,13 +17,13 @@ export interface Globals {
   vehicleAge: number;
   annualMileage: number;
   keepDuration: number;
-  downPayment: number;
   activeTab: Tab;
 }
 
 export interface LeaseInputs {
   apr: number;
   leaseTerm: number;
+  downPayment: number;
   /** null = auto-derive from keep-duration vs. lease term. Set by the user toggle. */
   leaseEndChoice: LeaseEndChoice | null;
   dispositionFee: number | null;
@@ -36,6 +36,7 @@ export interface LeaseInputs {
 export interface FinanceInputs {
   apr: number;
   loanTerm: number;
+  downPayment: number;
 }
 
 export interface CashInputs {

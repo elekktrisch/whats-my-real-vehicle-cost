@@ -7,6 +7,7 @@ interface HeroSlot {
   label: string;
   value: string;
   accent?: boolean;
+  subtitle?: string;
 }
 
 @Component({
@@ -28,6 +29,11 @@ interface HeroSlot {
                 >{{ slot.value }}</span
               >
             </div>
+            @if (slot.subtitle) {
+              <div class="font-ui text-[0.62rem] text-tx-dim leading-snug mt-[2px]">
+                {{ slot.subtitle }}
+              </div>
+            }
           </div>
         }
       </div>
@@ -65,7 +71,9 @@ export class TabHero {
   /** Cash-tab special case: opportunity cost is on the FULL purchase price. */
   private readonly monthlyOppCost = computed(() => {
     const principal =
-      this.store.activeTab() === 'cash' ? this.store.purchasePrice() : this.store.downPayment();
+      this.store.activeTab() === 'cash'
+        ? this.store.purchasePrice()
+        : this.store.activeDownPayment();
     return (principal * this.store.opportunityCostRate()) / 12;
   });
 
@@ -84,7 +92,7 @@ export class TabHero {
     const tab = this.store.activeTab();
     if (tab === 'lease') {
       return [
-        { label: 'Initial down payment', value: this.fmtInt(this.store.downPayment()) },
+        { label: 'Initial down payment', value: this.fmtInt(this.store.leaseDownPayment()) },
         {
           label: 'Monthly lease payment',
           value: this.fmt2(this.store.leasePaymentDetails().monthlyPayment),
@@ -94,15 +102,29 @@ export class TabHero {
       ];
     }
     if (tab === 'finance') {
-      const principal = Math.max(this.store.purchasePrice() - this.store.downPayment(), 0);
+      const principal = Math.max(
+        this.store.purchasePrice() - this.store.financeDownPayment(),
+        0,
+      );
+      const loanMonths = Math.max(this.store.loanTerm(), 1);
       const monthly = financePayment({
         principal,
         apr: this.store.financeApr(),
         termMonths: this.store.loanTerm(),
       });
+      // Each loan payment splits between equity (principal → builds car
+      // ownership) and interest (cost of borrowing). Average across the loan.
+      const avgEquity = principal / loanMonths;
+      const avgInterest = Math.max(monthly - avgEquity, 0);
+      const sym = this.currencySymbol();
       return [
-        { label: 'Initial down payment', value: this.fmtInt(this.store.downPayment()) },
-        { label: 'Monthly loan payment', value: this.fmt2(monthly), accent: true },
+        { label: 'Initial down payment', value: this.fmtInt(this.store.financeDownPayment()) },
+        {
+          label: 'Monthly loan payment',
+          value: this.fmt2(monthly),
+          accent: true,
+          subtitle: `${sym}${this.fmt2(avgEquity)} builds equity · ${sym}${this.fmt2(avgInterest)} interest`,
+        },
         { label: 'Monthly running costs', value: this.fmt2(this.monthlyRunningCosts()) },
       ];
     }

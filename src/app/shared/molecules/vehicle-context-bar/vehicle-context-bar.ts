@@ -47,19 +47,21 @@ import { SliderControl } from '../../slider-control/slider-control';
           [value]="store.residualValue()"
           (valueChange)="store.residualValue.set($event)"
         />
-        <app-slider-control
-          label="Down payment / cash on hand"
-          tip="Cash you'll put down or have available. ≥ 80% of price recommends Cash; smaller amounts adjust lease/finance math. Capped at the purchase price."
-          [min]="0"
-          [max]="downPaymentMax()"
-          [step]="500"
-          [minLabel]="lo(0)"
-          [maxLabel]="lo(downPaymentMax())"
-          [prefix]="currencyPrefix()"
-          [suffix]="currencySuffix()"
-          [value]="store.downPayment()"
-          (valueChange)="store.downPayment.set($event)"
-        />
+        @if (store.activeTab() !== 'cash') {
+          <app-slider-control
+            [label]="downPaymentLabel()"
+            tip="Cash you'll put down toward the active tab's deal. Lease and Finance track this separately so you can compare e.g. $5k down on a lease vs. $0 down on a loan. Capped at the purchase price."
+            [min]="0"
+            [max]="downPaymentMax()"
+            [step]="500"
+            [minLabel]="lo(0)"
+            [maxLabel]="lo(downPaymentMax())"
+            [prefix]="currencyPrefix()"
+            [suffix]="currencySuffix()"
+            [value]="store.activeDownPayment()"
+            (valueChange)="store.setActiveDownPayment($event)"
+          />
+        }
         <app-slider-control
           label="Annual mileage"
           tip="How far you drive each year. Drives fuel cost and (combined with keep-duration) the lease overage risk."
@@ -115,6 +117,9 @@ export class VehicleContextBar {
 
   protected readonly downPaymentMax = computed(() => Math.min(80000, this.store.purchasePrice()));
   protected readonly residualMax = computed(() => Math.min(100000, this.store.purchasePrice()));
+  protected readonly downPaymentLabel = computed(() =>
+    this.store.activeTab() === 'lease' ? 'Down payment (lease)' : 'Down payment (loan)',
+  );
 
   protected readonly msrpDisplay = computed(() => {
     const msrp = Math.round(this.store.msrp());

@@ -168,8 +168,8 @@ import type { Locale, Powertrain, Tab } from '../../scenario/scenario.types';
                 [maxLabel]="moneyLabel(downPaymentMax())"
                 [prefix]="currencyPrefix()"
                 [suffix]="currencySuffix()"
-                [value]="store.downPayment()"
-                (valueChange)="store.downPayment.set($event)"
+                [value]="store.leaseDownPayment()"
+                (valueChange)="setBothDownPayments($event)"
               />
             </li>
 
@@ -275,6 +275,13 @@ export class WizardPage {
 
   protected readonly downPaymentMax = computed(() => Math.min(80000, this.store.purchasePrice()));
   protected readonly residualMax = computed(() => Math.min(100000, this.store.purchasePrice()));
+
+  protected setBothDownPayments(value: number): void {
+    // Wizard captures one "cash on hand" number; mirror it into both per-tab
+    // signals so the user sees the same starting value if they switch tabs.
+    this.store.leaseDownPayment.set(value);
+    this.store.financeDownPayment.set(value);
+  }
 
   protected setLocale(v: string): void {
     this.store.setLocale(v as Locale);

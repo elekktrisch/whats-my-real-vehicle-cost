@@ -46,10 +46,10 @@ export function toQueryParams(snap: ScenarioSnapshot): Record<string, string> {
   setNum(q, 'age', g.vehicleAge);
   setNum(q, 'mileage', g.annualMileage);
   setNum(q, 'keep', g.keepDuration);
-  setNum(q, 'down', g.downPayment);
 
   setNum(q, 'leaseApr', snap.lease.apr);
   setNum(q, 'leaseTerm', snap.lease.leaseTerm);
+  setNum(q, 'leaseDown', snap.lease.downPayment);
   if (snap.lease.leaseEndChoice) q['leaseEnd'] = snap.lease.leaseEndChoice;
   setOpt(q, 'disp', snap.lease.dispositionFee);
   setOpt(q, 'milRate', snap.lease.mileageOverageRate);
@@ -59,6 +59,7 @@ export function toQueryParams(snap: ScenarioSnapshot): Record<string, string> {
 
   setNum(q, 'finApr', snap.finance.apr);
   setNum(q, 'loan', snap.finance.loanTerm);
+  setNum(q, 'finDown', snap.finance.downPayment);
   setNum(q, 'opp', snap.cash.opportunityCostRate);
 
   setOpt(q, 'ins', snap.overrides.insurance);
@@ -88,8 +89,6 @@ export function fromQueryParams(params: URLSearchParams): Partial<ScenarioSnapsh
   if (annualMileage !== undefined) globals.annualMileage = annualMileage;
   const keepDuration = n(params.get('keep'));
   if (keepDuration !== undefined) globals.keepDuration = keepDuration;
-  const downPayment = n(params.get('down'));
-  if (downPayment !== undefined) globals.downPayment = downPayment;
   if (Object.keys(globals).length > 0) snap.globals = globals as Globals;
 
   const lease: Partial<LeaseInputs> = {};
@@ -97,6 +96,8 @@ export function fromQueryParams(params: URLSearchParams): Partial<ScenarioSnapsh
   if (leaseApr !== undefined) lease.apr = leaseApr;
   const leaseTerm = i(params.get('leaseTerm'));
   if (leaseTerm !== undefined) lease.leaseTerm = leaseTerm;
+  const leaseDown = n(params.get('leaseDown'));
+  if (leaseDown !== undefined) lease.downPayment = leaseDown;
   const leaseEnd = params.get('leaseEnd');
   if (leaseEnd === 'handBack' || leaseEnd === 'buyOut')
     lease.leaseEndChoice = leaseEnd as LeaseEndChoice;
@@ -117,6 +118,8 @@ export function fromQueryParams(params: URLSearchParams): Partial<ScenarioSnapsh
   if (finApr !== undefined) finance.apr = finApr;
   const loan = i(params.get('loan'));
   if (loan !== undefined) finance.loanTerm = loan;
+  const finDown = n(params.get('finDown'));
+  if (finDown !== undefined) finance.downPayment = finDown;
   if (Object.keys(finance).length > 0) snap.finance = finance as FinanceInputs;
 
   const cash: Partial<CashInputs> = {};

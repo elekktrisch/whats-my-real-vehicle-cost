@@ -36,11 +36,11 @@ export class ScenarioStore {
   readonly vehicleAge = signal(this.initial.globals.vehicleAge);
   readonly annualMileage = signal(this.initial.globals.annualMileage);
   readonly keepDuration = signal(this.initial.globals.keepDuration);
-  readonly downPayment = signal(this.initial.globals.downPayment);
   readonly activeTab = signal<Tab>(this.initial.globals.activeTab);
 
   readonly leaseApr = signal(this.initial.lease.apr);
   readonly leaseTerm = signal(this.initial.lease.leaseTerm);
+  readonly leaseDownPayment = signal(this.initial.lease.downPayment);
   private readonly _leaseEndOverride = signal<LeaseEndChoice | null>(null);
   private readonly _dispositionFeeOverride = signal<number | null>(this.initial.lease.dispositionFee);
   private readonly _mileageOverageRateOverride = signal<number | null>(
@@ -54,6 +54,23 @@ export class ScenarioStore {
 
   readonly financeApr = signal(this.initial.finance.apr);
   readonly loanTerm = signal(this.initial.finance.loanTerm);
+  readonly financeDownPayment = signal(this.initial.finance.downPayment);
+
+  /** The active tab's down payment, for components that need a single value
+   * tied to the current tab (vehicle context bar, hero, recommendation). Cash
+   * tab returns purchasePrice since cash purchase ties up the full amount. */
+  readonly activeDownPayment = computed(() => {
+    const tab = this.activeTab();
+    if (tab === 'lease') return this.leaseDownPayment();
+    if (tab === 'finance') return this.financeDownPayment();
+    return this.purchasePrice();
+  });
+  setActiveDownPayment(value: number): void {
+    const tab = this.activeTab();
+    if (tab === 'lease') this.leaseDownPayment.set(value);
+    else if (tab === 'finance') this.financeDownPayment.set(value);
+    // cash: noop — driven by purchase price
+  }
 
   readonly opportunityCostRate = signal(this.initial.cash.opportunityCostRate);
 
@@ -109,7 +126,9 @@ export class ScenarioStore {
   readonly recommendedTab = computed(() =>
     recommendTab({
       purchasePrice: this.purchasePrice(),
-      downPayment: this.downPayment(),
+      // Recommendation uses the lease down payment as the "cash on hand" proxy
+      // (it's the value the wizard captures and the user sees first).
+      downPayment: this.leaseDownPayment(),
       keepDuration: this.keepDuration(),
       annualMileage: this.annualMileage(),
       locale: this.locale(),
@@ -143,9 +162,11 @@ export class ScenarioStore {
     const totalDepreciation = Math.max(this.purchasePrice() - this.residualValue(), 0);
     return remainingFraction * totalDepreciation;
   });
-  /** Hard cap so the slider can't exceed 90% of the financed portion. */
+  /** Hard cap so the slider can't exceed 90% of the financed portion. The
+   * lease's own down payment is what's relevant here (slider lives in the
+   * lease-end-section). */
   readonly earlyTerminationFeeMax = computed(() =>
-    Math.max(0.9 * (this.purchasePrice() - this.downPayment()), 0),
+    Math.max(0.9 * (this.purchasePrice() - this.leaseDownPayment()), 0),
   );
   readonly earlyTerminationFee = computed(() => {
     const override = this._earlyTerminationFeeOverride();
@@ -156,7 +177,7 @@ export class ScenarioStore {
   readonly leasePaymentDetails = computed(() =>
     leasePayment({
       capCost: this.purchasePrice(),
-      downPayment: this.downPayment(),
+      downPayment: this.leaseDownPayment(),
       residualValue: this.residualValue(),
       apr: this.leaseApr(),
       termMonths: this.leaseTerm(),
@@ -174,7 +195,7 @@ export class ScenarioStore {
       vehicleAge: this.vehicleAge(),
       annualMileage: this.annualMileage(),
       keepDurationYears: this.keepDuration(),
-      downPayment: this.downPayment(),
+      downPayment: this.leaseDownPayment(),
       insuranceAnnual: this.insurance(),
       maintenanceAnnual: this.maintenance(),
       fuelEfficiency: this.fuelEfficiency(),
@@ -203,7 +224,7 @@ export class ScenarioStore {
       vehicleAge: this.vehicleAge(),
       annualMileage: this.annualMileage(),
       keepDurationYears: this.keepDuration(),
-      downPayment: this.downPayment(),
+      downPayment: this.financeDownPayment(),
       insuranceAnnual: this.insurance(),
       maintenanceAnnual: this.maintenance(),
       fuelEfficiency: this.fuelEfficiency(),
@@ -225,7 +246,9 @@ export class ScenarioStore {
       vehicleAge: this.vehicleAge(),
       annualMileage: this.annualMileage(),
       keepDurationYears: this.keepDuration(),
-      downPayment: this.downPayment(),
+      // Cash purchase ties up the FULL price, not a "down payment" — pass 0 so
+      // any downstream code that adds it doesn't double-count.
+      downPayment: 0,
       insuranceAnnual: this.insurance(),
       maintenanceAnnual: this.maintenance(),
       fuelEfficiency: this.fuelEfficiency(),
@@ -328,11 +351,11 @@ export class ScenarioStore {
       this.vehicleAge.set(merged.globals.vehicleAge);
       this.annualMileage.set(merged.globals.annualMileage);
       this.keepDuration.set(merged.globals.keepDuration);
-      this.downPayment.set(merged.globals.downPayment);
       this.activeTab.set(merged.globals.activeTab);
 
       this.leaseApr.set(merged.lease.apr);
       this.leaseTerm.set(merged.lease.leaseTerm);
+      this.leaseDownPayment.set(merged.lease.downPayment);
       this._leaseEndOverride.set(merged.lease.leaseEndChoice);
       this._dispositionFeeOverride.set(merged.lease.dispositionFee);
       this._mileageOverageRateOverride.set(merged.lease.mileageOverageRate);
@@ -342,6 +365,7 @@ export class ScenarioStore {
 
       this.financeApr.set(merged.finance.apr);
       this.loanTerm.set(merged.finance.loanTerm);
+      this.financeDownPayment.set(merged.finance.downPayment);
       this.opportunityCostRate.set(merged.cash.opportunityCostRate);
 
       this._insuranceOverride.set(merged.overrides.insurance);
@@ -364,12 +388,12 @@ export class ScenarioStore {
         vehicleAge: this.vehicleAge(),
         annualMileage: this.annualMileage(),
         keepDuration: this.keepDuration(),
-        downPayment: this.downPayment(),
         activeTab: this.activeTab(),
       },
       lease: {
         apr: this.leaseApr(),
         leaseTerm: this.leaseTerm(),
+        downPayment: this.leaseDownPayment(),
         leaseEndChoice: this._leaseEndOverride(),
         dispositionFee: this._dispositionFeeOverride(),
         mileageOverageRate: this._mileageOverageRateOverride(),
@@ -380,6 +404,7 @@ export class ScenarioStore {
       finance: {
         apr: this.financeApr(),
         loanTerm: this.loanTerm(),
+        downPayment: this.financeDownPayment(),
       },
       cash: {
         opportunityCostRate: this.opportunityCostRate(),
@@ -411,12 +436,13 @@ export class ScenarioStore {
       timer = setTimeout(() => this.persist(snap), 200);
     });
 
-    // Cross-field invariants: down payment and residual value can never exceed
-    // the purchase price. Re-clamp whenever purchase price moves down.
+    // Cross-field invariants: down payments and residual value can never
+    // exceed the purchase price. Re-clamp whenever purchase price moves down.
     effect(() => {
       const price = this.purchasePrice();
       if (this.isHydrating()) return;
-      if (this.downPayment() > price) this.downPayment.set(price);
+      if (this.leaseDownPayment() > price) this.leaseDownPayment.set(price);
+      if (this.financeDownPayment() > price) this.financeDownPayment.set(price);
       if (this.residualValue() > price) this.residualValue.set(price);
     });
   }

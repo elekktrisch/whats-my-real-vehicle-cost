@@ -21,12 +21,12 @@ export function defaultScenario(localeOverride?: Locale): ScenarioSnapshot {
       vehicleAge: 0,
       annualMileage: isUS ? 12000 : 15000,
       keepDuration: 5,
-      downPayment: isUS ? 5000 : 4000,
       activeTab: 'lease',
     },
     lease: {
       apr: 4.5,
       leaseTerm: 36,
+      downPayment: isUS ? 5000 : 4000,
       leaseEndChoice: null,
       dispositionFee: null,
       mileageOverageRate: null,
@@ -37,6 +37,7 @@ export function defaultScenario(localeOverride?: Locale): ScenarioSnapshot {
     finance: {
       apr: 6.0,
       loanTerm: 60,
+      downPayment: 0,
     },
     cash: {
       opportunityCostRate: 0.05,
