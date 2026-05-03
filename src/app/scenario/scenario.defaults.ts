@@ -50,5 +50,4 @@ export const LEASE_END_DEFAULTS = {
   mileageOverageRate: 0.25,
   excessWearEstimate: 800,
   buyoutFee: 300,
-  earlyTerminationFee: 400,
 };

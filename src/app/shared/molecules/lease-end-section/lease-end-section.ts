@@ -95,13 +95,13 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
         class="mt-2"
       >
         <app-slider-control
-          label="Early termination fee"
-          tip="Admin fee charged on top of the remaining lease payments when you exit the lease before the term ends. Applies to both renew-lease and buy-out modes when the keep duration is shorter than one full lease term."
+          label="Early termination penalty"
+          tip="Total amount the lessor charges when you exit before the lease term ends. Defaults to a depreciation-based approximation of typical lessor tables ((term − keep) / term × total depreciation); override with the exact figure from your contract's early-exit table. Applies to both renew-lease and buy-out modes."
           [min]="0"
-          [max]="2000"
-          [step]="25"
+          [max]="store.earlyTerminationFeeMax()"
+          [step]="50"
           minLabel="$0"
-          maxLabel="$2k"
+          [maxLabel]="maxLabel()"
           prefix="$"
           [value]="store.earlyTerminationFee()"
           (valueChange)="store.setEarlyTerminationFee($event)"
@@ -135,6 +135,13 @@ export class LeaseEndSection {
   protected readonly earlyTerminationApplies = computed(
     () => this.store.keepDuration() * 12 < this.store.leaseTerm(),
   );
+
+  protected readonly maxLabel = computed(() => {
+    const max = this.store.earlyTerminationFeeMax();
+    const k = max >= 1000 ? `${Math.round(max / 100) / 10}k` : String(Math.round(max));
+    const cfg = this.store.localeConfig();
+    return cfg.currencyAfter ? `${k} ${cfg.currencySymbol}` : `${cfg.currencySymbol}${k}`;
+  });
 
   protected onChoice(v: string): void {
     this.store.setLeaseEndChoice(v as LeaseEndChoice);

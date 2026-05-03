@@ -132,9 +132,26 @@ export class ScenarioStore {
     () => this._excessWearOverride() ?? LEASE_END_DEFAULTS.excessWearEstimate,
   );
   readonly buyoutFee = computed(() => this._buyoutFeeOverride() ?? LEASE_END_DEFAULTS.buyoutFee);
-  readonly earlyTerminationFee = computed(
-    () => this._earlyTerminationFeeOverride() ?? LEASE_END_DEFAULTS.earlyTerminationFee,
+  /** Default approximates a typical lessor's early-exit table: a share of the
+   * full depreciation (purchasePrice − residualValue) proportional to how much
+   * of the lease term remains. Zero when keep ≥ term (no early exit). */
+  private readonly earlyTerminationFeeDefault = computed(() => {
+    const term = this.leaseTerm();
+    const keepMonths = this.keepDuration() * 12;
+    if (keepMonths >= term) return 0;
+    const remainingFraction = (term - keepMonths) / term;
+    const totalDepreciation = Math.max(this.purchasePrice() - this.residualValue(), 0);
+    return remainingFraction * totalDepreciation;
+  });
+  /** Hard cap so the slider can't exceed 90% of the financed portion. */
+  readonly earlyTerminationFeeMax = computed(() =>
+    Math.max(0.9 * (this.purchasePrice() - this.downPayment()), 0),
   );
+  readonly earlyTerminationFee = computed(() => {
+    const override = this._earlyTerminationFeeOverride();
+    const value = override ?? this.earlyTerminationFeeDefault();
+    return Math.min(value, this.earlyTerminationFeeMax());
+  });
 
   readonly leasePaymentDetails = computed(() =>
     leasePayment({
