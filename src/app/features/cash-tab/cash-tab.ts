@@ -1,19 +1,31 @@
-import { Component } from '@angular/core';
-import { Icon } from '../../shared/atoms/icon/icon';
+import { Component, inject } from '@angular/core';
+import { ScenarioStore } from '../../scenario/scenario.store';
+import { SliderControl } from '../../shared/slider-control/slider-control';
+import { SliderGroup } from '../../shared/molecules/slider-group/slider-group';
 
 @Component({
   selector: 'app-cash-tab',
-  imports: [Icon],
+  imports: [SliderControl, SliderGroup],
   template: `
-    <div class="flex flex-col items-center justify-center gap-[14px] py-[110px]">
-      <app-icon name="card" [size]="44" [strokeWidth]="1.2" ariaLabel="Card" />
-      <div class="font-ui text-[1.5rem] font-medium text-tx-muted tracking-[0.02em]">
-        Cash Purchase Calculator
-      </div>
-      <div class="font-ui text-[0.65rem] tracking-[0.12em] uppercase text-tx-dim">
-        Coming in phase 6
-      </div>
+    <div class="flex flex-col gap-[14px]">
+      <app-slider-group title="Cash purchase">
+        <app-slider-control
+          label="Opportunity cost rate"
+          tip="What you'd earn per year if you invested the cash instead of buying the car outright. Applied to the FULL purchase price (not just a down payment) since cash purchase ties up all of it."
+          [min]="0"
+          [max]="15"
+          [step]="0.25"
+          minLabel="0%"
+          maxLabel="15%"
+          suffix="%"
+          [fractionDigits]="2"
+          [value]="store.opportunityCostRate() * 100"
+          (valueChange)="store.opportunityCostRate.set($event / 100)"
+        />
+      </app-slider-group>
     </div>
   `,
 })
-export class CashTab {}
+export class CashTab {
+  protected readonly store = inject(ScenarioStore);
+}

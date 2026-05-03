@@ -7,6 +7,7 @@ import { HeaderBar } from '../../shared/molecules/header-bar/header-bar';
 import { VehicleContextBar } from '../../shared/molecules/vehicle-context-bar/vehicle-context-bar';
 import { RunningCostsBar } from '../../shared/molecules/running-costs-bar/running-costs-bar';
 import { KpiBar, KpiSpec } from '../../shared/molecules/kpi-bar/kpi-bar';
+import { TabHero } from '../../shared/molecules/tab-hero/tab-hero';
 import { LeaseTab } from '../../features/lease-tab/lease-tab';
 import { FinanceTab } from '../../features/finance-tab/finance-tab';
 import { CashTab } from '../../features/cash-tab/cash-tab';
@@ -22,6 +23,7 @@ import type { Tab } from '../../scenario/scenario.types';
     VehicleContextBar,
     RunningCostsBar,
     KpiBar,
+    TabHero,
     LeaseTab,
     FinanceTab,
     CashTab,
@@ -32,8 +34,8 @@ import type { Tab } from '../../scenario/scenario.types';
       <app-header-bar />
 
       <div class="flex flex-col gap-5 mt-5">
-        <app-vehicle-context-bar />
-        <app-running-costs-bar />
+        <app-tab-hero />
+        <app-kpi-bar [kpis]="kpis()" />
 
         <app-tab-strip
           [active]="store.activeTab()"
@@ -41,7 +43,7 @@ import type { Tab } from '../../scenario/scenario.types';
           [recommended]="store.recommendedTab().tab"
         />
 
-        <app-kpi-bar [kpis]="kpis()" />
+        <app-tco-chart-desktop [breakdown]="activeBreakdown()" />
 
         @switch (store.activeTab()) {
           @case ('lease') {
@@ -55,9 +57,8 @@ import type { Tab } from '../../scenario/scenario.types';
           }
         }
 
-        @if (store.activeTab() === 'lease') {
-          <app-tco-chart-desktop [breakdown]="store.leaseBreakdown()" />
-        }
+        <app-vehicle-context-bar />
+        <app-running-costs-bar />
       </div>
     </div>
   `,
@@ -78,14 +79,15 @@ export class TabPage {
     });
   }
 
-  protected readonly kpis = computed<KpiSpec[]>(() => {
+  protected readonly activeBreakdown = computed(() => {
     const tab = this.store.activeTab();
-    const breakdown =
-      tab === 'lease'
-        ? this.store.leaseBreakdown()
-        : tab === 'finance'
-          ? this.store.financeBreakdown()
-          : this.store.cashBreakdown();
+    if (tab === 'lease') return this.store.leaseBreakdown();
+    if (tab === 'finance') return this.store.financeBreakdown();
+    return this.store.cashBreakdown();
+  });
+
+  protected readonly kpis = computed<KpiSpec[]>(() => {
+    const breakdown = this.activeBreakdown();
     const months = Math.max(Math.round(this.store.keepDuration() * 12), 1);
     const total = breakdown.total;
     const monthly = total / months;
