@@ -24,9 +24,9 @@ export function defaultScenario(localeOverride?: Locale): ScenarioSnapshot {
       activeTab: 'lease',
     },
     lease: {
-      apr: 4.5,
-      leaseTerm: 36,
-      downPayment: isUS ? 5000 : 4000,
+      apr: 3.0,
+      leaseTerm: 48,
+      downPayment: isUS ? 10000 : 8000,
       leaseEndChoice: null,
       dispositionFee: null,
       mileageOverageRate: null,
@@ -35,7 +35,7 @@ export function defaultScenario(localeOverride?: Locale): ScenarioSnapshot {
       earlyTerminationFee: null,
     },
     finance: {
-      apr: 6.0,
+      apr: 9.0,
       loanTerm: 60,
       downPayment: 0,
     },
