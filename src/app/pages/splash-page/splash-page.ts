@@ -44,7 +44,7 @@ import { Icon } from '../../shared/atoms/icon/icon';
         <p
           class="relative mt-6 font-ui text-[0.92rem] text-tx-muted leading-[1.65] max-w-[460px] mx-auto"
         >
-          Six questions, one chart. See what a car really costs you over the years —
+          Seven questions, one chart. See what a car really costs you over the years —
           financing, depreciation, fuel, insurance and maintenance, side by side across
           lease, finance and cash.
         </p>
