@@ -100,12 +100,15 @@ export class TabHero {
   protected readonly slots = computed<HeroSlot[]>(() => {
     const tab = this.store.activeTab();
     if (tab === 'lease') {
+      const lease = this.store.leasePaymentDetails();
+      const sym = this.currencySymbol();
       return [
         { label: 'Initial down payment', value: this.fmtInt(this.store.leaseDownPayment()) },
         {
           label: 'Monthly lease payment',
-          value: this.fmt2(this.store.leasePaymentDetails().monthlyPayment),
+          value: this.fmt2(lease.monthlyPayment),
           accent: true,
+          subtitle: `${sym}${this.fmt2(lease.depreciationFee)} depreciation · ${sym}${this.fmt2(lease.financeFee)} interest`,
         },
         {
           label: 'Monthly running costs',
@@ -158,7 +161,11 @@ export class TabHero {
         value: this.fmt2(monthlyDepreciation),
         accent: true,
       },
-      { label: 'Monthly running costs', value: this.fmt2(this.monthlyRunningCosts()) },
+      {
+        label: 'Monthly running costs',
+        value: this.fmt2(this.monthlyRunningCosts()),
+        subtitle: this.runningCostsSubtitle(),
+      },
     ];
   });
 
