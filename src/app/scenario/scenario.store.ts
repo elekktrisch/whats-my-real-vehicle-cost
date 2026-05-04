@@ -12,6 +12,7 @@ import type {
   Tab,
 } from './scenario.types';
 import { backDeriveMsrp } from './calculations/msrp';
+import { depreciationFactor } from './calculations/depreciation';
 import { categorize, categoryMultipliers } from './calculations/category';
 import { leasePayment } from './calculations/financing';
 import { recommendTab } from './calculations/recommendation';
@@ -32,7 +33,9 @@ export class ScenarioStore {
   readonly locale = signal<Locale>(this.initial.globals.locale);
   readonly powertrain = signal<Powertrain>(this.initial.globals.powertrain);
   readonly purchasePrice = signal(this.initial.globals.purchasePrice);
-  readonly residualValue = signal(this.initial.globals.residualValue);
+  private readonly _residualValueOverride = signal<number | null>(
+    this.initial.globals.residualValue,
+  );
   readonly vehicleAge = signal(this.initial.globals.vehicleAge);
   readonly annualMileage = signal(this.initial.globals.annualMileage);
   readonly keepDuration = signal(this.initial.globals.keepDuration);
@@ -95,6 +98,18 @@ export class ScenarioStore {
   readonly vehicleCategory = computed(() => categorize(this.msrp(), this.locale()));
   readonly categoryMultipliers = computed(() => categoryMultipliers(this.vehicleCategory()));
   readonly localeConfig = computed(() => LOCALE_CONFIG[this.locale()]);
+
+  /** What the car is expected to be worth at the end of the keep period. */
+  private readonly residualValueDefault = computed(() => {
+    const endAge = this.vehicleAge() + this.keepDuration();
+    return Math.round(this.msrp() * depreciationFactor(endAge));
+  });
+  readonly residualValue = computed(
+    () => this._residualValueOverride() ?? this.residualValueDefault(),
+  );
+  setResidualValue(value: number | null): void {
+    this._residualValueOverride.set(value);
+  }
 
   private insuranceDefault = computed(() => {
     const cfg = this.localeConfig();
@@ -350,7 +365,7 @@ export class ScenarioStore {
       this.locale.set(merged.globals.locale);
       this.powertrain.set(merged.globals.powertrain);
       this.purchasePrice.set(merged.globals.purchasePrice);
-      this.residualValue.set(merged.globals.residualValue);
+      this._residualValueOverride.set(merged.globals.residualValue);
       this.vehicleAge.set(merged.globals.vehicleAge);
       this.annualMileage.set(merged.globals.annualMileage);
       this.keepDuration.set(merged.globals.keepDuration);
@@ -387,7 +402,9 @@ export class ScenarioStore {
         locale: this.locale(),
         powertrain: this.powertrain(),
         purchasePrice: this.purchasePrice(),
-        residualValue: this.residualValue(),
+        // Persist null when the user is on the auto-derived default — keeps
+        // URLs short and lets the curve update if the user changes age/keep.
+        residualValue: this._residualValueOverride(),
         vehicleAge: this.vehicleAge(),
         annualMileage: this.annualMileage(),
         keepDuration: this.keepDuration(),
@@ -439,14 +456,43 @@ export class ScenarioStore {
       timer = setTimeout(() => this.persist(snap), 200);
     });
 
-    // Cross-field invariants: down payments and residual value can never
-    // exceed the purchase price. Re-clamp whenever purchase price moves down.
+    // Cross-field invariants: down payments and any residual override can
+    // never exceed the purchase price. Re-clamp whenever purchase price moves
+    // down. We clamp the OVERRIDE only (the auto-derived default is always
+    // ≤ price by construction since depreciationFactor ≤ 1).
     effect(() => {
       const price = this.purchasePrice();
       if (this.isHydrating()) return;
       if (this.leaseDownPayment() > price) this.leaseDownPayment.set(price);
       if (this.financeDownPayment() > price) this.financeDownPayment.set(price);
-      if (this.residualValue() > price) this.residualValue.set(price);
+      const residualOverride = this._residualValueOverride();
+      if (residualOverride !== null && residualOverride > price) {
+        this._residualValueOverride.set(price);
+      }
+    });
+
+    // Re-track the auto-derived residual whenever its drivers change. Without
+    // this, a user-set residual (say 20k for a 5-yr keep) would stay frozen
+    // even after the user bumped keep to 10 yr. Baseline lets us distinguish
+    // "first run after hydration" from "user actually changed an input".
+    let residualBaseline: { price: number; age: number; keep: number } | null = null;
+    effect(() => {
+      const price = this.purchasePrice();
+      const age = this.vehicleAge();
+      const keep = this.keepDuration();
+      if (this.isHydrating() || !this.hasHydrated()) return;
+      if (residualBaseline === null) {
+        residualBaseline = { price, age, keep };
+        return;
+      }
+      if (
+        price !== residualBaseline.price ||
+        age !== residualBaseline.age ||
+        keep !== residualBaseline.keep
+      ) {
+        this._residualValueOverride.set(null);
+        residualBaseline = { price, age, keep };
+      }
     });
   }
 

@@ -42,7 +42,7 @@ export function toQueryParams(snap: ScenarioSnapshot): Record<string, string> {
   q['l'] = g.locale;
   q['p'] = g.powertrain;
   setNum(q, 'price', g.purchasePrice);
-  setNum(q, 'residual', g.residualValue);
+  setOpt(q, 'residual', g.residualValue);
   setNum(q, 'age', g.vehicleAge);
   setNum(q, 'mileage', g.annualMileage);
   setNum(q, 'keep', g.keepDuration);

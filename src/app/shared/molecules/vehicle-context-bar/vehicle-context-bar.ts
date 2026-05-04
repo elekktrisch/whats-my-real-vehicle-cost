@@ -36,7 +36,7 @@ import { SliderControl } from '../../slider-control/slider-control';
         />
         <app-slider-control
           label="Residual value"
-          tip="What the car is worth at the end of your keep-duration. Sets the lease residual and the depreciation curve. Capped at the purchase price."
+          tip="Auto-derived from the depreciation curve at age + keep-duration; updates whenever those inputs change. Move the slider to override (resale value at end of keep). Note: the lease tab uses this as the contracted lease-end residual — those are different points in time, so for an accurate lease comparison override this to the figure printed in your lease contract (typically expressed as a percentage of MSRP)."
           [min]="0"
           [max]="residualMax()"
           [step]="500"
@@ -45,7 +45,7 @@ import { SliderControl } from '../../slider-control/slider-control';
           [prefix]="currencyPrefix()"
           [suffix]="currencySuffix()"
           [value]="store.residualValue()"
-          (valueChange)="store.residualValue.set($event)"
+          (valueChange)="store.setResidualValue($event)"
         />
         @if (store.activeTab() !== 'cash') {
           <app-slider-control

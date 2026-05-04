@@ -13,7 +13,8 @@ export interface Globals {
   locale: Locale;
   powertrain: Powertrain;
   purchasePrice: number;
-  residualValue: number;
+  /** null = auto-derive from msrp × depreciationFactor(vehicleAge + keepDuration). */
+  residualValue: number | null;
   vehicleAge: number;
   annualMileage: number;
   keepDuration: number;

@@ -42,7 +42,7 @@ import type { Tab } from '../../scenario/scenario.types';
           <div
             class="font-ui text-[0.62rem] font-medium tracking-[0.16em] uppercase text-accent mb-2"
           >
-            Setup · 7 questions
+            Setup · 6 questions
           </div>
           <h1
             class="font-ui text-[1.6rem] sm:text-[1.9rem] font-medium tracking-[-0.02em] text-tx leading-[1.1] mb-2"
@@ -129,26 +129,7 @@ import type { Tab } from '../../scenario/scenario.types';
 
             <li class="wizard-question">
               <div class="font-ui text-[0.62rem] tracking-[0.14em] uppercase text-tx-dim mb-1">
-                04 · Residual value
-              </div>
-              <app-slider-control
-                label="What will the car be worth at the end?"
-                tip="Used for the lease residual and the depreciation curve. Defaults to ~50% of purchase price; lower it for high-mileage or beat-up cars. Capped at the purchase price."
-                [min]="0"
-                [max]="residualMax()"
-                [step]="500"
-                [minLabel]="moneyLabel(0)"
-                [maxLabel]="moneyLabel(residualMax())"
-                [prefix]="currencyPrefix()"
-                [suffix]="currencySuffix()"
-                [value]="store.residualValue()"
-                (valueChange)="store.residualValue.set($event)"
-              />
-            </li>
-
-            <li class="wizard-question">
-              <div class="font-ui text-[0.62rem] tracking-[0.14em] uppercase text-tx-dim mb-1">
-                05 · Down payment / cash on hand
+                04 · Down payment / cash on hand
               </div>
               <app-slider-control
                 label="How much cash can you put toward this?"
@@ -167,7 +148,7 @@ import type { Tab } from '../../scenario/scenario.types';
 
             <li class="wizard-question">
               <div class="font-ui text-[0.62rem] tracking-[0.14em] uppercase text-tx-dim mb-1">
-                06 · What's your spare cash doing?
+                05 · What's your spare cash doing?
               </div>
               <div class="flex flex-col gap-2 pt-1">
                 <p class="font-ui text-[0.78rem] text-tx-muted leading-snug max-w-[520px]">
@@ -189,7 +170,7 @@ import type { Tab } from '../../scenario/scenario.types';
 
             <li class="wizard-question">
               <div class="font-ui text-[0.62rem] tracking-[0.14em] uppercase text-tx-dim mb-1">
-                07 · Vehicle age
+                06 · Vehicle age
               </div>
               <app-slider-control
                 label="How old is the car?"
@@ -289,7 +270,6 @@ export class WizardPage {
   );
 
   protected readonly downPaymentMax = computed(() => Math.min(80000, this.store.purchasePrice()));
-  protected readonly residualMax = computed(() => Math.min(100000, this.store.purchasePrice()));
 
   protected setInvestmentStyle(style: string): void {
     this.store.opportunityCostRate.set(style === 'investing' ? 0.06 : 0.01);

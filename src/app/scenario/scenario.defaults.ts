@@ -17,7 +17,7 @@ export function defaultScenario(localeOverride?: Locale): ScenarioSnapshot {
       locale,
       powertrain: 'ICE',
       purchasePrice: isUS ? 35000 : 30000,
-      residualValue: isUS ? 17500 : 15000,
+      residualValue: null, // auto-derived from msrp × depreciationFactor(end-of-keep age)
       vehicleAge: 0,
       annualMileage: isUS ? 12000 : 15000,
       keepDuration: 5,
