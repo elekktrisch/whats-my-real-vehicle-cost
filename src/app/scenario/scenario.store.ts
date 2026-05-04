@@ -18,14 +18,9 @@ import { leasePayment } from './calculations/financing';
 import { maintenanceK } from './calculations/maintenance';
 import { recommendTab } from './calculations/recommendation';
 import { costPerDistance, effectiveMonthly, tcoBreakdown } from './calculations/tco';
-import { STORAGE_KEY, toLocalStorage, toQueryParams } from './scenario.serializer';
+import { URL_PARAM, encodeSnapshot } from './scenario.serializer';
 
-export type TcoSlot =
-  | 'insurance'
-  | 'maintenance'
-  | 'fuelEfficiency'
-  | 'fuelPrice'
-  | 'homeChargerInstall';
+export type TcoSlot = 'insurance' | 'fuelEfficiency' | 'fuelPrice';
 
 @Injectable({ providedIn: 'root' })
 export class ScenarioStore {
@@ -41,6 +36,9 @@ export class ScenarioStore {
   readonly annualMileage = signal(this.initial.globals.annualMileage);
   readonly keepDuration = signal(this.initial.globals.keepDuration);
   readonly activeTab = signal<Tab>(this.initial.globals.activeTab);
+  readonly homeChargerInstalled = signal(this.initial.globals.homeChargerInstalled);
+  readonly solar = signal(this.initial.globals.solar);
+  readonly basicMode = signal(this.initial.globals.basicMode);
 
   readonly leaseApr = signal(this.initial.lease.apr);
   readonly leaseTerm = signal(this.initial.lease.leaseTerm);
@@ -79,14 +77,10 @@ export class ScenarioStore {
   readonly opportunityCostRate = signal(this.initial.cash.opportunityCostRate);
 
   private readonly _insuranceOverride = signal<number | null>(this.initial.overrides.insurance);
-  private readonly _maintenanceOverride = signal<number | null>(this.initial.overrides.maintenance);
   private readonly _fuelEfficiencyOverride = signal<number | null>(
     this.initial.overrides.fuelEfficiency,
   );
   private readonly _fuelPriceOverride = signal<number | null>(this.initial.overrides.fuelPrice);
-  private readonly _homeChargerOverride = signal<number | null>(
-    this.initial.overrides.homeChargerInstall,
-  );
 
   /** Autosave gate — true once APP_INITIALIZER finishes, regardless of cold/warm boot. */
   readonly hasHydrated = signal(false);
@@ -116,40 +110,28 @@ export class ScenarioStore {
     const cfg = this.localeConfig();
     return this.purchasePrice() * cfg.insuranceRate * this.categoryMultipliers().insurance;
   });
-  // Year-0 base — the age curve now lives in the calc layer (`maintenanceAt`),
-  // applied per-month with `maintenanceK(category, powertrain)`. The previous
-  // (1 + vehicleAge × 0.1) bump moved into that curve.
-  private maintenanceDefault = computed(() => {
+  // Year-0 base — the age curve lives in the calc layer (`maintenanceAt`),
+  // applied per-month with `maintenanceK(category, powertrain)`. No override
+  // — the redesign demoted maintenance to a fully-derived display row.
+  readonly maintenance = computed(() => {
     const baseRate = this.powertrain() === 'EV' ? 0.007 : 0.015;
     return this.msrp() * baseRate * this.categoryMultipliers().maintenance;
   });
   readonly maintenanceK = computed(() =>
     maintenanceK(this.vehicleCategory(), this.powertrain()),
   );
-  // Phase A bridge: derive the boolean from the existing dollar override so
-  // the old slider keeps functioning. Phase B replaces this with a proper
-  // `homeChargerInstalled` writable signal.
-  readonly homeChargerInstalled = computed(() => (this._homeChargerOverride() ?? 0) > 0);
-  // Phase A: solar isn't yet wired through the store (no signal until Phase B).
-  // Hardcode false here so EV cost calc behaves identically to today.
-  readonly solar = computed(() => false);
   private fuelEfficiencyDefaultSignal = computed(() =>
     fuelEfficiencyDefault(this.locale(), this.powertrain()),
   );
   private fuelPriceDefaultSignal = computed(() =>
     fuelPriceDefault(this.locale(), this.powertrain()),
   );
-  private homeChargerDefault = computed(() => 0);
 
   readonly insurance = computed(() => this._insuranceOverride() ?? this.insuranceDefault());
-  readonly maintenance = computed(() => this._maintenanceOverride() ?? this.maintenanceDefault());
   readonly fuelEfficiency = computed(
     () => this._fuelEfficiencyOverride() ?? this.fuelEfficiencyDefaultSignal(),
   );
   readonly fuelPrice = computed(() => this._fuelPriceOverride() ?? this.fuelPriceDefaultSignal());
-  readonly homeChargerInstall = computed(
-    () => this._homeChargerOverride() ?? this.homeChargerDefault(),
-  );
 
   readonly recommendedTab = computed(() => {
     const annualMiles = this.annualMileage();
@@ -300,6 +282,12 @@ export class ScenarioStore {
     return this.cashBreakdown();
   });
 
+  /** Shared y-axis ceiling for the three mode sparklines on the comparison
+   * strip, so the recommended card's line is literally the lowest. */
+  readonly sparklineYMax = computed(() =>
+    Math.max(this.leaseBreakdown().total, this.financeBreakdown().total, this.cashBreakdown().total),
+  );
+
   readonly effectiveMonthly = (tab: Tab): Signal<number> =>
     computed(() => effectiveMonthly(this.breakdownFor(tab)(), this.keepDuration()));
   readonly costPerDistance = (tab: Tab): Signal<number> =>
@@ -320,10 +308,8 @@ export class ScenarioStore {
    */
   clearRunningCostOverrides(): void {
     this._insuranceOverride.set(null);
-    this._maintenanceOverride.set(null);
     this._fuelEfficiencyOverride.set(null);
     this._fuelPriceOverride.set(null);
-    this._homeChargerOverride.set(null);
   }
 
   setLocale(v: Locale): void {
@@ -341,12 +327,17 @@ export class ScenarioStore {
   setOverride(slot: TcoSlot, value: number | null): void {
     const map: Record<TcoSlot, ReturnType<typeof signal<number | null>>> = {
       insurance: this._insuranceOverride,
-      maintenance: this._maintenanceOverride,
       fuelEfficiency: this._fuelEfficiencyOverride,
       fuelPrice: this._fuelPriceOverride,
-      homeChargerInstall: this._homeChargerOverride,
     };
     map[slot].set(value);
+  }
+
+  /** Toggling the home charger off also disables solar (solar without a home
+   * charger has no effect — keep the booleans coherent). */
+  setHomeChargerInstalled(value: boolean): void {
+    this.homeChargerInstalled.set(value);
+    if (!value) this.solar.set(false);
   }
 
   setLeaseEndChoice(value: LeaseEndChoice | null): void {
@@ -386,6 +377,9 @@ export class ScenarioStore {
       this.annualMileage.set(merged.globals.annualMileage);
       this.keepDuration.set(merged.globals.keepDuration);
       this.activeTab.set(merged.globals.activeTab);
+      this.homeChargerInstalled.set(merged.globals.homeChargerInstalled);
+      this.solar.set(merged.globals.solar);
+      this.basicMode.set(merged.globals.basicMode);
 
       this.leaseApr.set(merged.lease.apr);
       this.leaseTerm.set(merged.lease.leaseTerm);
@@ -403,10 +397,8 @@ export class ScenarioStore {
       this.opportunityCostRate.set(merged.cash.opportunityCostRate);
 
       this._insuranceOverride.set(merged.overrides.insurance);
-      this._maintenanceOverride.set(merged.overrides.maintenance);
       this._fuelEfficiencyOverride.set(merged.overrides.fuelEfficiency);
       this._fuelPriceOverride.set(merged.overrides.fuelPrice);
-      this._homeChargerOverride.set(merged.overrides.homeChargerInstall);
     } finally {
       this._isHydrating.set(false);
     }
@@ -425,6 +417,9 @@ export class ScenarioStore {
         annualMileage: this.annualMileage(),
         keepDuration: this.keepDuration(),
         activeTab: this.activeTab(),
+        homeChargerInstalled: this.homeChargerInstalled(),
+        solar: this.solar(),
+        basicMode: this.basicMode(),
       },
       lease: {
         apr: this.leaseApr(),
@@ -447,10 +442,8 @@ export class ScenarioStore {
       },
       overrides: {
         insurance: this._insuranceOverride(),
-        maintenance: this._maintenanceOverride(),
         fuelEfficiency: this._fuelEfficiencyOverride(),
         fuelPrice: this._fuelPriceOverride(),
-        homeChargerInstall: this._homeChargerOverride(),
       },
     };
   }
@@ -514,13 +507,8 @@ export class ScenarioStore {
 
   private persist(snap: ScenarioSnapshot): void {
     try {
-      localStorage.setItem(STORAGE_KEY, toLocalStorage(snap));
-    } catch {
-      // storage unavailable (private mode, quota); silent.
-    }
-    try {
       const tree = this.router.parseUrl(this.router.url);
-      tree.queryParams = toQueryParams(snap);
+      tree.queryParams = { [URL_PARAM]: encodeSnapshot(snap) };
       this.location.replaceState(this.router.serializeUrl(tree));
     } catch {
       // router/location not ready; URL sync skipped.

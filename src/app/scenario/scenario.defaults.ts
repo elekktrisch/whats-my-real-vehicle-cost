@@ -3,10 +3,8 @@ import { detectLocaleFromBrowser } from './locale.config';
 
 const EMPTY_OVERRIDES: TcoOverrides = {
   insurance: null,
-  maintenance: null,
   fuelEfficiency: null,
   fuelPrice: null,
-  homeChargerInstall: null,
 };
 
 export function defaultScenario(localeOverride?: Locale): ScenarioSnapshot {
@@ -22,6 +20,9 @@ export function defaultScenario(localeOverride?: Locale): ScenarioSnapshot {
       annualMileage: isUS ? 12000 : 15000,
       keepDuration: 5,
       activeTab: 'lease',
+      homeChargerInstalled: false,
+      solar: false,
+      basicMode: true,
     },
     lease: {
       apr: 3.0,

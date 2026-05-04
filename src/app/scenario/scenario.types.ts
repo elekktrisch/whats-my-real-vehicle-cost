@@ -19,6 +19,12 @@ export interface Globals {
   annualMileage: number;
   keepDuration: number;
   activeTab: Tab;
+  /** EV-only: home wall charger present? Gates solar effect AND the install cost. */
+  homeChargerInstalled: boolean;
+  /** EV-only: solar at home (85% home / 15% public split). Gated by charger. */
+  solar: boolean;
+  /** UI state: hides the advanced controls block. Default true. */
+  basicMode: boolean;
 }
 
 export interface LeaseInputs {
@@ -46,10 +52,8 @@ export interface CashInputs {
 
 export interface TcoOverrides {
   insurance: number | null;
-  maintenance: number | null;
   fuelEfficiency: number | null;
   fuelPrice: number | null;
-  homeChargerInstall: number | null;
 }
 
 export interface ScenarioSnapshot {

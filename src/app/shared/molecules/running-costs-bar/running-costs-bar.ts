@@ -1,11 +1,12 @@
 import { Component, computed, inject } from '@angular/core';
 import { ScenarioStore } from '../../../scenario/scenario.store';
 import { SliderControl } from '../../slider-control/slider-control';
+import { Toggle, ToggleOption } from '../../atoms/toggle/toggle';
 import { formatCurrency } from '../../../scenario/locale.config';
 
 @Component({
   selector: 'app-running-costs-bar',
-  imports: [SliderControl],
+  imports: [SliderControl, Toggle],
   template: `
     <section
       class="bg-surface border border-border rounded-[14px] p-[22px] flex flex-col gap-[18px]"
@@ -34,19 +35,6 @@ import { formatCurrency } from '../../../scenario/locale.config';
           (valueChange)="store.setOverride('insurance', $event)"
         />
         <app-slider-control
-          label="Maintenance / yr"
-          tip="Annual maintenance. Defaults to MSRP × 1.5% (ICE) or 0.7% (EV), scaled by age and vehicle category."
-          [min]="0"
-          [max]="4000"
-          [step]="25"
-          minLabel="$0"
-          maxLabel="$4k"
-          [prefix]="currencyPrefix()"
-          [suffix]="currencySuffix()"
-          [value]="store.maintenance()"
-          (valueChange)="store.setOverride('maintenance', $event)"
-        />
-        <app-slider-control
           [label]="fuelEfficiencyLabel()"
           tip="Vehicle efficiency. ICE uses mpg (US) or L/100km (EU). EV uses mi/kWh (US) or kWh/100km (EU)."
           [min]="fuelEfficiencyMin()"
@@ -73,20 +61,32 @@ import { formatCurrency } from '../../../scenario/locale.config';
           [value]="store.fuelPrice()"
           (valueChange)="store.setOverride('fuelPrice', $event)"
         />
+        <div class="font-mono text-[0.7rem] text-tx-muted self-end pb-2">
+          Maintenance: {{ maintenanceDisplay() }} / yr (year 1)
+        </div>
         @if (store.powertrain() === 'EV') {
-          <app-slider-control
-            label="Home charger install"
-            tip="One-time cost for a Level 2 home charger and electrical work. Typical $1500 (US) / €1200 (EU). Set to 0 if you'll only use public charging."
-            [min]="0"
-            [max]="3500"
-            [step]="50"
-            minLabel="$0"
-            maxLabel="$3.5k"
-            [prefix]="currencyPrefix()"
-            [suffix]="currencySuffix()"
-            [value]="store.homeChargerInstall()"
-            (valueChange)="store.setOverride('homeChargerInstall', $event)"
-          />
+          <div class="flex flex-col gap-1">
+            <span class="font-ui text-[0.62rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
+              Home charger
+            </span>
+            <app-toggle
+              ariaLabel="Home charger installed"
+              [options]="chargerOptions"
+              [value]="chargerToggleValue()"
+              (valueChange)="store.setHomeChargerInstalled($event === 'on')"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="font-ui text-[0.62rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
+              Solar
+            </span>
+            <app-toggle
+              ariaLabel="Home solar charging"
+              [options]="solarOptions"
+              [value]="solarToggleValue()"
+              (valueChange)="store.solar.set($event === 'on')"
+            />
+          </div>
         }
       </div>
     </section>
@@ -94,6 +94,22 @@ import { formatCurrency } from '../../../scenario/locale.config';
 })
 export class RunningCostsBar {
   protected readonly store = inject(ScenarioStore);
+
+  protected readonly chargerOptions: readonly ToggleOption[] = [
+    { value: 'off', label: 'Public only' },
+    { value: 'on', label: 'Installed' },
+  ];
+  protected readonly solarOptions: readonly ToggleOption[] = [
+    { value: 'off', label: 'Off' },
+    { value: 'on', label: 'On' },
+  ];
+  protected readonly chargerToggleValue = computed(() =>
+    this.store.homeChargerInstalled() ? 'on' : 'off',
+  );
+  protected readonly solarToggleValue = computed(() => (this.store.solar() ? 'on' : 'off'));
+  protected readonly maintenanceDisplay = computed(() =>
+    formatCurrency(this.store.maintenance(), this.store.locale(), 0),
+  );
 
   protected readonly currencyPrefix = computed(() =>
     this.store.localeConfig().currencyAfter ? '' : this.store.localeConfig().currencySymbol,

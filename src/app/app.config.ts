@@ -10,10 +10,9 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { ScenarioStore } from './scenario/scenario.store';
 import {
-  STORAGE_KEY,
-  fromLocalStorage,
-  fromQueryParams,
-  hasAnyParams,
+  URL_PARAM,
+  decodeSnapshot,
+  hasAnyState,
   tabFromPath,
 } from './scenario/scenario.serializer';
 import type { ScenarioSnapshot } from './scenario/scenario.types';
@@ -21,30 +20,6 @@ import type { ScenarioSnapshot } from './scenario/scenario.types';
 function readSearchParams(): URLSearchParams {
   if (typeof window === 'undefined') return new URLSearchParams();
   return new URL(window.location.href).searchParams;
-}
-
-function readLocalStorage(): string | null {
-  try {
-    return typeof localStorage === 'undefined' ? null : localStorage.getItem(STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function merge(
-  base: Partial<ScenarioSnapshot>,
-  over: Partial<ScenarioSnapshot>,
-): Partial<ScenarioSnapshot> {
-  return {
-    globals: { ...(base.globals ?? {}), ...(over.globals ?? {}) } as ScenarioSnapshot['globals'],
-    lease: { ...(base.lease ?? {}), ...(over.lease ?? {}) } as ScenarioSnapshot['lease'],
-    finance: { ...(base.finance ?? {}), ...(over.finance ?? {}) } as ScenarioSnapshot['finance'],
-    cash: { ...(base.cash ?? {}), ...(over.cash ?? {}) } as ScenarioSnapshot['cash'],
-    overrides: {
-      ...(base.overrides ?? {}),
-      ...(over.overrides ?? {}),
-    } as ScenarioSnapshot['overrides'],
-  };
 }
 
 export const appConfig: ApplicationConfig = {
@@ -55,13 +30,11 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => {
       const store = inject(ScenarioStore);
       const params = readSearchParams();
-      const lsRaw = readLocalStorage();
-      const fromUrl = fromQueryParams(params);
-      const fromLs = fromLocalStorage(lsRaw);
-      // URL wins over localStorage (sharing-via-link is the headline use case).
-      const merged = merge(fromLs, fromUrl);
+      const merged: Partial<ScenarioSnapshot> = decodeSnapshot(params.get(URL_PARAM));
 
-      // Active tab comes from the route path, not from query params.
+      // Active tab still comes from the route path while routes 'lease | finance
+      // | cash' exist (Phase E consolidates everything to '/'). The path wins
+      // over the JSON snapshot so deep links to a specific tab keep working.
       const pathTab =
         typeof window === 'undefined' ? null : tabFromPath(window.location.pathname);
       if (pathTab) {
@@ -72,7 +45,7 @@ export const appConfig: ApplicationConfig = {
       }
 
       store.applySnapshot(merged);
-      store.markHydrated({ hadReturningState: hasAnyParams(params, lsRaw) || !!pathTab });
+      store.markHydrated({ hadReturningState: hasAnyState(params) || !!pathTab });
     }),
   ],
 };
