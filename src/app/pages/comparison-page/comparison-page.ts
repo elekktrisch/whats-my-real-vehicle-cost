@@ -90,6 +90,17 @@ const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Loan', cash: 'Cas
           Share via WhatsApp
         </button>
       </div>
+
+      <!-- Fineprint -->
+      <p class="font-ui text-[0.72rem] text-tx-dim leading-relaxed text-center max-w-[640px] mx-auto mt-8 px-2">
+        Fineprint — this is a side project, vibe-coded on weekends by some
+        dude on the internet. The numbers are rough estimates with a stack of
+        simplifying assumptions baked in (depreciation curves, locale defaults,
+        category multipliers, etc). Useful for a sanity check; not a substitute
+        for the actual contract from your dealer, a real insurance quote, your
+        own math, or a financial advisor with credentials. Don't sign a
+        five-figure deal because a chart on a stranger's website said so.
+      </p>
     </div>
   `,
 })

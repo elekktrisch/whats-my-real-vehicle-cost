@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Rounded background tile in the page surface color so the car reads
+       on light tab backgrounds too. -->
+  <rect width="32" height="32" rx="7" fill="#0d1117"/>
+  <!-- Car silhouette: low body, A-pillar greenhouse, two wheels.
+       Stroke + fill in the brand accent. -->
+  <path d="M5.5 19h21v3.5a1 1 0 0 1-1 1h-1.2a2.3 2.3 0 0 1-4.6 0H12.3a2.3 2.3 0 0 1-4.6 0H6.5a1 1 0 0 1-1-1z"
+        fill="#4f8ef7"/>
+  <path d="M7.5 19l1.7-5.4a2 2 0 0 1 1.9-1.4h9.8a2 2 0 0 1 1.9 1.4L24.5 19"
+        fill="none" stroke="#4f8ef7" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+  <!-- Cabin glass: a hint of light, just enough to read as windows. -->
+  <path d="M10.5 18l1.3-3.7a1 1 0 0 1 .95-.7h6.5a1 1 0 0 1 .95.7L21.5 18z"
+        fill="rgba(221,227,240,0.18)"/>
+  <!-- Wheels: dark fills with accent rims. -->
+  <circle cx="10" cy="23" r="2.2" fill="#0d1117" stroke="#4f8ef7" stroke-width="1.1"/>
+  <circle cx="22" cy="23" r="2.2" fill="#0d1117" stroke="#4f8ef7" stroke-width="1.1"/>
+</svg>
