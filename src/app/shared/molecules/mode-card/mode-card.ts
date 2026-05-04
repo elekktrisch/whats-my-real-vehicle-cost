@@ -1,19 +1,22 @@
 import { Component, computed, input, output } from '@angular/core';
 import type { Tab } from '../../../scenario/scenario.types';
-import { TcoSparkline } from '../../atoms/tco-sparkline/tco-sparkline';
 
 /**
  * One mode's card on the comparison strip — also a tablist member. The card
  * is the *only* tab control: clicking it focuses the mode below the strip.
  *
+ * Layout: each row is label-left / value-right, baseline-aligned.
+ *
  * Compact mode (driven by parent's F2 shrink behavior past ~250px scroll):
- * drops the Total row and the sparkline; keeps Monthly + Per-distance + delta.
- * Per-distance is the cross-mode apples-to-apples figure, so we keep it even
- * in compact form.
+ * drops the Total row. On mobile additionally drops the Per-distance row
+ * (per plan §H mobile-tuned F2 — shrunk row = monthly + delta only).
+ *
+ * Mobile typography: row labels drop the uppercase + wide tracking on
+ * narrow viewports so the label + value pair fits in ~110px-wide cards
+ * without overflow.
  */
 @Component({
   selector: 'app-mode-card',
-  imports: [TcoSparkline],
   template: `
     <button
       type="button"
@@ -48,40 +51,27 @@ import { TcoSparkline } from '../../atoms/tco-sparkline/tco-sparkline';
       </header>
 
       @if (!compact()) {
-        <div class="flex items-baseline justify-between gap-2 mt-[10px]">
-          <span class="font-ui text-[0.75rem] tracking-[0.1em] uppercase text-tx-dim">Total</span>
-          <span class="font-mono text-[0.85rem] text-tx tracking-[-0.02em]">{{ total() }}</span>
+        <div class="flex items-baseline justify-between gap-1 sm:gap-2 mt-[10px]">
+          <span [class]="rowLabelClass">Total</span>
+          <span class="font-mono text-[0.78rem] sm:text-[0.85rem] text-tx tracking-[-0.02em]">
+            {{ total() }}
+          </span>
         </div>
       }
 
-      <div class="flex items-baseline justify-between gap-2 mt-[6px]">
-        <span class="font-ui text-[0.75rem] tracking-[0.1em] uppercase text-tx-dim">Monthly</span>
-        <span class="font-mono text-[0.95rem] font-medium text-tx tracking-[-0.02em]">
+      <div class="flex items-baseline justify-between gap-1 sm:gap-2 mt-[6px]">
+        <span [class]="rowLabelClass">Monthly</span>
+        <span class="font-mono text-[0.85rem] sm:text-[0.95rem] font-medium text-tx tracking-[-0.02em]">
           {{ monthly() }}
         </span>
       </div>
 
-      <!-- Per-distance row hides on mobile when compact (plan §H mobile-tuned
-           F2: shrunk row = monthly + delta only). On sm+ it stays visible
-           even when compact (desktop F2 keeps per-distance). -->
       <div [class]="perDistanceRowClass()">
-        <span class="font-ui text-[0.75rem] tracking-[0.1em] uppercase text-tx-dim">Per {{ distanceUnit() }}</span>
+        <span [class]="rowLabelClass">Per {{ distanceUnit() }}</span>
         <span class="font-mono text-[0.78rem] text-tx-muted tracking-[-0.02em]">
           {{ perDistance() }}
         </span>
       </div>
-
-      @if (!compact() && sparklinePoints().length > 1) {
-        <div class="mt-[10px] -mx-[2px]">
-          <app-tco-sparkline
-            [points]="sparklinePoints()"
-            [yMax]="sparklineYMax()"
-            [width]="sparklineWidth()"
-            [height]="22"
-            [accent]="recommended()"
-          />
-        </div>
-      }
     </button>
   `,
 })
@@ -94,22 +84,23 @@ export class ModeCard {
   readonly monthly = input.required<string>();
   readonly perDistance = input.required<string>();
   readonly distanceUnit = input.required<string>();
-  /** Pre-formatted delta vs. recommended (e.g. "+$32 / mo"). null for the
+  /** Pre-formatted delta vs. recommended (e.g. "+$0.12 / mi"). null for the
    * recommended card itself. */
   readonly delta = input<string | null>(null);
-  readonly sparklinePoints = input.required<readonly number[]>();
-  readonly sparklineYMax = input.required<number>();
   /** Compact / shrunk mode (parent decides when via scroll). */
   readonly compact = input(false);
-  /** Used for visual width of the sparkline; the strip lays cards in a flex
-   * row, so a slight max here keeps the SVG from over-stretching. */
-  readonly sparklineWidth = input(140);
   /** Tab ID this button uses (for the corresponding panel's aria-labelledby). */
   readonly tabId = input.required<string>();
   /** ID of the tabpanel this tab controls. */
   readonly panelId = input.required<string>();
 
   readonly select = output<Tab>();
+
+  /** Row labels — sentence case + normal tracking on narrow viewports so the
+   * label + value pair fits in ~110px-wide cards; uppercase eyebrow style
+   * returns at sm+ for the desktop look. */
+  protected readonly rowLabelClass =
+    'font-ui text-[0.75rem] text-tx-dim tracking-normal sm:tracking-[0.1em] normal-case sm:uppercase';
 
   protected readonly cardClass = computed(() => {
     const base = [

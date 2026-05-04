@@ -282,12 +282,6 @@ export class ScenarioStore {
     return this.cashBreakdown();
   });
 
-  /** Shared y-axis ceiling for the three mode sparklines on the comparison
-   * strip, so the recommended card's line is literally the lowest. */
-  readonly sparklineYMax = computed(() =>
-    Math.max(this.leaseBreakdown().total, this.financeBreakdown().total, this.cashBreakdown().total),
-  );
-
   readonly effectiveMonthly = (tab: Tab): Signal<number> =>
     computed(() => effectiveMonthly(this.breakdownFor(tab)(), this.keepDuration()));
   readonly costPerDistance = (tab: Tab): Signal<number> =>

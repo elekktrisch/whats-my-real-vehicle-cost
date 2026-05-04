@@ -23,7 +23,6 @@ export interface ModeCardData {
   monthly: string;
   perDistance: string;
   delta: string | null;
-  sparklinePoints: readonly number[];
 }
 
 const MODES: readonly Tab[] = ['lease', 'finance', 'cash'];
@@ -77,8 +76,6 @@ const MOBILE_BREAKPOINT_PX = 600;
             [perDistance]="card.perDistance"
             [distanceUnit]="distanceUnit()"
             [delta]="card.delta"
-            [sparklinePoints]="card.sparklinePoints"
-            [sparklineYMax]="sparklineYMax()"
             [compact]="compact()"
             [tabId]="tabId(card.mode)"
             [panelId]="panelId(card.mode)"
@@ -103,7 +100,6 @@ export class ComparisonStrip {
   readonly cards = input.required<readonly ModeCardData[]>();
   readonly active = model.required<Tab>();
   readonly recommended = input<Tab | null>(null);
-  readonly sparklineYMax = input.required<number>();
   readonly distanceUnit = input.required<string>();
   /** One-line locale-aware explanation rendered under the cards inside the
    * sticky block so it stays visible alongside the strip. */

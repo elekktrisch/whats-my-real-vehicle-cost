@@ -10,33 +10,9 @@ import {
 } from '../../shared/molecules/comparison-strip/comparison-strip';
 import { ModeDetailView } from '../../features/mode-detail-view/mode-detail-view';
 import { formatCurrency } from '../../scenario/locale.config';
-import type {
-  CostBreakdown,
-  CostCategory,
-  MonthlyTcoPoint,
-  Tab,
-} from '../../scenario/scenario.types';
+import type { CostBreakdown, Tab } from '../../scenario/scenario.types';
 
-const COST_KEYS: readonly CostCategory[] = [
-  'depreciationOrLease',
-  'financing',
-  'fuel',
-  'insurance',
-  'maintenance',
-  'leaseEnd',
-];
 const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Finance', cash: 'Cash' };
-
-/** Pure: cumulative TCO per month for the sparkline. */
-function cumulativeTotals(series: readonly MonthlyTcoPoint[]): number[] {
-  const out = new Array<number>(series.length);
-  for (let i = 0; i < series.length; i++) {
-    let sum = 0;
-    for (const k of COST_KEYS) sum += series[i][k];
-    out[i] = sum;
-  }
-  return out;
-}
 
 /**
  * The new comparison-first shell. Layout per plan §Page shape (order O1):
@@ -73,9 +49,9 @@ function cumulativeTotals(series: readonly MonthlyTcoPoint[]): number[] {
           size="lg"
         />
         <span
-          class="flex-1 min-w-0 text-center font-ui text-[0.95rem] font-medium tracking-[0.01em] text-tx-muted"
+          class="flex-1 min-w-0 text-center font-ui text-lg font-medium tracking-[0.01em] text-tx-muted"
         >
-          Negotiated price
+          Price
         </span>
         <div class="flex items-center gap-3 flex-wrap">
           <app-locale-selector />
@@ -89,7 +65,6 @@ function cumulativeTotals(series: readonly MonthlyTcoPoint[]): number[] {
         [active]="store.activeTab()"
         (activeChange)="store.activeTab.set($event)"
         [recommended]="recommended()"
-        [sparklineYMax]="sparklineYMax()"
         [distanceUnit]="distanceUnit()"
         [recommendationReason]="recommendationReason()"
       />
@@ -112,14 +87,7 @@ export class ComparisonPage {
   protected readonly recommended = computed(() => this.store.recommendedTab().tab);
   protected readonly recommendationReason = computed(() => this.store.recommendedTab().reason);
 
-  protected readonly sparklineYMax = computed(() => this.store.sparklineYMax());
-
-  /**
-   * Build the three card payloads. Each one's sparkline series is the
-   * cumulative TCO per month sampled at every month — the same shape the
-   * chart would draw if it summed all bands. Sharing `sparklineYMax` across
-   * all three keeps the recommended card's line literally the lowest.
-   */
+  /** Build the three card payloads from the store's per-mode breakdowns. */
   protected readonly cards = computed<readonly ModeCardData[]>(() => {
     const locale = this.store.locale();
     const distanceUnit = this.distanceUnit();
@@ -157,7 +125,6 @@ export class ComparisonPage {
         delta: isRecommended
           ? null
           : `+${formatCurrency(deltaPerDistance, locale, 2)} / ${distanceUnit}`,
-        sparklinePoints: cumulativeTotals(breakdown.series),
       };
     });
   });
