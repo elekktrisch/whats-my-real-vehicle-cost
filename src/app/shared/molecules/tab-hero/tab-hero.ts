@@ -79,6 +79,8 @@ export class TabHero {
       years: 1,
       powertrain: this.store.powertrain(),
       locale: this.store.locale(),
+      homeChargerInstalled: this.store.homeChargerInstalled(),
+      solar: this.store.solar(),
     }),
   );
 

@@ -15,6 +15,7 @@ import { backDeriveMsrp } from './calculations/msrp';
 import { depreciationFactor } from './calculations/depreciation';
 import { categorize, categoryMultipliers } from './calculations/category';
 import { leasePayment } from './calculations/financing';
+import { maintenanceK } from './calculations/maintenance';
 import { recommendTab } from './calculations/recommendation';
 import { costPerDistance, effectiveMonthly, tcoBreakdown } from './calculations/tco';
 import { STORAGE_KEY, toLocalStorage, toQueryParams } from './scenario.serializer';
@@ -115,11 +116,23 @@ export class ScenarioStore {
     const cfg = this.localeConfig();
     return this.purchasePrice() * cfg.insuranceRate * this.categoryMultipliers().insurance;
   });
+  // Year-0 base — the age curve now lives in the calc layer (`maintenanceAt`),
+  // applied per-month with `maintenanceK(category, powertrain)`. The previous
+  // (1 + vehicleAge × 0.1) bump moved into that curve.
   private maintenanceDefault = computed(() => {
     const baseRate = this.powertrain() === 'EV' ? 0.007 : 0.015;
-    const ageFactor = 1 + this.vehicleAge() * 0.1;
-    return this.msrp() * baseRate * ageFactor * this.categoryMultipliers().maintenance;
+    return this.msrp() * baseRate * this.categoryMultipliers().maintenance;
   });
+  readonly maintenanceK = computed(() =>
+    maintenanceK(this.vehicleCategory(), this.powertrain()),
+  );
+  // Phase A bridge: derive the boolean from the existing dollar override so
+  // the old slider keeps functioning. Phase B replaces this with a proper
+  // `homeChargerInstalled` writable signal.
+  readonly homeChargerInstalled = computed(() => (this._homeChargerOverride() ?? 0) > 0);
+  // Phase A: solar isn't yet wired through the store (no signal until Phase B).
+  // Hardcode false here so EV cost calc behaves identically to today.
+  readonly solar = computed(() => false);
   private fuelEfficiencyDefaultSignal = computed(() =>
     fuelEfficiencyDefault(this.locale(), this.powertrain()),
   );
@@ -214,11 +227,12 @@ export class ScenarioStore {
       keepDurationYears: this.keepDuration(),
       downPayment: this.leaseDownPayment(),
       insuranceAnnual: this.insurance(),
-      maintenanceAnnual: this.maintenance(),
+      maintenanceBase: this.maintenance(),
+      maintenanceK: this.maintenanceK(),
       fuelEfficiency: this.fuelEfficiency(),
       fuelPrice: this.fuelPrice(),
-      homeChargerInstall: this.homeChargerInstall(),
-      categoryMultipliers: this.categoryMultipliers(),
+      homeChargerInstalled: this.homeChargerInstalled(),
+      solar: this.solar(),
       apr: this.leaseApr(),
       leaseTermMonths: this.leaseTerm(),
       leaseEndChoice: this.leaseEndChoice(),
@@ -243,11 +257,12 @@ export class ScenarioStore {
       keepDurationYears: this.keepDuration(),
       downPayment: this.financeDownPayment(),
       insuranceAnnual: this.insurance(),
-      maintenanceAnnual: this.maintenance(),
+      maintenanceBase: this.maintenance(),
+      maintenanceK: this.maintenanceK(),
       fuelEfficiency: this.fuelEfficiency(),
       fuelPrice: this.fuelPrice(),
-      homeChargerInstall: this.homeChargerInstall(),
-      categoryMultipliers: this.categoryMultipliers(),
+      homeChargerInstalled: this.homeChargerInstalled(),
+      solar: this.solar(),
       apr: this.financeApr(),
       loanTermMonths: this.loanTerm(),
       opportunityCostRate: this.opportunityCostRate(),
@@ -268,11 +283,12 @@ export class ScenarioStore {
       // any downstream code that adds it doesn't double-count.
       downPayment: 0,
       insuranceAnnual: this.insurance(),
-      maintenanceAnnual: this.maintenance(),
+      maintenanceBase: this.maintenance(),
+      maintenanceK: this.maintenanceK(),
       fuelEfficiency: this.fuelEfficiency(),
       fuelPrice: this.fuelPrice(),
-      homeChargerInstall: this.homeChargerInstall(),
-      categoryMultipliers: this.categoryMultipliers(),
+      homeChargerInstalled: this.homeChargerInstalled(),
+      solar: this.solar(),
       opportunityCostRate: this.opportunityCostRate(),
     }),
   );

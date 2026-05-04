@@ -9,6 +9,8 @@ describe('fuelCostOverYears', () => {
       years: 3,
       powertrain: 'ICE',
       locale: 'US',
+      homeChargerInstalled: false,
+      solar: false,
     });
     expect(cost).toBeGreaterThan(4400);
     expect(cost).toBeLessThan(4600);
@@ -22,6 +24,8 @@ describe('fuelCostOverYears', () => {
       years: 3,
       powertrain: 'ICE',
       locale: 'US',
+      homeChargerInstalled: false,
+      solar: false,
     });
     const ev = fuelCostOverYears({
       efficiency: 3.5,
@@ -30,6 +34,8 @@ describe('fuelCostOverYears', () => {
       years: 3,
       powertrain: 'EV',
       locale: 'US',
+      homeChargerInstalled: false,
+      solar: false,
     });
     expect(ev).toBeLessThan(ice);
   });
@@ -42,6 +48,8 @@ describe('fuelCostOverYears', () => {
       years: 5,
       powertrain: 'ICE',
       locale: 'EU',
+      homeChargerInstalled: false,
+      solar: false,
     });
     expect(cost).toBeGreaterThan(8000);
     expect(cost).toBeLessThan(9000);
@@ -56,7 +64,65 @@ describe('fuelCostOverYears', () => {
         years: 0,
         powertrain: 'ICE',
         locale: 'US',
+        homeChargerInstalled: false,
+        solar: false,
       }),
     ).toBe(0);
+  });
+
+  it('US EV: solar with home charger drops cost to 15% of grid (85/15 split)', () => {
+    const base = {
+      efficiency: 3.5,
+      fuelPrice: 0.16,
+      annualMileage: 12000,
+      years: 3,
+      powertrain: 'EV' as const,
+      locale: 'US' as const,
+    };
+    const grid = fuelCostOverYears({ ...base, homeChargerInstalled: true, solar: false });
+    const solar = fuelCostOverYears({ ...base, homeChargerInstalled: true, solar: true });
+    expect(solar).toBeCloseTo(grid * 0.15, 4);
+  });
+
+  it('EU EV: solar with home charger drops cost to 15% of grid', () => {
+    const base = {
+      efficiency: 17,
+      fuelPrice: 0.32,
+      annualMileage: 15000,
+      years: 5,
+      powertrain: 'EV' as const,
+      locale: 'EU' as const,
+    };
+    const grid = fuelCostOverYears({ ...base, homeChargerInstalled: true, solar: false });
+    const solar = fuelCostOverYears({ ...base, homeChargerInstalled: true, solar: true });
+    expect(solar).toBeCloseTo(grid * 0.15, 4);
+  });
+
+  it('solar without home charger has no effect (gating)', () => {
+    const base = {
+      efficiency: 3.5,
+      fuelPrice: 0.16,
+      annualMileage: 12000,
+      years: 3,
+      powertrain: 'EV' as const,
+      locale: 'US' as const,
+    };
+    const offOff = fuelCostOverYears({ ...base, homeChargerInstalled: false, solar: false });
+    const onOff = fuelCostOverYears({ ...base, homeChargerInstalled: false, solar: true });
+    expect(onOff).toBeCloseTo(offOff, 4);
+  });
+
+  it('solar flag is ignored for ICE (no electricity)', () => {
+    const base = {
+      efficiency: 28,
+      fuelPrice: 3.5,
+      annualMileage: 12000,
+      years: 3,
+      powertrain: 'ICE' as const,
+      locale: 'US' as const,
+    };
+    const noSolar = fuelCostOverYears({ ...base, homeChargerInstalled: false, solar: false });
+    const withSolar = fuelCostOverYears({ ...base, homeChargerInstalled: true, solar: true });
+    expect(withSolar).toBeCloseTo(noSolar, 4);
   });
 });

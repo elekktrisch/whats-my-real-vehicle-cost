@@ -1,8 +1,5 @@
-import { categoryMultipliers } from './category';
 import { costPerDistance, effectiveMonthly, tcoBreakdown } from './tco';
-import type { CategoryMultipliers } from '../scenario.types';
-
-const baseMultipliers: CategoryMultipliers = categoryMultipliers('economy');
+import { maintenanceK } from './maintenance';
 
 const usLeaseShared = {
   tab: 'lease' as const,
@@ -15,11 +12,12 @@ const usLeaseShared = {
   keepDurationYears: 3,
   downPayment: 4000,
   insuranceAnnual: 1750,
-  maintenanceAnnual: 525,
+  maintenanceBase: 525,
+  maintenanceK: 0,
   fuelEfficiency: 28,
   fuelPrice: 3.5,
-  homeChargerInstall: 0,
-  categoryMultipliers: baseMultipliers,
+  homeChargerInstalled: false,
+  solar: false,
   apr: 4.5,
   leaseTermMonths: 36,
   leaseEndChoice: 'handBack' as const,
@@ -125,8 +123,6 @@ describe('tcoBreakdown', () => {
       leaseEndChoice: 'handBack',
       earlyTerminationFee: 1000,
     });
-    // Final partial cycle (24 of 36 mo in cycle 2) is treated as a shorter
-    // last lease — early-termination fee should be irrelevant here.
     expect(withEtf.totals.leaseEnd).toBeCloseTo(noEtf.totals.leaseEnd, 4);
   });
 
@@ -155,8 +151,6 @@ describe('tcoBreakdown', () => {
       leaseTermMonths: 36,
       leaseEndChoice: 'handBack',
     });
-    // depreciationOrLease slope (= lease.depreciationFee + downPayment/term) should
-    // be roughly the same in cycle 2 (months 37-72) as in cycle 1 (months 1-36).
     const cycle1Slope = (r.series[36].depreciationOrLease - r.series[0].depreciationOrLease) / 36;
     const cycle2Slope = (r.series[72].depreciationOrLease - r.series[36].depreciationOrLease) / 36;
     expect(cycle2Slope).toBeCloseTo(cycle1Slope, 4);
@@ -172,8 +166,6 @@ describe('tcoBreakdown', () => {
     });
     const cycle1Slope = (r.series[36].financing - r.series[0].financing) / 36;
     const cycle2Slope = (r.series[72].financing - r.series[36].financing) / 36;
-    // After cycle 2 starts, cumulative down payment doubles → opp cost slope
-    // grows by downPayment * rate / 12.
     const expectedDelta = (usLeaseShared.downPayment * 0.06) / 12;
     expect(cycle2Slope - cycle1Slope).toBeCloseTo(expectedDelta, 4);
   });
@@ -200,16 +192,15 @@ describe('tcoBreakdown', () => {
     const lo = tcoBreakdown({ ...usLeaseShared, opportunityCostRate: 0 });
     const hi = tcoBreakdown({ ...usLeaseShared, opportunityCostRate: 0.08 });
     expect(hi.totals.financing).toBeGreaterThan(lo.totals.financing);
-    // Linear: total opportunity cost = downPayment * rate * years.
     const expectedExtra = usLeaseShared.downPayment * 0.08 * usLeaseShared.keepDurationYears;
     expect(hi.totals.financing - lo.totals.financing).toBeCloseTo(expectedExtra, 4);
   });
 
   it('cash tab opportunity-cost grows with the rate', () => {
-    const lo = tcoBreakdown({
-      tab: 'cash',
-      locale: 'US',
-      powertrain: 'ICE',
+    const baseCash = {
+      tab: 'cash' as const,
+      locale: 'US' as const,
+      powertrain: 'ICE' as const,
       purchasePrice: 40000,
       residualValue: 14000,
       vehicleAge: 0,
@@ -217,31 +208,15 @@ describe('tcoBreakdown', () => {
       keepDurationYears: 7,
       downPayment: 40000,
       insuranceAnnual: 2000,
-      maintenanceAnnual: 600,
+      maintenanceBase: 600,
+      maintenanceK: 0,
       fuelEfficiency: 28,
       fuelPrice: 3.5,
-      homeChargerInstall: 0,
-      categoryMultipliers: baseMultipliers,
-      opportunityCostRate: 0,
-    });
-    const hi = tcoBreakdown({
-      tab: 'cash',
-      locale: 'US',
-      powertrain: 'ICE',
-      purchasePrice: 40000,
-      residualValue: 14000,
-      vehicleAge: 0,
-      annualMileage: 10000,
-      keepDurationYears: 7,
-      downPayment: 40000,
-      insuranceAnnual: 2000,
-      maintenanceAnnual: 600,
-      fuelEfficiency: 28,
-      fuelPrice: 3.5,
-      homeChargerInstall: 0,
-      categoryMultipliers: baseMultipliers,
-      opportunityCostRate: 0.08,
-    });
+      homeChargerInstalled: false,
+      solar: false,
+    };
+    const lo = tcoBreakdown({ ...baseCash, opportunityCostRate: 0 });
+    const hi = tcoBreakdown({ ...baseCash, opportunityCostRate: 0.08 });
     expect(hi.totals.financing).toBeGreaterThan(lo.totals.financing);
   });
 
@@ -257,17 +232,17 @@ describe('tcoBreakdown', () => {
       keepDurationYears: 5,
       downPayment: 5000,
       insuranceAnnual: 1750,
-      maintenanceAnnual: 525,
+      maintenanceBase: 525,
+      maintenanceK: 0,
       fuelEfficiency: 28,
       fuelPrice: 3.5,
-      homeChargerInstall: 0,
-      categoryMultipliers: baseMultipliers,
+      homeChargerInstalled: false,
+      solar: false,
       apr: 6,
       loanTermMonths: 60,
     };
     const noOpp = tcoBreakdown({ ...base, opportunityCostRate: 0 });
     const withOpp = tcoBreakdown({ ...base, opportunityCostRate: 0.08 });
-    // Linear: total opportunity cost = downPayment * rate * years.
     const expectedExtra = base.downPayment * 0.08 * base.keepDurationYears;
     expect(withOpp.totals.financing - noOpp.totals.financing).toBeCloseTo(expectedExtra, 4);
   });
@@ -282,11 +257,12 @@ describe('tcoBreakdown', () => {
       annualMileage: 12000,
       keepDurationYears: 10,
       insuranceAnnual: 1750,
-      maintenanceAnnual: 525,
+      maintenanceBase: 525,
+      maintenanceK: 0,
       fuelEfficiency: 28,
       fuelPrice: 3.5,
-      homeChargerInstall: 0,
-      categoryMultipliers: baseMultipliers,
+      homeChargerInstalled: false,
+      solar: false,
       opportunityCostRate: 0.05,
     };
     const finance = tcoBreakdown({
@@ -301,11 +277,196 @@ describe('tcoBreakdown', () => {
       tab: 'cash',
       downPayment: 0,
     });
-    // Linear (finance) vs compound monthly (cash) opp-cost shapes don't match
-    // exactly, but they should be in the same ballpark — a 10% delta is plenty
-    // of room for the finance-side simplification.
     expect(finance.total).toBeGreaterThan(cash.total * 0.9);
     expect(finance.total).toBeLessThan(cash.total * 1.1);
+  });
+});
+
+describe('tcoBreakdown — maintenance age curve', () => {
+  // Cash mode is the cleanest place to inspect maintenance behavior because
+  // there's no lease-cycle structure on top of the curve.
+  const cashAged = {
+    tab: 'cash' as const,
+    locale: 'US' as const,
+    powertrain: 'ICE' as const,
+    purchasePrice: 40000,
+    residualValue: 14000,
+    vehicleAge: 0,
+    annualMileage: 12000,
+    keepDurationYears: 10,
+    downPayment: 40000,
+    insuranceAnnual: 2000,
+    maintenanceBase: 600,
+    maintenanceK: maintenanceK('mid', 'ICE'), // 0.08
+    fuelEfficiency: 28,
+    fuelPrice: 3.5,
+    homeChargerInstalled: false,
+    solar: false,
+    opportunityCostRate: 0,
+  };
+
+  it('cash: maintenance grows ~base for year 1 → ~base × (1 + k × 9.5) by year 10', () => {
+    const r = tcoBreakdown(cashAged);
+    const yr1 = r.series[12].maintenance - r.series[0].maintenance;
+    const yr10 = r.series[120].maintenance - r.series[108].maintenance;
+    // yr1 ≈ base × (1 + k × 0.5) ≈ 600 × 1.04 = 624
+    expect(yr1).toBeGreaterThan(620);
+    expect(yr1).toBeLessThan(640);
+    // yr10 ≈ base × (1 + k × 9.5) ≈ 600 × 1.76 = 1056
+    expect(yr10).toBeGreaterThan(1040);
+    expect(yr10).toBeLessThan(1080);
+  });
+
+  it('cash: total maintenance with k > 0 exceeds flat (k = 0)', () => {
+    const flat = tcoBreakdown({ ...cashAged, maintenanceK: 0 });
+    const curved = tcoBreakdown(cashAged);
+    expect(curved.totals.maintenance).toBeGreaterThan(flat.totals.maintenance);
+  });
+
+  it('finance: vehicleAge shifts the curve forward (older car → more maintenance)', () => {
+    const young = tcoBreakdown({
+      tab: 'finance' as const,
+      locale: 'US' as const,
+      powertrain: 'ICE' as const,
+      purchasePrice: 35000,
+      residualValue: 14000,
+      vehicleAge: 0,
+      annualMileage: 12000,
+      keepDurationYears: 5,
+      downPayment: 5000,
+      insuranceAnnual: 1750,
+      maintenanceBase: 525,
+      maintenanceK: maintenanceK('mid', 'ICE'),
+      fuelEfficiency: 28,
+      fuelPrice: 3.5,
+      homeChargerInstalled: false,
+      solar: false,
+      apr: 6,
+      loanTermMonths: 60,
+      opportunityCostRate: 0,
+    });
+    const old = tcoBreakdown({
+      tab: 'finance' as const,
+      locale: 'US' as const,
+      powertrain: 'ICE' as const,
+      purchasePrice: 35000,
+      residualValue: 14000,
+      vehicleAge: 5,
+      annualMileage: 12000,
+      keepDurationYears: 5,
+      downPayment: 5000,
+      insuranceAnnual: 1750,
+      maintenanceBase: 525,
+      maintenanceK: maintenanceK('mid', 'ICE'),
+      fuelEfficiency: 28,
+      fuelPrice: 3.5,
+      homeChargerInstalled: false,
+      solar: false,
+      apr: 6,
+      loanTermMonths: 60,
+      opportunityCostRate: 0,
+    });
+    expect(old.totals.maintenance).toBeGreaterThan(young.totals.maintenance);
+  });
+
+  it('renew lease: maintenance per cycle is identical (sawtooth resets each cycle)', () => {
+    const r = tcoBreakdown({
+      ...usLeaseShared,
+      keepDurationYears: 6,
+      leaseTermMonths: 36,
+      leaseEndChoice: 'handBack',
+      maintenanceBase: 525,
+      maintenanceK: maintenanceK('mid', 'ICE'),
+    });
+    const cycle1Maint = r.series[36].maintenance - r.series[0].maintenance;
+    const cycle2Maint = r.series[72].maintenance - r.series[36].maintenance;
+    // Each cycle starts a new car at age 0, so per-cycle maintenance is equal.
+    expect(cycle2Maint).toBeCloseTo(cycle1Maint, 2);
+  });
+
+  it('buyout: maintenance is flat through the lease term, then climbs on the owned tail', () => {
+    const r = tcoBreakdown({
+      ...usLeaseShared,
+      keepDurationYears: 6,
+      leaseTermMonths: 36,
+      leaseEndChoice: 'buyOut',
+      maintenanceBase: 525,
+      maintenanceK: maintenanceK('mid', 'ICE'),
+    });
+    // Lease portion (months 1..36) — flat. Per-month increment ≈ base/12.
+    const mid1 = r.series[18].maintenance - r.series[6].maintenance;
+    const mid2 = r.series[30].maintenance - r.series[18].maintenance;
+    expect(mid1).toBeCloseTo(mid2, 1); // flat slope during lease
+    // Owned tail (months 37..72) climbs above the flat base.
+    const ownedYr1 = r.series[48].maintenance - r.series[36].maintenance;
+    const ownedYr3 = r.series[72].maintenance - r.series[60].maintenance;
+    expect(ownedYr3).toBeGreaterThan(ownedYr1);
+  });
+});
+
+describe('tcoBreakdown — solar / home charger', () => {
+  const usEv = {
+    tab: 'cash' as const,
+    locale: 'US' as const,
+    powertrain: 'EV' as const,
+    purchasePrice: 40000,
+    residualValue: 18000,
+    vehicleAge: 0,
+    annualMileage: 12000,
+    keepDurationYears: 5,
+    downPayment: 40000,
+    insuranceAnnual: 2000,
+    maintenanceBase: 400,
+    maintenanceK: maintenanceK('mid', 'EV'),
+    fuelEfficiency: 3.5,
+    fuelPrice: 0.16,
+    homeChargerInstalled: false,
+    solar: false,
+    opportunityCostRate: 0,
+  };
+
+  it('charger off: no install cost added to maintenance', () => {
+    const r = tcoBreakdown(usEv);
+    expect(r.series[0].maintenance).toBe(0);
+  });
+
+  it('charger on: install cost lands at month 0 (US default $1500)', () => {
+    const r = tcoBreakdown({ ...usEv, homeChargerInstalled: true });
+    expect(r.series[0].maintenance).toBeCloseTo(1500, 4);
+    // And the step persists through the cumulative chain.
+    expect(r.series[1].maintenance).toBeGreaterThan(1500);
+  });
+
+  it('charger on EU: install cost is €1200', () => {
+    const r = tcoBreakdown({
+      ...usEv,
+      locale: 'EU',
+      fuelEfficiency: 17,
+      fuelPrice: 0.32,
+      homeChargerInstalled: true,
+    });
+    expect(r.series[0].maintenance).toBeCloseTo(1200, 4);
+  });
+
+  it('charger on + solar: fuel cost drops to 15% of grid', () => {
+    const grid = tcoBreakdown({ ...usEv, homeChargerInstalled: true, solar: false });
+    const solar = tcoBreakdown({ ...usEv, homeChargerInstalled: true, solar: true });
+    expect(solar.totals.fuel).toBeCloseTo(grid.totals.fuel * 0.15, 2);
+  });
+
+  it('solar without charger has no effect (gating)', () => {
+    const off = tcoBreakdown({ ...usEv, homeChargerInstalled: false, solar: false });
+    const solar = tcoBreakdown({ ...usEv, homeChargerInstalled: false, solar: true });
+    expect(solar.totals.fuel).toBeCloseTo(off.totals.fuel, 2);
+  });
+
+  it('install cost only applies for EV (ignored for ICE)', () => {
+    const r = tcoBreakdown({
+      ...usEv,
+      powertrain: 'ICE',
+      homeChargerInstalled: true,
+    });
+    expect(r.series[0].maintenance).toBe(0);
   });
 });
 
