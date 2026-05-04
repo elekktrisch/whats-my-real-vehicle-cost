@@ -101,10 +101,10 @@ export class TabHero {
   /** Subtitle for the running-costs slot — splits insurance/maint/fuel from
    * the opportunity-cost share so the user can see what's "real" outflow vs.
    * forgone investment return. */
-  private readonly runningCostsSubtitle = computed(() => {
-    const sym = this.currencySymbol();
-    return `${sym}${this.fmt2(this.monthlyVehicleCosts())} vehicle · ${sym}${this.fmt2(this.monthlyOppCost())} opportunity`;
-  });
+  private readonly runningCostsSubtitle = computed(
+    () =>
+      `${this.money(this.fmt2(this.monthlyVehicleCosts()))} vehicle · ${this.money(this.fmt2(this.monthlyOppCost()))} opportunity`,
+  );
 
   private readonly category = computed(() => {
     const c = this.store.vehicleCategory();
@@ -115,14 +115,13 @@ export class TabHero {
     const tab = this.store.activeTab();
     if (tab === 'lease') {
       const lease = this.store.leasePaymentDetails();
-      const sym = this.currencySymbol();
       return [
         { label: 'Initial down payment', value: this.fmtInt(this.store.leaseDownPayment()) },
         {
           label: 'Monthly lease payment',
           value: this.fmt2(lease.monthlyPayment),
           accent: true,
-          subtitle: `${sym}${this.fmt2(lease.depreciationFee)} depreciation · ${sym}${this.fmt2(lease.financeFee)} interest`,
+          subtitle: `${this.money(this.fmt2(lease.depreciationFee))} depreciation · ${this.money(this.fmt2(lease.financeFee))} interest`,
         },
         {
           label: 'Monthly running costs',
@@ -146,14 +145,13 @@ export class TabHero {
       // ownership) and interest (cost of borrowing). Average across the loan.
       const avgEquity = principal / loanMonths;
       const avgInterest = Math.max(monthly - avgEquity, 0);
-      const sym = this.currencySymbol();
       return [
         { label: 'Initial down payment', value: this.fmtInt(this.store.financeDownPayment()) },
         {
           label: 'Monthly loan payment',
           value: this.fmt2(monthly),
           accent: true,
-          subtitle: `${sym}${this.fmt2(avgEquity)} builds equity · ${sym}${this.fmt2(avgInterest)} interest`,
+          subtitle: `${this.money(this.fmt2(avgEquity))} builds equity · ${this.money(this.fmt2(avgInterest))} interest`,
         },
         {
           label: 'Monthly running costs',
