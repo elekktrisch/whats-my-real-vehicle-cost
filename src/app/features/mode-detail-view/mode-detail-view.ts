@@ -1,6 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 import { ScenarioStore } from '../../scenario/scenario.store';
-import { TcoChartDesktop } from '../chart/tco-chart-desktop/tco-chart-desktop';
+import { TcoChart } from '../chart/tco-chart/tco-chart';
 import { GlobalControls } from '../../shared/molecules/global-controls/global-controls';
 import { LeaseFields } from './lease-fields';
 import { FinanceFields } from './finance-fields';
@@ -20,10 +20,10 @@ import { CashFields } from './cash-fields';
  */
 @Component({
   selector: 'app-mode-detail-view',
-  imports: [TcoChartDesktop, GlobalControls, LeaseFields, FinanceFields, CashFields],
+  imports: [TcoChart, GlobalControls, LeaseFields, FinanceFields, CashFields],
   template: `
     <div class="flex flex-col gap-5">
-      <app-tco-chart-desktop [breakdown]="activeBreakdown()" />
+      <app-tco-chart [breakdown]="activeBreakdown()" />
 
       @switch (store.activeTab()) {
         @case ('lease') {
