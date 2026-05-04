@@ -34,14 +34,22 @@ const MOBILE_BREAKPOINT_PX = 600;
 
 /**
  * Sticky strip of three mode-cards. Strip alone sticks; the surrounding
- * header scrolls away. A 24px gradient fade sits at the strip's bottom so
- * content scrolling underneath doesn't "knife edge" against the strip.
+ * header scrolls away. The strip's own background is a vertical gradient
+ * from the body bg to transparent over the last 24px, so content
+ * scrolling underneath disappears smoothly instead of knife-edging.
+ *
+ * The recommendation explanation slots inside the sticky block (between the
+ * cards and the fade band) so it stays visible alongside the cards.
  *
  * F2 shrink: past ~250px scroll desktop / ~120px mobile, the strip switches
  * the cards to compact (drops Total + sparkline; keeps Monthly + per-distance).
  *
  * Tablist semantics: roving tabindex, arrow keys move focus between cards,
  * Enter/Space activates (the underlying button click already handles this).
+ *
+ * Anti-flicker: solid (not blurred) background, `will-change: transform` to
+ * force the strip into its own compositor layer — chart.js canvas behind
+ * the strip can otherwise cause sub-pixel repaint flicker on scroll.
  */
 @Component({
   selector: 'app-comparison-strip',
@@ -49,7 +57,8 @@ const MOBILE_BREAKPOINT_PX = 600;
   template: `
     <div
       #stripEl
-      class="sticky top-0 z-20 bg-surface/95 backdrop-blur-[2px] pt-3 pb-[28px]"
+      class="sticky top-0 z-20 pt-3 pb-[28px]"
+      style="background: linear-gradient(to bottom, var(--color-bg) 0%, var(--color-bg) calc(100% - 24px), transparent 100%); will-change: transform;"
       [attr.data-compact]="compact()"
     >
       <div
@@ -79,13 +88,15 @@ const MOBILE_BREAKPOINT_PX = 600;
         }
       </div>
 
-      <!-- Gradient fade band — fades surface to transparent so scrolling
-           content disappears under the strip rather than ending abruptly. -->
-      <div
-        class="pointer-events-none absolute left-0 right-0 bottom-0 h-[24px]"
-        style="background: linear-gradient(to bottom, var(--color-surface) 0%, color-mix(in srgb, var(--color-surface) 70%, transparent) 70%, transparent 100%);"
-        aria-hidden="true"
-      ></div>
+      @if (recommendationReason()) {
+        <p
+          class="font-ui text-[0.78rem] text-tx-muted leading-[1.55] mt-3 text-center px-2"
+          role="status"
+          aria-live="polite"
+        >
+          {{ recommendationReason() }}
+        </p>
+      }
     </div>
   `,
 })
@@ -95,6 +106,9 @@ export class ComparisonStrip {
   readonly recommended = input<Tab | null>(null);
   readonly sparklineYMax = input.required<number>();
   readonly distanceUnit = input.required<string>();
+  /** One-line locale-aware explanation rendered under the cards inside the
+   * sticky block so it stays visible alongside the strip. */
+  readonly recommendationReason = input<string>('');
 
   @ViewChild('stripEl', { static: true }) stripEl?: ElementRef<HTMLElement>;
 

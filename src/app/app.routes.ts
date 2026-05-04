@@ -25,5 +25,12 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/tab-page/tab-page').then((m) => m.TabPage),
     data: { tab: 'cash' as Tab },
   },
+  // Phase D preview route — Phase E will retire `/lease | /finance | /cash`
+  // and point '/' at the comparison page directly.
+  {
+    path: 'preview',
+    loadComponent: () =>
+      import('./pages/comparison-page/comparison-page').then((m) => m.ComparisonPage),
+  },
   { path: '**', redirectTo: '' },
 ];

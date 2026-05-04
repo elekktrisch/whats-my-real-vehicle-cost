@@ -61,7 +61,7 @@ import { TcoSparkline } from '../../atoms/tco-sparkline/tco-sparkline';
       </div>
 
       @if (delta(); as d) {
-        <div class="mt-[6px] font-mono text-[0.7rem] text-accent/80 text-right tracking-[-0.01em]">
+        <div [class]="deltaClass()">
           {{ d }}
         </div>
       }
@@ -105,6 +105,13 @@ export class ModeCard {
   readonly panelId = input.required<string>();
 
   readonly select = output<Tab>();
+
+  protected readonly deltaClass = computed(() => {
+    const base = 'mt-[6px] font-mono text-[0.7rem] text-right tracking-[-0.01em]';
+    // Reference label on the recommended card is informational filler — keep
+    // it muted so the Best badge stays the visual anchor.
+    return this.recommended() ? `${base} text-tx-dim` : `${base} text-accent/80`;
+  });
 
   protected readonly cardClass = computed(() => {
     const base = [
