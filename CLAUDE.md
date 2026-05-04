@@ -23,12 +23,9 @@ One-time setup on the repo: **Settings → Pages → Source: GitHub Actions** mu
 
 ## Status
 
-Phases 1–6 done. As of 2026-05-03:
+The phase 1–6 narrative has moved out of this file. See [REDESIGN_PLAN.md](./REDESIGN_PLAN.md) for the in-flight redesign and its phase plan (A–H), and `git log` for what already shipped.
 
-- **Phases 1–5 done** — see ARCHITECTURE.md.
-- **Phase 6 done:** All three tabs (Lease, Finance, Cash) wired to the store. Hero card extracted into a `tab-hero` molecule positioned at the top of `TabPage` with KPI bar + chart, switching content per active tab. Down payment is now per-tab (`leaseDownPayment`, `financeDownPayment`; cash uses `purchasePrice`). Loan tab math accounts for opportunity cost on the down payment (parity with lease/cash). Wizard now has a 7th question for investment style → opportunity-cost rate. Recommendation is now a real cost-per-distance comparison across all three tabs.
-- **Phase 7 next:** Mobile chart variant + responsive layout polish.
-- **Visible app:** `/` splash → `/wizard` (7 questions + live cost-per-distance recommendation) → `/lease | /finance | /cash`. All three tabs fully working with shareable URLs; per-tab down payments; lessor-table-style early termination.
+**Visible app today:** `/` splash → `/wizard` (7 questions + live cost-per-distance recommendation) → `/lease | /finance | /cash`. All three tabs fully working with shareable URLs; per-tab down payments; lessor-table-style early termination. The redesign collapses this into a single comparison-first page; see the plan.
 
 ## Architecture
 
@@ -47,7 +44,7 @@ features/
   finance-tab/               loan-financing slider group (APR, loan term, opportunity-cost rate)
   cash-tab/                  cash-purchase slider group (just opportunity-cost rate)
   chart/
-    tco-chart-desktop/       stacked-area Chart.js renderer (mobile variant pending Phase 7)
+    tco-chart-desktop/       stacked-area Chart.js renderer (responsive consolidation planned in REDESIGN_PLAN.md Phase F)
 pages/
   splash-page/               bold intro + "Get started" → /wizard, hasHydrated() skip seam
   wizard-page/               7 numbered questions + live cost-per-distance recommendation card
