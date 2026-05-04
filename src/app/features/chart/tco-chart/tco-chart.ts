@@ -76,13 +76,13 @@ const TABLET_BP = 900;
   template: `
     <div class="bg-surface border border-border rounded-xl pt-[22px] px-[22px] pb-4">
       <div class="flex items-center justify-between mb-[18px] flex-wrap gap-2">
-        <span class="font-ui text-[0.7rem] font-medium tracking-[0.13em] uppercase text-tx-dim">
+        <span class="font-ui text-[0.75rem] font-medium tracking-[0.13em] uppercase text-tx-dim">
           Cumulative total cost of ownership
         </span>
         <div class="flex flex-wrap gap-x-4 gap-y-1">
           @for (layer of layers; track layer.key) {
             <span
-              class="flex items-center gap-[6px] font-ui text-[0.72rem] text-tx-muted tracking-[0.04em]"
+              class="flex items-center gap-[6px] font-ui text-[0.75rem] text-tx-muted tracking-[0.04em]"
             >
               <span
                 class="w-3 h-2 rounded-[2px] inline-block"
@@ -131,22 +131,6 @@ const TABLET_BP = 900;
       </table>
     </div>
   `,
-  styles: [
-    `
-      /* Tailwind 4 doesn't ship sr-only by default in this setup. */
-      .sr-only {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        white-space: nowrap;
-        border: 0;
-      }
-    `,
-  ],
 })
 export class TcoChart {
   readonly breakdown = input.required<CostBreakdown>();
@@ -160,11 +144,24 @@ export class TcoChart {
   private readonly viewportWidth = signal<number>(
     typeof window === 'undefined' ? 1200 : window.innerWidth,
   );
+  /** Chart.js animations are JS-driven, so the CSS media query in styles.css
+   * doesn't reach them. We mirror it here. */
+  private readonly reducedMotion = signal<boolean>(
+    this.isBrowser && typeof window !== 'undefined'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false,
+  );
 
   @HostListener('window:resize')
   protected onResize(): void {
     if (!this.isBrowser || typeof window === 'undefined') return;
     this.viewportWidth.set(window.innerWidth);
+  }
+
+  constructor() {
+    if (!this.isBrowser || typeof window === 'undefined') return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    mq.addEventListener?.('change', (e) => this.reducedMotion.set(e.matches));
   }
 
   protected readonly chartData = computed<ChartConfiguration<'line'>['data']>(() => {
@@ -205,7 +202,7 @@ export class TcoChart {
       responsive: true,
       maintainAspectRatio: true,
       aspectRatio,
-      animation: { duration: 240 },
+      animation: this.reducedMotion() ? false : { duration: 240 },
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },

@@ -34,7 +34,7 @@ export class Toggle {
 
   protected readonly optionClass = (active: boolean) =>
     [
-      'px-3 h-7 rounded-[6px] font-ui text-[0.7rem] font-medium tracking-[0.06em] uppercase',
+      'px-3 h-7 rounded-[6px] font-ui text-[0.75rem] font-medium tracking-[0.06em] uppercase',
       'transition-[background-color,color] duration-150 cursor-pointer',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
       active

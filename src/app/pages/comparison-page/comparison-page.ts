@@ -69,7 +69,7 @@ function cumulativeTotals(series: readonly MonthlyTcoPoint[]): number[] {
             WhatsMyVehicleCost
           </span>
           <span
-            class="hidden sm:inline-block ml-2 font-mono text-[0.62rem] tracking-[0.1em] uppercase text-tx-dim"
+            class="hidden sm:inline-block ml-2 font-mono text-[0.75rem] tracking-[0.1em] uppercase text-tx-dim"
           >
             TCO calculator
           </span>

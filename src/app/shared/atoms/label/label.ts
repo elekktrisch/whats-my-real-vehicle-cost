@@ -5,7 +5,7 @@ import { Component, input } from '@angular/core';
   template: `
     <label
       [attr.for]="for() || null"
-      class="font-ui text-[0.62rem] font-medium tracking-[0.13em] uppercase text-tx-dim"
+      class="font-ui text-[0.75rem] font-medium tracking-[0.13em] uppercase text-tx-dim"
     >
       <ng-content />
       @if (required()) {

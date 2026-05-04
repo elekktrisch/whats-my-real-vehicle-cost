@@ -51,7 +51,7 @@ import { Icon } from '../../shared/atoms/icon/icon';
         <div class="relative mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
           <app-button size="lg" (click)="getStarted()">Get started</app-button>
           <span
-            class="font-ui text-[0.6rem] tracking-[0.16em] uppercase text-tx-dim sm:ml-2"
+            class="font-ui text-[0.75rem] tracking-[0.16em] uppercase text-tx-dim sm:ml-2"
             >{{ localeLabel() }}</span
           >
         </div>

@@ -10,7 +10,7 @@ import { Component } from '@angular/core';
   selector: 'app-cash-fields',
   template: `
     <div role="tabpanel" id="modepanel-cash" aria-labelledby="modetab-cash">
-      <p class="font-mono text-[0.72rem] text-tx-muted leading-[1.5]">
+      <p class="font-mono text-[0.75rem] text-tx-muted leading-[1.5]">
         Cash buys outright — no APR, no term. Use the global controls below to
         adjust purchase price, keep duration, and the opportunity-cost rate
         (the return you'd otherwise earn on that capital).

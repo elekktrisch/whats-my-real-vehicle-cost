@@ -26,12 +26,12 @@ import { TcoSparkline } from '../../atoms/tco-sparkline/tco-sparkline';
       [class]="cardClass()"
     >
       <header class="flex items-center justify-between gap-2">
-        <span class="font-ui text-[0.72rem] font-semibold tracking-[0.06em] uppercase">
+        <span class="font-ui text-[0.75rem] font-semibold tracking-[0.06em] uppercase">
           {{ label() }}
         </span>
         @if (recommended()) {
           <span
-            class="rounded-full bg-accent/15 text-accent text-[0.55rem] tracking-[0.1em] uppercase px-[7px] py-[1px] font-ui font-medium"
+            class="rounded-full bg-accent/15 text-accent text-[0.75rem] tracking-[0.1em] uppercase px-[7px] py-[1px] font-ui font-medium"
             aria-label="Recommended"
           >
             Best
@@ -39,7 +39,7 @@ import { TcoSparkline } from '../../atoms/tco-sparkline/tco-sparkline';
         } @else {
           @if (delta(); as d) {
             <span
-              class="font-mono text-[0.65rem] text-accent/80 tracking-[-0.01em] whitespace-nowrap"
+              class="font-mono text-[0.75rem] text-accent/80 tracking-[-0.01em] whitespace-nowrap"
             >
               {{ d }}
             </span>
@@ -49,20 +49,20 @@ import { TcoSparkline } from '../../atoms/tco-sparkline/tco-sparkline';
 
       @if (!compact()) {
         <div class="flex items-baseline justify-between gap-2 mt-[10px]">
-          <span class="font-ui text-[0.6rem] tracking-[0.1em] uppercase text-tx-dim">Total</span>
+          <span class="font-ui text-[0.75rem] tracking-[0.1em] uppercase text-tx-dim">Total</span>
           <span class="font-mono text-[0.85rem] text-tx tracking-[-0.02em]">{{ total() }}</span>
         </div>
       }
 
       <div class="flex items-baseline justify-between gap-2 mt-[6px]">
-        <span class="font-ui text-[0.6rem] tracking-[0.1em] uppercase text-tx-dim">Monthly</span>
+        <span class="font-ui text-[0.75rem] tracking-[0.1em] uppercase text-tx-dim">Monthly</span>
         <span class="font-mono text-[0.95rem] font-medium text-tx tracking-[-0.02em]">
           {{ monthly() }}
         </span>
       </div>
 
       <div class="flex items-baseline justify-between gap-2 mt-[4px]">
-        <span class="font-ui text-[0.6rem] tracking-[0.1em] uppercase text-tx-dim">Per {{ distanceUnit() }}</span>
+        <span class="font-ui text-[0.75rem] tracking-[0.1em] uppercase text-tx-dim">Per {{ distanceUnit() }}</span>
         <span class="font-mono text-[0.78rem] text-tx-muted tracking-[-0.02em]">
           {{ perDistance() }}
         </span>

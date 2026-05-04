@@ -10,7 +10,7 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
   template: `
     <section class="bg-surface border border-border rounded-[14px] py-[22px] px-5">
       <header class="flex items-center justify-between gap-3 mb-5 pb-[14px] border-b border-border">
-        <div class="font-ui text-[0.62rem] font-medium tracking-[0.15em] uppercase text-tx-dim">
+        <div class="font-ui text-[0.75rem] font-medium tracking-[0.15em] uppercase text-tx-dim">
           End of lease
         </div>
         <app-toggle
@@ -22,7 +22,7 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
       </header>
 
       @if (choice() === 'handBack') {
-        <p class="font-ui text-[0.7rem] text-tx-muted mb-4 leading-relaxed">
+        <p class="font-ui text-[0.75rem] text-tx-muted mb-4 leading-relaxed">
           You switch for a new car at lease-end and sign a new lease for the new car. Disposition
           fee and any wear or mileage overage are paid at every cycle boundary; each new cycle also
           requires a fresh down payment.
@@ -68,7 +68,7 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
           (valueChange)="store.setMileageOverageRate($event)"
         />
       } @else {
-        <p class="font-ui text-[0.7rem] text-tx-muted mb-4 leading-relaxed">
+        <p class="font-ui text-[0.75rem] text-tx-muted mb-4 leading-relaxed">
           You buy the car at lease-end. Buyout price is the residual value (set in vehicle context),
           paid in cash. Costs after the buyout are insurance, maintenance and fuel only.
         </p>
@@ -111,7 +111,7 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
           (valueChange)="store.setEarlyTerminationFee($event)"
         />
         @if (!earlyTerminationApplies()) {
-          <div class="font-ui text-[0.65rem] text-tx-dim -mt-3 leading-relaxed">
+          <div class="font-ui text-[0.75rem] text-tx-dim -mt-3 leading-relaxed">
             Not applicable: keep duration ({{ store.keepDuration() }} yr) is at or beyond the lease
             term ({{ store.leaseTerm() }} mo) — no early exit happens.
           </div>

@@ -11,7 +11,7 @@
   --color-border-strong: rgba(255, 255, 255, 0.13);
   --color-tx:           #dde3f0;
   --color-tx-muted:     #8896b3;
-  --color-tx-dim:       #5c6d8f;
+  --color-tx-dim:       #7282a3;
   --color-accent:       #4f8ef7;
   --color-accent-soft:  rgba(79, 142, 247, 0.1);
   --color-accent-glow:  rgba(79, 142, 247, 0.22);
@@ -87,7 +87,8 @@
     border: 1px solid var(--color-border-strong);
     color: var(--color-tx);
     font-family: var(--font-ui);
-    font-size: 0.72rem;
+    /* Plan §Font-size policy: tooltip body → 14px (text-sm). */
+    font-size: 0.875rem;
     font-weight: 400;
     line-height: 1.55;
     padding: 9px 11px;
@@ -100,7 +101,9 @@
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
   }
 
-  .info-badge:hover::after {
+  /* Tooltip surfaces on hover OR keyboard focus — info-badge is a button now. */
+  .info-badge:hover::after,
+  .info-badge:focus-visible::after {
     opacity: 1;
   }
 
@@ -181,5 +184,56 @@
     height: 180px;
     background: radial-gradient(circle, rgba(244, 132, 95, 0.04) 0%, transparent 65%);
     pointer-events: none;
+  }
+}
+
+@layer utilities {
+  /* Visually-hide for screen readers — used by the chart's data table and
+   * the AppShell skip link. Tailwind 4 doesn't ship sr-only by default in
+   * this project's setup. */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .focus\:not-sr-only:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+}
+
+/* ── Focus management for the sticky comparison-strip ────────────────────
+ * WCAG 2.4.11 (Focus Not Obscured) — when a focusable element is scrolled
+ * into view (Tab / arrow-key navigation), browsers center it; without a
+ * scroll margin the sticky strip sits over the focused element. */
+:focus-visible {
+  scroll-margin-top: 220px;
+}
+
+/* ── Reduced-motion preference ───────────────────────────────────────────
+ * Plan §Concrete changes: single CSS block disables the F2 shrink animation,
+ * the gradient-fade transition, and slider thumb / tooltip transitions.
+ * Chart.js animations are JS-driven — TcoChart reads the same media query
+ * and passes `animation: false` to Chart.js. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

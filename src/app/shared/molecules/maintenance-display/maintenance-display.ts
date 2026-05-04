@@ -19,7 +19,7 @@ import { InfoBadge } from '../../info-badge/info-badge';
   imports: [InfoBadge],
   template: `
     <div class="flex flex-col gap-1">
-      <div class="flex items-center gap-1 font-ui text-[0.62rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
+      <div class="flex items-center gap-1 font-ui text-[0.75rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
         Maintenance
         <app-info-badge
           tip="Auto-calculated from MSRP × locale baseline × category multiplier, with a linear age curve. Lease-renew resets the curve every cycle (new car each time)."

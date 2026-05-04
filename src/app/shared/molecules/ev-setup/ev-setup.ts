@@ -27,7 +27,7 @@ const CHARGER: readonly ToggleOption[] = [
     @if (visible()) {
       <div class="flex flex-col gap-3">
         <div class="flex flex-col gap-1">
-          <span class="font-ui text-[0.62rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
+          <span class="font-ui text-[0.75rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
             Home charger
           </span>
           <app-toggle
@@ -39,7 +39,7 @@ const CHARGER: readonly ToggleOption[] = [
         </div>
 
         <div class="flex flex-col gap-1" [class.opacity-50]="!solarEnabled()">
-          <span class="font-ui text-[0.62rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
+          <span class="font-ui text-[0.75rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
             Solar
             @if (!solarEnabled()) {
               <span class="ml-1 text-tx-muted lowercase tracking-normal">
