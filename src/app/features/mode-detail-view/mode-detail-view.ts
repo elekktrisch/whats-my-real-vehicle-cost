@@ -2,6 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { ScenarioStore } from '../../scenario/scenario.store';
 import { TcoChart } from '../chart/tco-chart/tco-chart';
 import { GlobalControls } from '../../shared/molecules/global-controls/global-controls';
+import { HeroSummary } from '../../shared/molecules/hero-summary/hero-summary';
 import { YourSituation } from '../../shared/molecules/your-situation/your-situation';
 import { LeaseFields } from './lease-fields';
 import { FinanceFields } from './finance-fields';
@@ -20,9 +21,18 @@ import { CashFields } from './cash-fields';
  */
 @Component({
   selector: 'app-mode-detail-view',
-  imports: [TcoChart, GlobalControls, YourSituation, LeaseFields, FinanceFields, CashFields],
+  imports: [
+    TcoChart,
+    HeroSummary,
+    GlobalControls,
+    YourSituation,
+    LeaseFields,
+    FinanceFields,
+    CashFields,
+  ],
   template: `
     <div class="flex flex-col gap-5">
+      <app-hero-summary />
       <app-tco-chart [breakdown]="activeBreakdown()" />
 
       @switch (store.activeTab()) {
