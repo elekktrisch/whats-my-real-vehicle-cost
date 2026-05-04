@@ -35,7 +35,7 @@ const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Finance', cash: '
     ModeDetailView,
   ],
   template: `
-    <div class="max-w-[1200px] mx-auto px-4 sm:px-7 pb-[72px] relative z-[1]">
+    <div class="max-w-[1200px] mx-auto px-4 sm:px-7 pb-[72px] relative z-[1] overflow-x-clip">
       <header
         class="flex items-center justify-between gap-3 flex-wrap pt-7 pb-[18px] border-b border-border"
       >
@@ -49,9 +49,9 @@ const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Finance', cash: '
           size="lg"
         />
         <span
-          class="flex-1 min-w-0 text-center font-ui text-lg font-medium tracking-[0.01em] text-tx-muted"
+          class="flex-1 min-w-0 text-left font-ui text-lg font-medium tracking-[0.01em] text-tx-muted"
         >
-          Price
+          Negotiated Price
         </span>
         <div class="flex items-center gap-3 flex-wrap">
           <app-locale-selector />

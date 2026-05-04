@@ -14,10 +14,11 @@ export type NumberInputSize = 'sm' | 'md' | 'lg';
         inputmode="decimal"
         [value]="display()"
         [attr.aria-label]="ariaLabel() || null"
+        [attr.size]="display().length || 1"
         (focus)="focused.set(true)"
         (blur)="onBlur($event)"
         (input)="onInput($event)"
-        class="num-input bg-transparent border-none outline-none text-right text-tx font-mono tracking-[-0.01em] caret-accent w-full min-w-0"
+        class="num-input bg-transparent border-none outline-none text-right text-tx font-mono tracking-[-0.01em] caret-accent min-w-0"
       />
       @if (suffix()) {
         <span class="text-tx-muted/80 select-none">{{ suffix() }}</span>

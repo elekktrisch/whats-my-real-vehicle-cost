@@ -28,13 +28,13 @@ import type { Tab } from '../../../scenario/scenario.types';
       (click)="select.emit(mode())"
       [class]="cardClass()"
     >
-      <header class="flex items-center justify-between gap-2">
-        <span class="font-ui text-[0.75rem] font-semibold tracking-[0.06em] uppercase">
+      <header class="flex items-center justify-between gap-2 min-w-0">
+        <span class="font-ui text-[0.75rem] font-semibold tracking-[0.06em] uppercase min-w-0 truncate">
           {{ label() }}
         </span>
         @if (recommended()) {
           <span
-            class="rounded-full bg-accent/15 text-accent text-[0.75rem] tracking-[0.1em] uppercase px-[7px] py-[1px] font-ui font-medium"
+            class="shrink-0 rounded-full bg-accent/15 text-accent text-[0.75rem] tracking-[0.1em] uppercase px-[7px] py-[1px] font-ui font-medium"
             aria-label="Recommended"
           >
             Best
@@ -42,7 +42,7 @@ import type { Tab } from '../../../scenario/scenario.types';
         } @else {
           @if (delta(); as d) {
             <span
-              class="font-mono text-[0.75rem] text-accent/80 tracking-[-0.01em] whitespace-nowrap"
+              class="shrink min-w-0 font-mono text-[0.75rem] text-accent/80 tracking-[-0.01em] text-right"
             >
               {{ d }}
             </span>
@@ -104,7 +104,11 @@ export class ModeCard {
 
   protected readonly cardClass = computed(() => {
     const base = [
-      'block w-full text-left rounded-[12px] transition-colors duration-150',
+      // `min-w-0` lets the grid cell shrink below its intrinsic content width
+      // (grid items default to `min-width: auto`, which would push the strip
+      // wider than the viewport when content like a long delta string would
+      // otherwise refuse to wrap).
+      'block w-full min-w-0 text-left rounded-[12px] transition-colors duration-150',
       // Tighter padding on narrow viewports — on a 360px screen each card
       // is ~110px wide; padding has to give the numbers some space.
       'p-[10px] sm:p-[14px]',

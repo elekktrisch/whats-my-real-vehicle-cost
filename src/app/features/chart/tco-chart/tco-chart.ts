@@ -74,7 +74,7 @@ const TABLET_BP = 900;
   selector: 'app-tco-chart',
   imports: [BaseChartDirective],
   template: `
-    <div class="bg-surface border border-border rounded-xl pt-[22px] px-[22px] pb-4">
+    <div class="bg-surface border border-border rounded-xl pt-3 px-3 pb-4 sm:pt-[22px] sm:px-[22px]">
       <div class="flex items-center justify-between mb-[18px] flex-wrap gap-2">
         <span class="font-ui text-[0.75rem] font-medium tracking-[0.13em] uppercase text-tx-dim">
           Cumulative total cost of ownership

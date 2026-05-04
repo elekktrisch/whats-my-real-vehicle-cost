@@ -8,7 +8,7 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
   selector: 'app-lease-end-section',
   imports: [Toggle, SliderControl],
   template: `
-    <section class="bg-surface border border-border rounded-[14px] py-[22px] px-5">
+    <section class="bg-surface border border-border rounded-[14px] py-4 px-3 sm:py-[22px] sm:px-5">
       <header class="flex items-center justify-between gap-3 mb-5 pb-[14px] border-b border-border">
         <div class="font-ui text-[0.75rem] font-medium tracking-[0.15em] uppercase text-tx-dim">
           End of lease

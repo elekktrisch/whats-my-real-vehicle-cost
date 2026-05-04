@@ -3,7 +3,7 @@ import { Component, input } from '@angular/core';
 @Component({
   selector: 'app-slider-group',
   template: `
-    <section class="bg-surface border border-border rounded-[14px] py-[22px] px-5">
+    <section class="bg-surface border border-border rounded-[14px] py-4 px-3 sm:py-[22px] sm:px-5">
       <div
         class="font-ui text-[0.75rem] font-medium tracking-[0.15em] uppercase text-tx-dim pb-[14px] mb-5 border-b border-border flex items-center justify-between gap-2"
       >
