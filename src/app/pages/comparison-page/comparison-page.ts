@@ -12,7 +12,7 @@ import { ModeDetailView } from '../../features/mode-detail-view/mode-detail-view
 import { formatCurrency } from '../../scenario/locale.config';
 import type { CostBreakdown, Tab } from '../../scenario/scenario.types';
 
-const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Finance', cash: 'Cash' };
+const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Loan', cash: 'Cash' };
 
 /**
  * The new comparison-first shell. Layout per plan §Page shape (order O1):

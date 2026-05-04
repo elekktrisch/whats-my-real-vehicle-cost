@@ -41,7 +41,7 @@ import { MaintenanceDisplay } from '../maintenance-display/maintenance-display';
           @if (store.activeTab() !== 'cash') {
             <app-slider-control
               [label]="downPaymentLabel()"
-              tip="Cash put down on the active tab's deal. Lease and Finance track this separately so you can compare e.g. $5k down on a lease vs. $0 on a loan. Capped at the purchase price."
+              tip="Cash put down on the active financing method's deal. Lease and Loan track this separately so you can compare e.g. $5k down on a lease vs. $0 on a loan. Capped at the purchase price."
               [min]="0"
               [max]="downPaymentMax()"
               [step]="500"
@@ -67,7 +67,7 @@ import { MaintenanceDisplay } from '../maintenance-display/maintenance-display';
           />
           <app-slider-control
             label="Keep duration"
-            tip="How many years you plan to keep the car. Sets the chart horizon and tab recommendation."
+            tip="How many years you plan to keep the car. Sets the chart horizon and the recommended financing method."
             [min]="1"
             [max]="15"
             [step]="1"
@@ -91,7 +91,7 @@ import { MaintenanceDisplay } from '../maintenance-display/maintenance-display';
           />
           <app-slider-control
             label="Opportunity cost rate"
-            tip="Annual return you'd otherwise earn on the capital tied up in the car. Charged on each tab's down payment (or full price for cash)."
+            tip="Annual return you'd otherwise earn on the capital tied up in the car. Charged on each financing method's down payment (or full price for cash)."
             [min]="0"
             [max]="15"
             [step]="0.25"

@@ -13,7 +13,7 @@ export interface Recommendation {
 }
 
 const TABS: readonly Tab[] = ['lease', 'finance', 'cash'];
-const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Finance', cash: 'Cash' };
+const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Loan', cash: 'Cash' };
 
 /**
  * Picks the tab with the lowest cost per distance unit. Reactive — every input

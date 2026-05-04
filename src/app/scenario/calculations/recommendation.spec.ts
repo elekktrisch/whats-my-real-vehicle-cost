@@ -34,7 +34,7 @@ describe('recommendTab', () => {
       locale: 'US',
       distanceUnit: 'mi',
     });
-    expect(rec.reason).toContain('Finance');
+    expect(rec.reason).toContain('Loan');
     expect(rec.reason).toContain('Lease');
     expect(rec.reason).toContain('Cash');
     expect(rec.reason).toContain('mi');
