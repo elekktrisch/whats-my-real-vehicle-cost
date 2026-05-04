@@ -20,8 +20,11 @@ export function defaultScenario(localeOverride?: Locale): ScenarioSnapshot {
       annualMileage: isUS ? 12000 : 15000,
       keepDuration: 5,
       activeTab: 'lease',
-      chargerStatus: 'none',
-      solar: false,
+      // Default for EV: assume the user already has a home charger
+      // installed (no install cost added to TCO) and solar on. ICE ignores
+      // both fields, so the values are inert there.
+      chargerStatus: 'installed',
+      solar: true,
     },
     lease: {
       apr: 3.0,

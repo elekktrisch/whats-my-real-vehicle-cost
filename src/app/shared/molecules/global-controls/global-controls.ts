@@ -59,7 +59,7 @@ import { MaintenanceDisplay } from '../maintenance-display/maintenance-display';
         />
       </div>
 
-      <app-disclosure label="+ Show overrides">
+      <app-disclosure label="+ Advanced">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
           <app-slider-control
             label="Residual value"

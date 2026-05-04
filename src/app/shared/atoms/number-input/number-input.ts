@@ -18,7 +18,7 @@ export type NumberInputSize = 'sm' | 'md' | 'lg';
         (focus)="focused.set(true)"
         (blur)="onBlur($event)"
         (input)="onInput($event)"
-        class="num-input bg-transparent border-none outline-none text-right text-tx font-mono tracking-[-0.01em] caret-accent min-w-0"
+        [class]="inputClass()"
       />
       @if (suffix()) {
         <span class="text-tx-muted/80 select-none">{{ suffix() }}</span>
@@ -39,11 +39,22 @@ export class NumberInput {
 
   protected readonly focused = signal(false);
 
+  /** Center the digits inside `lg` inputs (wrapper is `justify-center`,
+   * prefix/suffix are asymmetric — `text-right` on the input would skew the
+   * visible cluster). Other sizes keep right-alignment. */
+  protected readonly inputClass = computed(() => {
+    const align = this.size() === 'lg' ? 'text-center' : 'text-right';
+    return `num-input bg-transparent border-none outline-none ${align} text-tx font-mono tracking-[-0.01em] caret-accent min-w-0`;
+  });
+
   protected readonly wrapperClass = computed(() => {
     const size = this.size();
     const sizeClasses =
       size === 'lg'
-        ? 'text-[1.1rem] sm:text-[1.33rem] tracking-[-0.01em] px-[12px] py-[6px]'
+        // `lg` is the hero variant in the comparison-page header. When the
+        // wrapper is stretched to 100% width on mobile, `justify-center`
+        // centers the prefix + input + suffix group inside the wider box.
+        ? 'text-[1.1rem] sm:text-[1.33rem] tracking-[-0.01em] px-[12px] py-[6px] justify-center'
         : size === 'sm'
           ? 'text-[0.78rem] px-[8px] py-[4px]'
           : `text-[0.88rem] ${this.compact() ? 'px-[8px] py-[4px]' : 'px-[10px] py-[7px]'}`;

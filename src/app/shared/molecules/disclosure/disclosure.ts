@@ -16,7 +16,7 @@ import { Component, computed, input, signal } from '@angular/core';
         type="button"
         (click)="toggle()"
         [attr.aria-expanded]="open()"
-        class="self-start font-ui text-[0.78rem] text-tx-muted hover:text-tx tracking-[0.02em] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 rounded-[4px] px-1 -mx-1"
+        class="self-start font-ui text-[0.85rem] font-medium text-accent hover:text-accent/80 tracking-[0.02em] underline underline-offset-4 decoration-accent/40 hover:decoration-accent cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 rounded-[4px] px-1 -mx-1 transition-colors duration-150"
       >
         {{ buttonText() }}
       </button>

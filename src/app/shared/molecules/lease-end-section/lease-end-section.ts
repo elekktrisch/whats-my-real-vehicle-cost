@@ -50,7 +50,7 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
         </p>
       }
 
-      <app-disclosure label="+ Show lease-end fees">
+      <app-disclosure label="+ Advanced">
         @if (choice() === 'handBack') {
           <app-slider-control
             label="Disposition fee"

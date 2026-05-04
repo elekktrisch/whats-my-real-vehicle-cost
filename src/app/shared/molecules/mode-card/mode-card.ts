@@ -29,7 +29,7 @@ import type { Tab } from '../../../scenario/scenario.types';
       [class]="cardClass()"
     >
       <header class="flex flex-wrap items-center justify-between gap-2 min-w-0">
-        <span class="font-ui text-[0.75rem] font-semibold tracking-[0.06em] uppercase min-w-0">
+        <span class="font-ui text-[0.75rem] font-semibold tracking-[0.06em] uppercase min-w-24">
           {{ label() }}
         </span>
         @if (recommended()) {
@@ -42,7 +42,7 @@ import type { Tab } from '../../../scenario/scenario.types';
         } @else {
           @if (delta(); as d) {
             <span
-              class="shrink min-w-0 font-mono text-[0.75rem] text-accent/80 tracking-[-0.01em] text-right"
+              class="shrink min-w-24 font-mono text-[0.75rem] text-accent/80 tracking-[-0.01em] md:text-right text-left"
             >
               {{ d }}
             </span>

@@ -85,6 +85,11 @@ const SOLAR_OPTIONS: readonly ToggleOption[] = [
                 </span>
               }
             </span>
+            <span class="font-ui text-[0.78rem] text-tx-muted leading-snug">
+              Assumes 85% home charging from rooftop solar (≈ free) and 15%
+              public charging at the grid rate. When on, EV electricity cost
+              drops to ~15% of the grid price.
+            </span>
             <app-toggle
               ariaLabel="Home solar charging"
               [options]="solarOptions"
