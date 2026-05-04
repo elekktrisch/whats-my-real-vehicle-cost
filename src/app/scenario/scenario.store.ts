@@ -453,6 +453,23 @@ export class ScenarioStore {
     this.hasReturningState.set(true);
   }
 
+  /** Comparison → splash transition: applies fresh defaults, clears the
+   * URL's `s` param, and flips `hasReturningState` back to false so the
+   * AppShell renders the splash again. The autosave effect is gated on
+   * `hasReturningState`, so it stays quiet after this — the user lands on
+   * a clean splash with a clean URL. */
+  reset(): void {
+    this.applySnapshot(defaultScenario());
+    this.hasReturningState.set(false);
+    try {
+      const tree = this.router.parseUrl(this.router.url);
+      tree.queryParams = {};
+      this.location.replaceState(this.router.serializeUrl(tree));
+    } catch {
+      // router/location not ready; URL clear skipped — non-fatal.
+    }
+  }
+
   private readonly router = inject(Router);
   private readonly location = inject(Location);
 

@@ -1,6 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 import { ScenarioStore } from '../../scenario/scenario.store';
-import { defaultScenario } from '../../scenario/scenario.defaults';
+import { SHARE_PARAM, encodeShareSnapshot } from '../../scenario/scenario.serializer';
 import { NumberInput } from '../../shared/atoms/number-input/number-input';
 import { Icon } from '../../shared/atoms/icon/icon';
 import { LocaleSelector } from '../../shared/molecules/locale-selector/locale-selector';
@@ -101,18 +101,21 @@ export class ComparisonPage {
     'inline-flex items-center gap-2 h-9 px-4 rounded-[8px] bg-transparent border border-border-strong text-tx-muted hover:border-accent hover:text-accent font-ui text-[0.78rem] font-medium tracking-[0.06em] uppercase transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50';
 
   protected reset(): void {
-    // Apply a fresh default snapshot for the user's current locale. Autosave
-    // will rewrite `?s=...` with the new state. Powertrain + locale go back
-    // to detected/initial values too — full clean slate.
-    this.store.applySnapshot(defaultScenario());
+    // Full reset — clears state, clears the URL, and flips
+    // `hasReturningState` back to false so AppShell re-renders the splash.
+    this.store.reset();
   }
 
   protected shareWhatsApp(): void {
     if (typeof window === 'undefined') return;
-    const url = window.location.href;
-    const text = `Check out this car cost breakdown — ${url}`;
-    const shareUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(shareUrl, '_blank', 'noopener,noreferrer');
+    // Build a fresh share URL with the compressed `?c=` param — much
+    // shorter than the autosaved `?s=<JSON>`. The address bar stays put.
+    const compressed = encodeShareSnapshot(this.store.snapshot());
+    const base = window.location.origin + window.location.pathname;
+    const shareUrl = `${base}?${SHARE_PARAM}=${compressed}`;
+    const text = `Check out this car cost breakdown — ${shareUrl}`;
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
   }
 
   protected readonly distanceUnit = computed(() => this.store.localeConfig().distanceUnit);

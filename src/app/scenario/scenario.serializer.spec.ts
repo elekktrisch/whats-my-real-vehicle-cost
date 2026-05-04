@@ -1,8 +1,11 @@
 import { defaultScenario } from './scenario.defaults';
 import {
+  SHARE_PARAM,
   SNAPSHOT_VERSION,
   URL_PARAM,
+  decodeShareSnapshot,
   decodeSnapshot,
+  encodeShareSnapshot,
   encodeSnapshot,
   hasAnyState,
   tabFromPath,
@@ -17,8 +20,8 @@ describe('scenario.serializer', () => {
       expect(recovered.globals?.purchasePrice).toBe(snap.globals.purchasePrice);
       expect(recovered.globals?.keepDuration).toBe(snap.globals.keepDuration);
       expect(recovered.globals?.activeTab).toBe(snap.globals.activeTab);
-      expect(recovered.globals?.chargerStatus).toBe('none');
-      expect(recovered.globals?.solar).toBe(false);
+      expect(recovered.globals?.chargerStatus).toBe('installed');
+      expect(recovered.globals?.solar).toBe(true);
       expect(recovered.lease?.apr).toBe(snap.lease.apr);
       expect(recovered.finance?.loanTerm).toBe(snap.finance.loanTerm);
       expect(recovered.cash?.opportunityCostRate).toBe(snap.cash.opportunityCostRate);
@@ -44,7 +47,7 @@ describe('scenario.serializer', () => {
       expect(recovered.globals?.solar).toBe(true);
     });
 
-    it('embeds the version field in the encoded payload', () => {
+    it('embeds the version field in the encoded JSON', () => {
       const snap = defaultScenario('US');
       const encoded = encodeSnapshot(snap);
       const parsed = JSON.parse(encoded);
@@ -72,6 +75,43 @@ describe('scenario.serializer', () => {
       expect(decodeSnapshot('')).toEqual({});
       expect(decodeSnapshot('not json')).toEqual({});
       expect(decodeSnapshot('{')).toEqual({});
+    });
+  });
+
+  describe('encodeShareSnapshot / decodeShareSnapshot', () => {
+    it('round-trips identically to the raw-JSON codec', () => {
+      const snap = defaultScenario('EU');
+      snap.overrides.insurance = 1234;
+      snap.lease.apr = 4.2;
+      const recovered = decodeShareSnapshot(encodeShareSnapshot(snap));
+      expect(recovered.globals?.locale).toBe('EU');
+      expect(recovered.lease?.apr).toBe(4.2);
+      expect(recovered.overrides?.insurance).toBe(1234);
+    });
+
+    it('produces shorter output than the raw JSON', () => {
+      const snap = defaultScenario('US');
+      const raw = encodeSnapshot(snap);
+      const compressed = encodeShareSnapshot(snap);
+      expect(compressed.length).toBeLessThan(raw.length);
+    });
+
+    it('output is URL-safe (no chars needing percent-encoding)', () => {
+      const snap = defaultScenario('US');
+      const compressed = encodeShareSnapshot(snap);
+      expect(compressed).toMatch(/^[A-Za-z0-9_\-]+$/);
+    });
+
+    it('returns empty object for null/empty/garbage', () => {
+      expect(decodeShareSnapshot(null)).toEqual({});
+      expect(decodeShareSnapshot('')).toEqual({});
+      expect(decodeShareSnapshot('not-deflate')).toEqual({});
+    });
+  });
+
+  describe('hasAnyState includes the share param', () => {
+    it('true when ?c= is present', () => {
+      expect(hasAnyState(new URLSearchParams(`${SHARE_PARAM}=anything`))).toBe(true);
     });
   });
 
