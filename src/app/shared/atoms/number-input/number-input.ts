@@ -1,5 +1,7 @@
 import { Component, computed, input, model, signal } from '@angular/core';
 
+export type NumberInputSize = 'sm' | 'md' | 'lg';
+
 @Component({
   selector: 'app-number-input',
   template: `
@@ -32,17 +34,25 @@ export class NumberInput {
   readonly fractionDigits = input(0);
   readonly ariaLabel = input('');
   readonly compact = input(false);
+  readonly size = input<NumberInputSize>('md');
 
   protected readonly focused = signal(false);
 
-  protected readonly wrapperClass = computed(() =>
-    [
-      'inline-flex items-baseline gap-[2px] font-mono text-[0.88rem] font-medium text-tx',
+  protected readonly wrapperClass = computed(() => {
+    const size = this.size();
+    const sizeClasses =
+      size === 'lg'
+        ? 'text-[1.6rem] sm:text-[1.9rem] tracking-[-0.01em] px-[14px] py-[6px]'
+        : size === 'sm'
+          ? 'text-[0.78rem] px-[8px] py-[4px]'
+          : `text-[0.88rem] ${this.compact() ? 'px-[8px] py-[4px]' : 'px-[10px] py-[7px]'}`;
+    return [
+      'inline-flex items-baseline gap-[2px] font-mono font-medium text-tx',
       'rounded-md bg-elevated border border-border transition-colors duration-150',
       'focus-within:border-accent focus-within:shadow-[0_0_0_3px_var(--color-accent-soft)]',
-      this.compact() ? 'px-[8px] py-[4px]' : 'px-[10px] py-[7px]',
-    ].join(' '),
-  );
+      sizeClasses,
+    ].join(' ');
+  });
 
   protected readonly display = computed(() => {
     const v = this.value();

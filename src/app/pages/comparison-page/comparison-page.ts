@@ -1,6 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 import { ScenarioStore } from '../../scenario/scenario.store';
-import { Icon } from '../../shared/atoms/icon/icon';
+import { NumberInput } from '../../shared/atoms/number-input/number-input';
 import { LocaleSelector } from '../../shared/molecules/locale-selector/locale-selector';
 import { PowertrainSelector } from '../../shared/molecules/powertrain-selector/powertrain-selector';
 import { BasicAdvancedToggle } from '../../shared/molecules/basic-advanced-toggle/basic-advanced-toggle';
@@ -51,7 +51,7 @@ function cumulativeTotals(series: readonly MonthlyTcoPoint[]): number[] {
 @Component({
   selector: 'app-comparison-page',
   imports: [
-    Icon,
+    NumberInput,
     LocaleSelector,
     PowertrainSelector,
     BasicAdvancedToggle,
@@ -61,19 +61,24 @@ function cumulativeTotals(series: readonly MonthlyTcoPoint[]): number[] {
   template: `
     <div class="max-w-[1200px] mx-auto px-7 pb-[72px] relative z-[1]">
       <header
-        class="flex items-center justify-between gap-3 flex-wrap pt-7 pb-[18px] border-b border-border"
+        class="flex items-end justify-between gap-3 flex-wrap pt-7 pb-[18px] border-b border-border"
       >
-        <div class="flex items-center gap-2.5">
-          <app-icon name="logo" [size]="22" ariaLabel="WhatsMyVehicleCost" />
-          <span class="font-ui text-[1.2rem] font-bold tracking-[0.03em] text-tx">
-            WhatsMyVehicleCost
-          </span>
+        <label class="flex flex-col gap-1">
           <span
-            class="hidden sm:inline-block ml-2 font-mono text-[0.75rem] tracking-[0.1em] uppercase text-tx-dim"
+            class="font-ui text-[0.75rem] font-medium tracking-[0.12em] uppercase text-tx-dim"
           >
-            TCO calculator
+            Purchase price
           </span>
-        </div>
+          <app-number-input
+            [(value)]="store.purchasePrice"
+            [min]="5000"
+            [max]="150000"
+            [prefix]="currencyPrefix()"
+            [suffix]="currencySuffix()"
+            ariaLabel="Purchase price"
+            size="lg"
+          />
+        </label>
         <div class="flex items-center gap-3 flex-wrap">
           <app-locale-selector />
           <app-powertrain-selector />
@@ -99,6 +104,12 @@ export class ComparisonPage {
   protected readonly store = inject(ScenarioStore);
 
   protected readonly distanceUnit = computed(() => this.store.localeConfig().distanceUnit);
+  protected readonly currencyPrefix = computed(() =>
+    this.store.localeConfig().currencyAfter ? '' : this.store.localeConfig().currencySymbol,
+  );
+  protected readonly currencySuffix = computed(() =>
+    this.store.localeConfig().currencyAfter ? ' ' + this.store.localeConfig().currencySymbol : '',
+  );
 
   protected readonly recommended = computed(() => this.store.recommendedTab().tab);
   protected readonly recommendationReason = computed(() => this.store.recommendedTab().reason);

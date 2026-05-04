@@ -94,14 +94,19 @@ const TABLET_BP = 900;
         </div>
       </div>
 
-      <canvas
-        baseChart
-        role="img"
-        [attr.aria-label]="ariaSummary()"
-        [data]="chartData()"
-        [type]="'line'"
-        [options]="chartOptions()"
-      ></canvas>
+      <!-- Fixed-height container — Chart.js fills it because
+           maintainAspectRatio is false. Keeps the chart visually secondary
+           so the sliders below stay above the fold. -->
+      <div class="relative w-full" [style.height.px]="chartHeight()">
+        <canvas
+          baseChart
+          role="img"
+          [attr.aria-label]="ariaSummary()"
+          [data]="chartData()"
+          [type]="'line'"
+          [options]="chartOptions()"
+        ></canvas>
+      </div>
 
       <!-- Visually-hidden data table — the source of truth for screen
            readers. Never rendered visually; aria-label on the canvas covers
@@ -164,6 +169,14 @@ export class TcoChart {
     mq.addEventListener?.('change', (e) => this.reducedMotion.set(e.matches));
   }
 
+  /** Fixed height per breakpoint — keeps the chart secondary to the sliders. */
+  protected readonly chartHeight = computed(() => {
+    const w = this.viewportWidth();
+    if (w < MOBILE_BP) return 220;
+    if (w < TABLET_BP) return 260;
+    return 300;
+  });
+
   protected readonly chartData = computed<ChartConfiguration<'line'>['data']>(() => {
     const series = this.breakdown().series;
     const labels = series.map((p) => `Mo ${p.month}`);
@@ -196,12 +209,10 @@ export class TcoChart {
     const tooltipTitleSize = isMobile ? 12 : 13;
     const tooltipBodySize = isMobile ? 11 : 12;
     const maxTicksX = isMobile ? 4 : isTablet ? 6 : 8;
-    const aspectRatio = isMobile ? 1.35 : isTablet ? 1.8 : 2.2;
 
     return {
       responsive: true,
-      maintainAspectRatio: true,
-      aspectRatio,
+      maintainAspectRatio: false,
       animation: this.reducedMotion() ? false : { duration: 240 },
       interaction: { mode: 'index', intersect: false },
       plugins: {
