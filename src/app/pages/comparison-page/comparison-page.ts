@@ -134,9 +134,10 @@ export class ComparisonPage {
       const monthly = breakdown.total / months;
       const perDistance = perDistanceByMode.get(mode) ?? 0;
       const isRecommended = mode === rec;
-      // Recommended card shows "Reference" in the same slot so the three
-      // cards stay the same height. Other cards show the per-distance delta
-      // — cost-per-distance is the cross-mode apples-to-apples figure here.
+      // Recommended card shows the Best badge in the top-right; other cards
+      // show the per-distance delta in that same corner. Each card has
+      // exactly one thing on the right side of the header → equal heights
+      // without a "Reference" filler.
       const deltaPerDistance = perDistance - recPerDistance;
       return {
         mode,
@@ -145,7 +146,7 @@ export class ComparisonPage {
         monthly: formatCurrency(monthly, locale, 0),
         perDistance: formatCurrency(perDistance, locale, 2),
         delta: isRecommended
-          ? 'Reference'
+          ? null
           : `+${formatCurrency(deltaPerDistance, locale, 2)} / ${distanceUnit}`,
         sparklinePoints: cumulativeTotals(breakdown.series),
       };
