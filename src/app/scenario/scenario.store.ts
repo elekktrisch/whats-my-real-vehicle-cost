@@ -453,6 +453,13 @@ export class ScenarioStore {
     this.hasHydrated.set(true);
   }
 
+  /** Splash → comparison transition: flips `hasReturningState`, which both
+   * unblocks the autosave-to-URL effect (writing `?s=<defaults>` for the
+   * first time) and tells `AppShell` to swap to the comparison page. */
+  engage(): void {
+    this.hasReturningState.set(true);
+  }
+
   private readonly router = inject(Router);
   private readonly location = inject(Location);
 
@@ -460,7 +467,10 @@ export class ScenarioStore {
     let timer: ReturnType<typeof setTimeout> | null = null;
     effect(() => {
       const snap = this.snapshot();
-      if (this.isHydrating() || !this.hasHydrated()) return;
+      // Hold off on URL writes until the user crosses the splash threshold
+      // (or arrived with a returning URL). Otherwise a fresh visitor's URL
+      // would silently get `?s=<defaults>` and they'd skip splash on reload.
+      if (this.isHydrating() || !this.hasHydrated() || !this.hasReturningState()) return;
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => this.persist(snap), 200);
     });

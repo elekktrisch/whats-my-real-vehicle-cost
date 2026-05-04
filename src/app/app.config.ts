@@ -9,13 +9,7 @@ import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
 import { ScenarioStore } from './scenario/scenario.store';
-import {
-  URL_PARAM,
-  decodeSnapshot,
-  hasAnyState,
-  tabFromPath,
-} from './scenario/scenario.serializer';
-import type { ScenarioSnapshot } from './scenario/scenario.types';
+import { URL_PARAM, decodeSnapshot, hasAnyState } from './scenario/scenario.serializer';
 
 function readSearchParams(): URLSearchParams {
   if (typeof window === 'undefined') return new URLSearchParams();
@@ -30,22 +24,8 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => {
       const store = inject(ScenarioStore);
       const params = readSearchParams();
-      const merged: Partial<ScenarioSnapshot> = decodeSnapshot(params.get(URL_PARAM));
-
-      // Active tab still comes from the route path while routes 'lease | finance
-      // | cash' exist (Phase E consolidates everything to '/'). The path wins
-      // over the JSON snapshot so deep links to a specific tab keep working.
-      const pathTab =
-        typeof window === 'undefined' ? null : tabFromPath(window.location.pathname);
-      if (pathTab) {
-        merged.globals = {
-          ...(merged.globals ?? ({} as ScenarioSnapshot['globals'])),
-          activeTab: pathTab,
-        } as ScenarioSnapshot['globals'];
-      }
-
-      store.applySnapshot(merged);
-      store.markHydrated({ hadReturningState: hasAnyState(params) || !!pathTab });
+      store.applySnapshot(decodeSnapshot(params.get(URL_PARAM)));
+      store.markHydrated({ hadReturningState: hasAnyState(params) });
     }),
   ],
 };

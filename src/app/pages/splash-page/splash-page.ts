@@ -1,5 +1,4 @@
-import { Component, computed, effect, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, computed, inject } from '@angular/core';
 import { ScenarioStore } from '../../scenario/scenario.store';
 import { Button } from '../../shared/atoms/button/button';
 import { Icon } from '../../shared/atoms/icon/icon';
@@ -44,16 +43,16 @@ import { Icon } from '../../shared/atoms/icon/icon';
         <p
           class="relative mt-6 font-ui text-[0.92rem] text-tx-muted leading-[1.65] max-w-[460px] mx-auto"
         >
-          Seven questions, one chart. See what a car really costs you over the years —
-          financing, depreciation, fuel, insurance and maintenance, side by side across
-          lease, finance and cash.
+          One chart. See what a car really costs you over the years —
+          financing, depreciation, fuel, insurance and maintenance, side by
+          side across lease, finance and cash.
         </p>
 
         <div class="relative mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
           <app-button size="lg" (click)="getStarted()">Get started</app-button>
           <span
             class="font-ui text-[0.6rem] tracking-[0.16em] uppercase text-tx-dim sm:ml-2"
-            >~60 seconds · {{ localeLabel() }}</span
+            >{{ localeLabel() }}</span
           >
         </div>
       </article>
@@ -61,22 +60,16 @@ import { Icon } from '../../shared/atoms/icon/icon';
   `,
 })
 export class SplashPage {
-  private readonly router = inject(Router);
   private readonly store = inject(ScenarioStore);
 
   protected readonly localeLabel = computed(() =>
     this.store.locale() === 'US' ? 'US defaults' : 'EU defaults',
   );
 
-  constructor() {
-    effect(() => {
-      if (this.store.hasHydrated() && this.store.hasReturningState()) {
-        this.router.navigate(['/', this.store.activeTab()], { replaceUrl: true });
-      }
-    });
-  }
-
   protected getStarted(): void {
-    this.router.navigate(['/wizard']);
+    // Flips hasReturningState → autosave writes `?s=<defaults>` → AppShell
+    // swaps to the comparison page on next render. No router navigation —
+    // we're already at `/`.
+    this.store.engage();
   }
 }
