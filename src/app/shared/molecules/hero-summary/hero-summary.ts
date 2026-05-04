@@ -30,7 +30,7 @@ interface HeroData {
   selector: 'app-hero-summary',
   template: `
     <section class="bg-surface border border-border rounded-xl p-4 sm:p-5">
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+      <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-5">
         <div class="flex flex-col gap-1">
           <span class="font-ui text-[0.75rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
             Out of pocket
@@ -54,7 +54,25 @@ interface HeroData {
             </span>
           </div>
         </div>
-        <div class="flex flex-col gap-1 sm:border-l sm:border-border sm:pl-6">
+        <!-- Money → asset arrow. Horizontal between columns on desktop;
+             rotates 90° (downward) when columns stack on mobile. -->
+        <div class="flex justify-center text-accent/60 py-1 sm:py-0">
+          <svg
+            viewBox="0 0 56 56"
+            width="44"
+            height="44"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="3.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="rotate-90 sm:rotate-0"
+            aria-hidden="true"
+          >
+            <path d="M10 28h32 M30 14l14 14-14 14" />
+          </svg>
+        </div>
+        <div class="flex flex-col gap-1 text-right">
           <span class="font-ui text-[0.75rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
             Owned Asset value
           </span>

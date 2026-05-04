@@ -196,6 +196,56 @@
     }
   }
 
+  /* ── Mode-card shine ────────────────────────────────────────────────────
+   * Subtle ambient-light treatment for the comparison strip cards. A soft
+   * top-down sheen + inset top rim catches the eye without going full
+   * skeuomorphic. Active variant adds an accent-tinted glow + a soft drop
+   * shadow with accent color, so the focused card visibly "lifts".
+   *
+   * Inactive cards still get the gradient (consistency) but in surface tones
+   * only — the difference between active and inactive is the accent layer. */
+  .mode-card-shine {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.045) 0%,
+        rgba(255, 255, 255, 0.012) 35%,
+        transparent 70%
+      ),
+      var(--color-surface);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+  .mode-card-shine:hover {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+  .mode-card-shine-active {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(79, 142, 247, 0.2) 0%,
+        rgba(79, 142, 247, 0.06) 30%,
+        transparent 70%
+      ),
+      var(--color-surface);
+    box-shadow:
+      inset 0 1px 0 rgba(79, 142, 247, 0.45),
+      0 0 0 1px var(--color-accent),
+      0 6px 24px -10px rgba(79, 142, 247, 0.55);
+  }
+
+  /* ── Scroll-hint arrow ──────────────────────────────────────────────────
+   * Big chevron-down that sits between the answer (hero + chart) and the
+   * controls below in mode-detail-view. Gentle vertical bob to draw the
+   * eye; reduced-motion is handled by the global media query in this file
+   * so no override needed here. */
+  .scroll-hint-arrow {
+    animation: scroll-hint-bob 2.4s ease-in-out infinite;
+  }
+  @keyframes scroll-hint-bob {
+    0%, 100% { transform: translateY(0); opacity: 0.55; }
+    50% { transform: translateY(6px); opacity: 0.95; }
+  }
+
   /* ── Disclosure body — visual treatment for revealed advanced fields ────
    * `<app-disclosure>` opens to a body with a 2 px accent bar on the left
    * and a small indent so the contents read as nested under the button.

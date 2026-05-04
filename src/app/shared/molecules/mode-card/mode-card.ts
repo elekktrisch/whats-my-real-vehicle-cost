@@ -108,17 +108,20 @@ export class ModeCard {
       // (grid items default to `min-width: auto`, which would push the strip
       // wider than the viewport when content like a long delta string would
       // otherwise refuse to wrap).
-      'block w-full min-w-0 text-left rounded-[12px] transition-colors duration-150',
+      'block w-full min-w-0 text-left rounded-[12px] transition-[box-shadow,background-color] duration-200',
       // Tighter padding on narrow viewports — on a 360px screen each card
       // is ~110px wide; padding has to give the numbers some space.
       'p-[10px] sm:p-[14px]',
-      'border bg-surface cursor-pointer',
+      'border cursor-pointer',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
     ];
     if (this.active()) {
-      base.push('border-accent shadow-[0_0_0_1px_var(--color-accent)/0.4]');
+      // `mode-card-shine-active` paints both the gradient and the accent
+      // rim/glow; the rim acts as the border, so we drop the utility
+      // border color to avoid a double outline.
+      base.push('mode-card-shine-active border-transparent');
     } else {
-      base.push('border-border hover:border-border-strong text-tx-muted');
+      base.push('mode-card-shine border-border hover:border-border-strong text-tx-muted');
     }
     if (this.compact()) base.push('p-[8px] sm:p-[10px]');
     return base.join(' ');

@@ -35,6 +35,31 @@ import { CashFields } from './cash-fields';
       <app-hero-summary />
       <app-tco-chart [breakdown]="activeBreakdown()" />
 
+      <!-- Visual hand-off from the answer (hero + chart) to the levers
+           (mode-fields + global controls + your situation) below.
+           A big chevron with a soft pulse — reads as "these knobs drive
+           the numbers above". Reduced-motion is honoured via the global
+           media query in styles.css. -->
+      <div class="flex flex-col items-center justify-center py-2 text-accent/60">
+        <svg
+          viewBox="0 0 56 56"
+          width="56"
+          height="56"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="scroll-hint-arrow"
+          aria-hidden="true"
+        >
+          <path d="M28 8v36 M14 32l14 14 14-14" />
+        </svg>
+        <span class="font-ui text-[0.72rem] tracking-[0.18em] uppercase text-tx-dim mt-1">
+          Tweak the levers
+        </span>
+      </div>
+
       @switch (store.activeTab()) {
         @case ('lease') {
           <app-lease-fields />
