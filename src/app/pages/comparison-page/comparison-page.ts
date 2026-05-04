@@ -1,6 +1,8 @@
 import { Component, computed, inject } from '@angular/core';
 import { ScenarioStore } from '../../scenario/scenario.store';
+import { defaultScenario } from '../../scenario/scenario.defaults';
 import { NumberInput } from '../../shared/atoms/number-input/number-input';
+import { Icon } from '../../shared/atoms/icon/icon';
 import { LocaleSelector } from '../../shared/molecules/locale-selector/locale-selector';
 import { PowertrainSelector } from '../../shared/molecules/powertrain-selector/powertrain-selector';
 import {
@@ -27,6 +29,7 @@ const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Loan', cash: 'Cas
   selector: 'app-comparison-page',
   imports: [
     NumberInput,
+    Icon,
     LocaleSelector,
     PowertrainSelector,
     ComparisonStrip,
@@ -74,11 +77,43 @@ const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Loan', cash: 'Cas
       />
 
       <app-mode-detail-view />
+
+      <!-- Page-level actions: reset to defaults; share the current state via
+           WhatsApp (the URL already carries the ?s=JSON snapshot). -->
+      <div class="flex flex-wrap items-center justify-center gap-3 pt-8 mt-6 border-t border-border">
+        <button type="button" (click)="reset()" [class]="actionBtnClass">
+          <app-icon name="reset" [size]="14" />
+          Reset
+        </button>
+        <button type="button" (click)="shareWhatsApp()" [class]="actionBtnClass">
+          <app-icon name="share" [size]="14" />
+          Share via WhatsApp
+        </button>
+      </div>
     </div>
   `,
 })
 export class ComparisonPage {
   protected readonly store = inject(ScenarioStore);
+
+  /** Shared "ghost button" styling for the bottom action row. */
+  protected readonly actionBtnClass =
+    'inline-flex items-center gap-2 h-9 px-4 rounded-[8px] bg-transparent border border-border-strong text-tx-muted hover:border-accent hover:text-accent font-ui text-[0.78rem] font-medium tracking-[0.06em] uppercase transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50';
+
+  protected reset(): void {
+    // Apply a fresh default snapshot for the user's current locale. Autosave
+    // will rewrite `?s=...` with the new state. Powertrain + locale go back
+    // to detected/initial values too — full clean slate.
+    this.store.applySnapshot(defaultScenario());
+  }
+
+  protected shareWhatsApp(): void {
+    if (typeof window === 'undefined') return;
+    const url = window.location.href;
+    const text = `Check out this car cost breakdown — ${url}`;
+    const shareUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(shareUrl, '_blank', 'noopener,noreferrer');
+  }
 
   protected readonly distanceUnit = computed(() => this.store.localeConfig().distanceUnit);
   protected readonly currencyPrefix = computed(() =>
