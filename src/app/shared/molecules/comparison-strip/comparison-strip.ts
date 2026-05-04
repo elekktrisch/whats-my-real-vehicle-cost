@@ -57,14 +57,13 @@ const MOBILE_BREAKPOINT_PX = 600;
   template: `
     <div
       #stripEl
-      class="sticky top-0 z-20 pt-3 pb-[28px]"
-      style="background: linear-gradient(to bottom, var(--color-bg) 0%, var(--color-bg) calc(100% - 24px), transparent 100%); will-change: transform;"
+      class="comparison-strip-bg sticky top-0 z-20 pt-2 pb-[18px] sm:pt-3 sm:pb-[28px]"
       [attr.data-compact]="compact()"
     >
       <div
         role="tablist"
         aria-label="Financing modes"
-        class="grid grid-cols-3 gap-[10px]"
+        class="grid grid-cols-3 gap-[6px] sm:gap-[10px]"
         (keydown)="onKeydown($event)"
       >
         @for (card of orderedCards(); track card.mode) {

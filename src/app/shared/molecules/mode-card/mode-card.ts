@@ -61,7 +61,10 @@ import { TcoSparkline } from '../../atoms/tco-sparkline/tco-sparkline';
         </span>
       </div>
 
-      <div class="flex items-baseline justify-between gap-2 mt-[4px]">
+      <!-- Per-distance row hides on mobile when compact (plan §H mobile-tuned
+           F2: shrunk row = monthly + delta only). On sm+ it stays visible
+           even when compact (desktop F2 keeps per-distance). -->
+      <div [class]="perDistanceRowClass()">
         <span class="font-ui text-[0.75rem] tracking-[0.1em] uppercase text-tx-dim">Per {{ distanceUnit() }}</span>
         <span class="font-mono text-[0.78rem] text-tx-muted tracking-[-0.02em]">
           {{ perDistance() }}
@@ -110,7 +113,10 @@ export class ModeCard {
 
   protected readonly cardClass = computed(() => {
     const base = [
-      'block w-full text-left rounded-[12px] p-[14px] transition-colors duration-150',
+      'block w-full text-left rounded-[12px] transition-colors duration-150',
+      // Tighter padding on narrow viewports — on a 360px screen each card
+      // is ~110px wide; padding has to give the numbers some space.
+      'p-[10px] sm:p-[14px]',
       'border bg-surface cursor-pointer',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
     ];
@@ -119,7 +125,13 @@ export class ModeCard {
     } else {
       base.push('border-border hover:border-border-strong text-tx-muted');
     }
-    if (this.compact()) base.push('p-[10px]');
+    if (this.compact()) base.push('p-[8px] sm:p-[10px]');
     return base.join(' ');
+  });
+
+  /** Per-distance row visibility — collapses on mobile when compact. */
+  protected readonly perDistanceRowClass = computed(() => {
+    const base = 'items-baseline justify-between gap-2 mt-[4px]';
+    return this.compact() ? `hidden sm:flex ${base}` : `flex ${base}`;
   });
 }

@@ -175,6 +175,30 @@
     pointer-events: none;
   }
 
+  /* ── Comparison-strip sticky background ─────────────────────────────────
+   * 24px gradient fade on desktop, 16px on mobile (plan §F2 — mobile fade
+   * band shrinks). Plus will-change to keep the strip on its own compositor
+   * layer (chart.js canvas underneath would otherwise flicker on scroll). */
+  .comparison-strip-bg {
+    will-change: transform;
+    background: linear-gradient(
+      to bottom,
+      var(--color-bg) 0%,
+      var(--color-bg) calc(100% - 24px),
+      transparent 100%
+    );
+  }
+  @media (max-width: 600px) {
+    .comparison-strip-bg {
+      background: linear-gradient(
+        to bottom,
+        var(--color-bg) 0%,
+        var(--color-bg) calc(100% - 16px),
+        transparent 100%
+      );
+    }
+  }
+
   .hero-card::after {
     content: '';
     position: absolute;

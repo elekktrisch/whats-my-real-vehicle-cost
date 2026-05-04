@@ -42,7 +42,7 @@ export class NumberInput {
     const size = this.size();
     const sizeClasses =
       size === 'lg'
-        ? 'text-[1.6rem] sm:text-[1.9rem] tracking-[-0.01em] px-[14px] py-[6px]'
+        ? 'text-[1.1rem] sm:text-[1.33rem] tracking-[-0.01em] px-[12px] py-[6px]'
         : size === 'sm'
           ? 'text-[0.78rem] px-[8px] py-[4px]'
           : `text-[0.88rem] ${this.compact() ? 'px-[8px] py-[4px]' : 'px-[10px] py-[7px]'}`;

@@ -59,26 +59,24 @@ function cumulativeTotals(series: readonly MonthlyTcoPoint[]): number[] {
     ModeDetailView,
   ],
   template: `
-    <div class="max-w-[1200px] mx-auto px-7 pb-[72px] relative z-[1]">
+    <div class="max-w-[1200px] mx-auto px-4 sm:px-7 pb-[72px] relative z-[1]">
       <header
-        class="flex items-end justify-between gap-3 flex-wrap pt-7 pb-[18px] border-b border-border"
+        class="flex items-center justify-between gap-3 flex-wrap pt-7 pb-[18px] border-b border-border"
       >
-        <label class="flex flex-col gap-1">
-          <span
-            class="font-ui text-[0.75rem] font-medium tracking-[0.12em] uppercase text-tx-dim"
-          >
-            Purchase price
-          </span>
-          <app-number-input
-            [(value)]="store.purchasePrice"
-            [min]="5000"
-            [max]="150000"
-            [prefix]="currencyPrefix()"
-            [suffix]="currencySuffix()"
-            ariaLabel="Purchase price"
-            size="lg"
-          />
-        </label>
+        <app-number-input
+          [(value)]="store.purchasePrice"
+          [min]="5000"
+          [max]="150000"
+          [prefix]="currencyPrefix()"
+          [suffix]="currencySuffix()"
+          ariaLabel="Negotiated price"
+          size="lg"
+        />
+        <span
+          class="flex-1 min-w-0 text-center font-ui text-[0.95rem] font-medium tracking-[0.01em] text-tx-muted"
+        >
+          Negotiated price
+        </span>
         <div class="flex items-center gap-3 flex-wrap">
           <app-locale-selector />
           <app-powertrain-selector />

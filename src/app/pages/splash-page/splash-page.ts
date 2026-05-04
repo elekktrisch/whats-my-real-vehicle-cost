@@ -2,10 +2,11 @@ import { Component, computed, inject } from '@angular/core';
 import { ScenarioStore } from '../../scenario/scenario.store';
 import { Button } from '../../shared/atoms/button/button';
 import { Icon } from '../../shared/atoms/icon/icon';
+import { NumberInput } from '../../shared/atoms/number-input/number-input';
 
 @Component({
   selector: 'app-splash-page',
-  imports: [Button, Icon],
+  imports: [Button, Icon, NumberInput],
   template: `
     <main class="min-h-[100dvh] flex items-center justify-center px-6 py-12 relative">
       <div
@@ -48,7 +49,22 @@ import { Icon } from '../../shared/atoms/icon/icon';
           side across lease, finance and cash.
         </p>
 
-        <div class="relative mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <div class="relative mt-10 flex flex-col items-center gap-2">
+          <span class="font-ui text-[0.95rem] font-medium text-tx-muted">
+            Negotiated price
+          </span>
+          <app-number-input
+            [(value)]="store.purchasePrice"
+            [min]="5000"
+            [max]="150000"
+            [prefix]="currencyPrefix()"
+            [suffix]="currencySuffix()"
+            ariaLabel="Negotiated price"
+            size="lg"
+          />
+        </div>
+
+        <div class="relative mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
           <app-button size="lg" (click)="getStarted()">Get started</app-button>
           <span
             class="font-ui text-[0.75rem] tracking-[0.16em] uppercase text-tx-dim sm:ml-2"
@@ -60,10 +76,16 @@ import { Icon } from '../../shared/atoms/icon/icon';
   `,
 })
 export class SplashPage {
-  private readonly store = inject(ScenarioStore);
+  protected readonly store = inject(ScenarioStore);
 
   protected readonly localeLabel = computed(() =>
     this.store.locale() === 'US' ? 'US defaults' : 'EU defaults',
+  );
+  protected readonly currencyPrefix = computed(() =>
+    this.store.localeConfig().currencyAfter ? '' : this.store.localeConfig().currencySymbol,
+  );
+  protected readonly currencySuffix = computed(() =>
+    this.store.localeConfig().currencyAfter ? ' ' + this.store.localeConfig().currencySymbol : '',
   );
 
   protected getStarted(): void {
