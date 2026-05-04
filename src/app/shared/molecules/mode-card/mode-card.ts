@@ -28,8 +28,8 @@ import type { Tab } from '../../../scenario/scenario.types';
       (click)="select.emit(mode())"
       [class]="cardClass()"
     >
-      <header class="flex items-center justify-between gap-2 min-w-0">
-        <span class="font-ui text-[0.75rem] font-semibold tracking-[0.06em] uppercase min-w-0 truncate">
+      <header class="flex flex-wrap items-center justify-between gap-2 min-w-0">
+        <span class="font-ui text-[0.75rem] font-semibold tracking-[0.06em] uppercase min-w-0">
           {{ label() }}
         </span>
         @if (recommended()) {
@@ -37,7 +37,7 @@ import type { Tab } from '../../../scenario/scenario.types';
             class="shrink-0 rounded-full bg-accent/15 text-accent text-[0.75rem] tracking-[0.1em] uppercase px-[7px] py-[1px] font-ui font-medium"
             aria-label="Recommended"
           >
-            Best
+            Recommended
           </span>
         } @else {
           @if (delta(); as d) {
