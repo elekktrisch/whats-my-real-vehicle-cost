@@ -20,9 +20,8 @@ export function defaultScenario(localeOverride?: Locale): ScenarioSnapshot {
       annualMileage: isUS ? 12000 : 15000,
       keepDuration: 5,
       activeTab: 'lease',
-      homeChargerInstalled: false,
+      chargerStatus: 'none',
       solar: false,
-      basicMode: true,
     },
     lease: {
       apr: 3.0,

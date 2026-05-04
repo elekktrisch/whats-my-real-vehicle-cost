@@ -3,7 +3,6 @@ import { ScenarioStore } from '../../scenario/scenario.store';
 import { NumberInput } from '../../shared/atoms/number-input/number-input';
 import { LocaleSelector } from '../../shared/molecules/locale-selector/locale-selector';
 import { PowertrainSelector } from '../../shared/molecules/powertrain-selector/powertrain-selector';
-import { BasicAdvancedToggle } from '../../shared/molecules/basic-advanced-toggle/basic-advanced-toggle';
 import {
   ComparisonStrip,
   ModeCardData,
@@ -30,33 +29,38 @@ const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Loan', cash: 'Cas
     NumberInput,
     LocaleSelector,
     PowertrainSelector,
-    BasicAdvancedToggle,
     ComparisonStrip,
     ModeDetailView,
   ],
   template: `
     <div class="max-w-[1200px] mx-auto px-4 sm:px-7 pb-[72px] relative z-[1] overflow-x-clip">
-      <header
-        class="flex items-center justify-between gap-3 flex-wrap pt-7 pb-[18px] border-b border-border"
-      >
-        <app-number-input
-          [(value)]="store.purchasePrice"
-          [min]="5000"
-          [max]="150000"
-          [prefix]="currencyPrefix()"
-          [suffix]="currencySuffix()"
-          ariaLabel="Negotiated price"
-          size="lg"
-        />
-        <span
-          class="flex-1 min-w-0 text-left font-ui text-lg font-medium tracking-[0.01em] text-tx-muted"
-        >
-          Negotiated Price
-        </span>
-        <div class="flex items-center gap-3 flex-wrap">
-          <app-locale-selector />
-          <app-powertrain-selector />
-          <app-basic-advanced-toggle />
+      <!-- Two-row mobile / single-row desktop header.
+           Mobile: row 1 = label + price input full-width; row 2 = locale + powertrain.
+           Desktop: input on left, label centered, selectors on right (single row). -->
+      <header class="pt-7 pb-[18px] border-b border-border">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <label class="header-input flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+            <span class="font-ui text-[0.75rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
+              Negotiated price
+            </span>
+            <app-number-input
+              [(value)]="store.purchasePrice"
+              [min]="5000"
+              [max]="150000"
+              [prefix]="currencyPrefix()"
+              [suffix]="currencySuffix()"
+              ariaLabel="Negotiated price"
+              size="lg"
+            />
+          </label>
+          <!-- Mobile: justify-between pushes locale to the far left and
+               powertrain to the far right; both at content size, the gap
+               between them fills the rest. Row is therefore visually 100%
+               wide. Desktop: justify-end groups them on the right. -->
+          <div class="flex items-center gap-3 justify-between sm:justify-end">
+            <app-locale-selector />
+            <app-powertrain-selector />
+          </div>
         </div>
       </header>
 
@@ -124,7 +128,7 @@ export class ComparisonPage {
         perDistance: formatCurrency(perDistance, locale, 2),
         delta: isRecommended
           ? null
-          : `+${formatCurrency(deltaPerDistance, locale, 2)} / ${distanceUnit}`,
+          : `+${formatCurrency(deltaPerDistance, locale, 2)}/${distanceUnit}`,
       };
     });
   });

@@ -22,11 +22,12 @@ import type { Locale } from '../../../scenario/scenario.types';
       <button
         type="button"
         role="radio"
+        aria-label="United States locale"
         [attr.aria-checked]="store.locale() === 'US'"
         (click)="set('US')"
         [class]="optionClass(store.locale() === 'US')"
       >
-        <svg viewBox="0 0 30 20" class="w-[18px] h-[12px] rounded-[2px] shrink-0">
+        <svg viewBox="0 0 30 20" class="w-[20px] h-[14px] rounded-[2px] shrink-0 sm:w-[18px] sm:h-[12px]">
           <rect width="30" height="20" fill="#ffffff" />
           <g fill="#b22234">
             <rect y="0" width="30" height="1.54" />
@@ -39,16 +40,17 @@ import type { Locale } from '../../../scenario/scenario.types';
           </g>
           <rect width="12" height="10.77" fill="#3c3b6e" />
         </svg>
-        US
+        <span class="hidden sm:inline ml-[6px] font-ui text-[0.75rem] font-medium tracking-[0.06em] uppercase">US</span>
       </button>
       <button
         type="button"
         role="radio"
+        aria-label="European Union locale"
         [attr.aria-checked]="store.locale() === 'EU'"
         (click)="set('EU')"
         [class]="optionClass(store.locale() === 'EU')"
       >
-        <svg viewBox="0 0 30 20" class="w-[18px] h-[12px] rounded-[2px] shrink-0">
+        <svg viewBox="0 0 30 20" class="w-[20px] h-[14px] rounded-[2px] shrink-0 sm:w-[18px] sm:h-[12px]">
           <rect width="30" height="20" fill="#003399" />
           <g fill="#ffcc00" transform="translate(15 10)">
             @for (s of euStars; track $index) {
@@ -56,7 +58,7 @@ import type { Locale } from '../../../scenario/scenario.types';
             }
           </g>
         </svg>
-        EU
+        <span class="hidden sm:inline ml-[6px] font-ui text-[0.75rem] font-medium tracking-[0.06em] uppercase">EU</span>
       </button>
     </div>
   `,
@@ -72,13 +74,13 @@ export class LocaleSelector {
 
   protected optionClass(active: boolean): string {
     return [
-      'inline-flex items-center gap-[6px] px-3 h-7 rounded-[6px]',
-      'font-ui text-[0.75rem] font-medium tracking-[0.06em] uppercase',
+      // Mobile (icon-only): tighter px-2; desktop: px-3 with text alongside.
+      'inline-flex items-center justify-center px-2 sm:px-3 h-7 rounded-[6px]',
       'transition-[background-color,color] duration-150 cursor-pointer',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
       active
         ? 'bg-surface text-tx shadow-[0_0_0_1px_var(--color-border-strong)]'
-        : 'text-tx-muted hover:text-tx',
+        : 'opacity-60 hover:opacity-100 sm:opacity-100 text-tx-muted sm:hover:text-tx',
     ].join(' ');
   }
 

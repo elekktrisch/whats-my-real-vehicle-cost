@@ -1,4 +1,5 @@
 import type {
+  ChargerStatus,
   CostBreakdown,
   CostCategory,
   LeaseEndChoice,
@@ -32,7 +33,7 @@ export interface TcoBaseInputs {
   maintenanceK: number;
   fuelEfficiency: number;
   fuelPrice: number;
-  homeChargerInstalled: boolean;
+  chargerStatus: ChargerStatus;
   solar: boolean;
 }
 
@@ -142,13 +143,15 @@ function fuelTotalForMonths(input: TcoBaseInputs, months: number): number {
     years: months / 12,
     powertrain: input.powertrain,
     locale: input.locale,
-    homeChargerInstalled: input.homeChargerInstalled,
+    chargerStatus: input.chargerStatus,
     solar: input.solar,
   });
 }
 
 function homeChargerInstallCost(input: TcoBaseInputs): number {
-  if (input.powertrain !== 'EV' || !input.homeChargerInstalled) return 0;
+  // Sunk cost on `'installed'` (already paid out-of-pocket) — don't double-count
+  // it as a future expense. Only `'buying'` adds the install cost to TCO.
+  if (input.powertrain !== 'EV' || input.chargerStatus !== 'buying') return 0;
   return LOCALE_CONFIG[input.locale].defaultHomeChargerInstall;
 }
 

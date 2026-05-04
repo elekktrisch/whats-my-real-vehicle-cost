@@ -2,25 +2,25 @@ import { Component, computed, inject } from '@angular/core';
 import { ScenarioStore } from '../../scenario/scenario.store';
 import { TcoChart } from '../chart/tco-chart/tco-chart';
 import { GlobalControls } from '../../shared/molecules/global-controls/global-controls';
+import { YourSituation } from '../../shared/molecules/your-situation/your-situation';
 import { LeaseFields } from './lease-fields';
 import { FinanceFields } from './finance-fields';
 import { CashFields } from './cash-fields';
 
 /**
- * R2 container — everything below the comparison strip. Reads
- * `store.activeTab()`, mounts the matching per-mode field component, and
- * lays out (per plan §Below the strip):
+ * Everything below the comparison strip. Lays out (per Phase plan §Q3=B
+ * + §Q9d):
  *
- *   chart  →  mode-specific sliders  →  global controls block.
+ *   chart  →  mode-fields  →  Vehicle  →  Your situation
  *
- * Mode-specific fields are gated via `@switch` so only one DOM tree is
- * mounted at a time; each one carries `role="tabpanel"` semantics. The
- * global block (vehicle context + advanced when not in basic mode) lives
- * here because every mode shares it equally.
+ * Per-mode fields carry `role="tabpanel"` semantics (one mounted at a time
+ * via `@switch`). Vehicle owns the always-global inputs (mileage, keep,
+ * age + override disclosure). Your situation owns personal preferences
+ * (opp-cost preset + EV charger + solar).
  */
 @Component({
   selector: 'app-mode-detail-view',
-  imports: [TcoChart, GlobalControls, LeaseFields, FinanceFields, CashFields],
+  imports: [TcoChart, GlobalControls, YourSituation, LeaseFields, FinanceFields, CashFields],
   template: `
     <div class="flex flex-col gap-5">
       <app-tco-chart [breakdown]="activeBreakdown()" />
@@ -38,6 +38,7 @@ import { CashFields } from './cash-fields';
       }
 
       <app-global-controls />
+      <app-your-situation />
     </div>
   `,
 })

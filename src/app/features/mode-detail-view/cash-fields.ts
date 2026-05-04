@@ -1,19 +1,18 @@
 import { Component } from '@angular/core';
 
 /**
- * Cash has no mode-specific controls in the redesign — purchase price comes
- * from the global vehicle context, opportunity-cost rate from the global
- * basic block. Render a tabpanel placeholder so screen readers still see the
- * tab/panel relationship; visually it's a thin note.
+ * Cash has no per-mode controls — purchase price + opportunity-cost rate
+ * (set in "Your situation") cover everything. Render a small note inside
+ * a tabpanel so the screen-reader/tab semantics stay consistent.
  */
 @Component({
   selector: 'app-cash-fields',
   template: `
     <div role="tabpanel" id="modepanel-cash" aria-labelledby="modetab-cash">
-      <p class="font-mono text-[0.75rem] text-tx-muted leading-[1.5]">
-        Cash buys outright — no APR, no term. Use the global controls below to
-        adjust purchase price, keep duration, and the opportunity-cost rate
-        (the return you'd otherwise earn on that capital).
+      <p class="font-mono text-[0.78rem] text-tx-muted leading-snug">
+        Cash buys outright — no APR, no term, no down payment. Use the
+        purchase price in the header and the opportunity-cost preference in
+        "Your situation" below to tune cash TCO.
       </p>
     </div>
   `,

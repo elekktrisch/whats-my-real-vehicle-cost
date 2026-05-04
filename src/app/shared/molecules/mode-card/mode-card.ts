@@ -34,10 +34,10 @@ import type { Tab } from '../../../scenario/scenario.types';
         </span>
         @if (recommended()) {
           <span
-            class="shrink-0 rounded-full bg-accent/15 text-accent text-[0.75rem] tracking-[0.1em] uppercase px-[7px] py-[1px] font-ui font-medium"
+            class="shrink-0 min-w-24 text-center rounded-full bg-accent/15 text-accent text-[0.75rem] tracking-[0.1em] uppercase px-[7px] py-[1px] font-ui font-medium"
             aria-label="Recommended"
           >
-            Recommended
+            Best
           </span>
         } @else {
           @if (delta(); as d) {
@@ -51,7 +51,7 @@ import type { Tab } from '../../../scenario/scenario.types';
       </header>
 
       @if (!compact()) {
-        <div class="flex items-baseline justify-between gap-1 sm:gap-2 mt-[10px]">
+        <div class="flex items-baseline justify-between flex-wrap gap-1 sm:gap-2 mt-[10px]">
           <span [class]="rowLabelClass">Total</span>
           <span class="font-mono text-[0.78rem] sm:text-[0.85rem] text-tx tracking-[-0.02em]">
             {{ total() }}
@@ -59,7 +59,7 @@ import type { Tab } from '../../../scenario/scenario.types';
         </div>
       }
 
-      <div class="flex items-baseline justify-between gap-1 sm:gap-2 mt-[6px]">
+      <div class="flex items-baseline justify-between flex-wrap gap-1 sm:gap-2 mt-[6px]">
         <span [class]="rowLabelClass">Monthly</span>
         <span class="font-mono text-[0.85rem] sm:text-[0.95rem] font-medium text-tx tracking-[-0.02em]">
           {{ monthly() }}
@@ -126,7 +126,7 @@ export class ModeCard {
 
   /** Per-distance row visibility — collapses on mobile when compact. */
   protected readonly perDistanceRowClass = computed(() => {
-    const base = 'items-baseline justify-between gap-2 mt-[4px]';
+    const base = 'items-baseline justify-between flex-wrap gap-2 mt-[4px]';
     return this.compact() ? `hidden sm:flex ${base}` : `flex ${base}`;
   });
 }

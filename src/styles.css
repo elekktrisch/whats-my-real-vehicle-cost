@@ -181,6 +181,32 @@
     pointer-events: none;
   }
 
+  /* ── Comparison-page header — full-width controls on mobile ────────────
+   * Two-row mobile / single-row desktop layout. On mobile the header
+   * "controls" (price input, locale selector, powertrain selector) stretch
+   * to fill their slot so the row reads as 100% wide rather than hugging
+   * content widths. Desktop reverts to natural inline sizing. */
+  /* Price input row: stretch on mobile, content-size on desktop. */
+  .header-input > app-number-input > div {
+    width: 100%;
+  }
+  @media (min-width: 600px) {
+    .header-input > app-number-input > div {
+      width: auto;
+    }
+  }
+
+  /* ── Disclosure body — visual treatment for revealed advanced fields ────
+   * `<app-disclosure>` opens to a body with a 2 px accent bar on the left
+   * and a small indent so the contents read as nested under the button.
+   * Plan §Q7 = A. */
+  .disclosure-body {
+    border-left: 2px solid var(--color-accent-soft);
+    padding-left: 12px;
+    margin-top: 8px;
+    margin-left: 2px;
+  }
+
   /* ── Comparison-strip sticky background ─────────────────────────────────
    * 24px gradient fade on desktop, 16px on mobile (plan §F2 — mobile fade
    * band shrinks). Plus will-change to keep the strip on its own compositor

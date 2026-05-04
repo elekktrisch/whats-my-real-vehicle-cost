@@ -9,7 +9,7 @@ describe('fuelCostOverYears', () => {
       years: 3,
       powertrain: 'ICE',
       locale: 'US',
-      homeChargerInstalled: false,
+      chargerStatus: 'none' as const,
       solar: false,
     });
     expect(cost).toBeGreaterThan(4400);
@@ -24,7 +24,7 @@ describe('fuelCostOverYears', () => {
       years: 3,
       powertrain: 'ICE',
       locale: 'US',
-      homeChargerInstalled: false,
+      chargerStatus: 'none' as const,
       solar: false,
     });
     const ev = fuelCostOverYears({
@@ -34,7 +34,7 @@ describe('fuelCostOverYears', () => {
       years: 3,
       powertrain: 'EV',
       locale: 'US',
-      homeChargerInstalled: false,
+      chargerStatus: 'none' as const,
       solar: false,
     });
     expect(ev).toBeLessThan(ice);
@@ -48,7 +48,7 @@ describe('fuelCostOverYears', () => {
       years: 5,
       powertrain: 'ICE',
       locale: 'EU',
-      homeChargerInstalled: false,
+      chargerStatus: 'none' as const,
       solar: false,
     });
     expect(cost).toBeGreaterThan(8000);
@@ -64,7 +64,7 @@ describe('fuelCostOverYears', () => {
         years: 0,
         powertrain: 'ICE',
         locale: 'US',
-        homeChargerInstalled: false,
+        chargerStatus: 'none' as const,
         solar: false,
       }),
     ).toBe(0);
@@ -79,8 +79,8 @@ describe('fuelCostOverYears', () => {
       powertrain: 'EV' as const,
       locale: 'US' as const,
     };
-    const grid = fuelCostOverYears({ ...base, homeChargerInstalled: true, solar: false });
-    const solar = fuelCostOverYears({ ...base, homeChargerInstalled: true, solar: true });
+    const grid = fuelCostOverYears({ ...base, chargerStatus: 'installed' as const, solar: false });
+    const solar = fuelCostOverYears({ ...base, chargerStatus: 'installed' as const, solar: true });
     expect(solar).toBeCloseTo(grid * 0.15, 4);
   });
 
@@ -93,8 +93,8 @@ describe('fuelCostOverYears', () => {
       powertrain: 'EV' as const,
       locale: 'EU' as const,
     };
-    const grid = fuelCostOverYears({ ...base, homeChargerInstalled: true, solar: false });
-    const solar = fuelCostOverYears({ ...base, homeChargerInstalled: true, solar: true });
+    const grid = fuelCostOverYears({ ...base, chargerStatus: 'installed' as const, solar: false });
+    const solar = fuelCostOverYears({ ...base, chargerStatus: 'installed' as const, solar: true });
     expect(solar).toBeCloseTo(grid * 0.15, 4);
   });
 
@@ -107,8 +107,8 @@ describe('fuelCostOverYears', () => {
       powertrain: 'EV' as const,
       locale: 'US' as const,
     };
-    const offOff = fuelCostOverYears({ ...base, homeChargerInstalled: false, solar: false });
-    const onOff = fuelCostOverYears({ ...base, homeChargerInstalled: false, solar: true });
+    const offOff = fuelCostOverYears({ ...base, chargerStatus: 'none' as const, solar: false });
+    const onOff = fuelCostOverYears({ ...base, chargerStatus: 'none' as const, solar: true });
     expect(onOff).toBeCloseTo(offOff, 4);
   });
 
@@ -121,8 +121,8 @@ describe('fuelCostOverYears', () => {
       powertrain: 'ICE' as const,
       locale: 'US' as const,
     };
-    const noSolar = fuelCostOverYears({ ...base, homeChargerInstalled: false, solar: false });
-    const withSolar = fuelCostOverYears({ ...base, homeChargerInstalled: true, solar: true });
+    const noSolar = fuelCostOverYears({ ...base, chargerStatus: 'none' as const, solar: false });
+    const withSolar = fuelCostOverYears({ ...base, chargerStatus: 'installed' as const, solar: true });
     expect(withSolar).toBeCloseTo(noSolar, 4);
   });
 });

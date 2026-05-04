@@ -17,8 +17,7 @@ describe('scenario.serializer', () => {
       expect(recovered.globals?.purchasePrice).toBe(snap.globals.purchasePrice);
       expect(recovered.globals?.keepDuration).toBe(snap.globals.keepDuration);
       expect(recovered.globals?.activeTab).toBe(snap.globals.activeTab);
-      expect(recovered.globals?.basicMode).toBe(true);
-      expect(recovered.globals?.homeChargerInstalled).toBe(false);
+      expect(recovered.globals?.chargerStatus).toBe('none');
       expect(recovered.globals?.solar).toBe(false);
       expect(recovered.lease?.apr).toBe(snap.lease.apr);
       expect(recovered.finance?.loanTerm).toBe(snap.finance.loanTerm);
@@ -36,15 +35,13 @@ describe('scenario.serializer', () => {
       expect(recovered.overrides?.fuelEfficiency).toBe(8.4);
     });
 
-    it('round-trips the new boolean globals', () => {
+    it('round-trips the EV-context globals (chargerStatus + solar)', () => {
       const snap = defaultScenario('US');
-      snap.globals.homeChargerInstalled = true;
+      snap.globals.chargerStatus = 'buying';
       snap.globals.solar = true;
-      snap.globals.basicMode = false;
       const recovered = decodeSnapshot(encodeSnapshot(snap));
-      expect(recovered.globals?.homeChargerInstalled).toBe(true);
+      expect(recovered.globals?.chargerStatus).toBe('buying');
       expect(recovered.globals?.solar).toBe(true);
-      expect(recovered.globals?.basicMode).toBe(false);
     });
 
     it('embeds the version field in the encoded payload', () => {

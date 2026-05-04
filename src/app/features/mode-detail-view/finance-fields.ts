@@ -1,12 +1,11 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { ScenarioStore } from '../../scenario/scenario.store';
 import { SliderControl } from '../../shared/slider-control/slider-control';
 import { SliderGroup } from '../../shared/molecules/slider-group/slider-group';
 
 /**
- * Finance-specific controls. Opportunity-cost rate moved to globals (it's
- * cross-mode in the redesign). Down payment lives in the global vehicle
- * context block since the user can edit it for whichever tab is active.
+ * Loan-specific controls. Down-payment lives here (mode-specific) per Phase
+ * plan §Q10a. Opportunity-cost rate is in the Your-situation section.
  */
 @Component({
   selector: 'app-finance-fields',
@@ -39,10 +38,38 @@ import { SliderGroup } from '../../shared/molecules/slider-group/slider-group';
           [value]="store.loanTerm()"
           (valueChange)="store.loanTerm.set($event)"
         />
+        <app-slider-control
+          label="Down payment"
+          tip="Cash put down on the loan. Stored separately from the lease down payment so you can compare e.g. $5k down on a lease vs. $0 on a loan. Capped at the purchase price."
+          [min]="0"
+          [max]="downPaymentMax()"
+          [step]="500"
+          [minLabel]="lo(0)"
+          [maxLabel]="lo(downPaymentMax())"
+          [prefix]="currencyPrefix()"
+          [suffix]="currencySuffix()"
+          [value]="store.financeDownPayment()"
+          (valueChange)="store.financeDownPayment.set($event)"
+        />
       </app-slider-group>
     </div>
   `,
 })
 export class FinanceFields {
   protected readonly store = inject(ScenarioStore);
+
+  protected readonly downPaymentMax = computed(() =>
+    Math.min(80000, this.store.purchasePrice()),
+  );
+  protected readonly currencyPrefix = computed(() =>
+    this.store.localeConfig().currencyAfter ? '' : this.store.localeConfig().currencySymbol,
+  );
+  protected readonly currencySuffix = computed(() =>
+    this.store.localeConfig().currencyAfter ? ' ' + this.store.localeConfig().currencySymbol : '',
+  );
+  protected lo(value: number): string {
+    const cfg = this.store.localeConfig();
+    const k = value >= 1000 ? `${value / 1000}k` : String(value);
+    return cfg.currencyAfter ? `${k} ${cfg.currencySymbol}` : `${cfg.currencySymbol}${k}`;
+  }
 }

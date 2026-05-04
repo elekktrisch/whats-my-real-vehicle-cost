@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { LOCALE_CONFIG, fuelEfficiencyDefault, fuelPriceDefault } from './locale.config';
 import { LEASE_END_DEFAULTS, defaultScenario } from './scenario.defaults';
 import type {
+  ChargerStatus,
   CostBreakdown,
   LeaseEndChoice,
   Locale,
@@ -36,9 +37,8 @@ export class ScenarioStore {
   readonly annualMileage = signal(this.initial.globals.annualMileage);
   readonly keepDuration = signal(this.initial.globals.keepDuration);
   readonly activeTab = signal<Tab>(this.initial.globals.activeTab);
-  readonly homeChargerInstalled = signal(this.initial.globals.homeChargerInstalled);
+  readonly chargerStatus = signal<ChargerStatus>(this.initial.globals.chargerStatus);
   readonly solar = signal(this.initial.globals.solar);
-  readonly basicMode = signal(this.initial.globals.basicMode);
 
   readonly leaseApr = signal(this.initial.lease.apr);
   readonly leaseTerm = signal(this.initial.lease.leaseTerm);
@@ -213,7 +213,7 @@ export class ScenarioStore {
       maintenanceK: this.maintenanceK(),
       fuelEfficiency: this.fuelEfficiency(),
       fuelPrice: this.fuelPrice(),
-      homeChargerInstalled: this.homeChargerInstalled(),
+      chargerStatus: this.chargerStatus(),
       solar: this.solar(),
       apr: this.leaseApr(),
       leaseTermMonths: this.leaseTerm(),
@@ -243,7 +243,7 @@ export class ScenarioStore {
       maintenanceK: this.maintenanceK(),
       fuelEfficiency: this.fuelEfficiency(),
       fuelPrice: this.fuelPrice(),
-      homeChargerInstalled: this.homeChargerInstalled(),
+      chargerStatus: this.chargerStatus(),
       solar: this.solar(),
       apr: this.financeApr(),
       loanTermMonths: this.loanTerm(),
@@ -269,7 +269,7 @@ export class ScenarioStore {
       maintenanceK: this.maintenanceK(),
       fuelEfficiency: this.fuelEfficiency(),
       fuelPrice: this.fuelPrice(),
-      homeChargerInstalled: this.homeChargerInstalled(),
+      chargerStatus: this.chargerStatus(),
       solar: this.solar(),
       opportunityCostRate: this.opportunityCostRate(),
     }),
@@ -327,11 +327,12 @@ export class ScenarioStore {
     map[slot].set(value);
   }
 
-  /** Toggling the home charger off also disables solar (solar without a home
-   * charger has no effect — keep the booleans coherent). */
-  setHomeChargerInstalled(value: boolean): void {
-    this.homeChargerInstalled.set(value);
-    if (!value) this.solar.set(false);
+  /** Setting charger status to 'none' also disables solar (solar without a
+   * home charger has no effect — keep the two flags coherent). Other
+   * transitions preserve the user's solar choice. */
+  setChargerStatus(value: ChargerStatus): void {
+    this.chargerStatus.set(value);
+    if (value === 'none') this.solar.set(false);
   }
 
   setLeaseEndChoice(value: LeaseEndChoice | null): void {
@@ -371,9 +372,8 @@ export class ScenarioStore {
       this.annualMileage.set(merged.globals.annualMileage);
       this.keepDuration.set(merged.globals.keepDuration);
       this.activeTab.set(merged.globals.activeTab);
-      this.homeChargerInstalled.set(merged.globals.homeChargerInstalled);
+      this.chargerStatus.set(merged.globals.chargerStatus);
       this.solar.set(merged.globals.solar);
-      this.basicMode.set(merged.globals.basicMode);
 
       this.leaseApr.set(merged.lease.apr);
       this.leaseTerm.set(merged.lease.leaseTerm);
@@ -411,9 +411,8 @@ export class ScenarioStore {
         annualMileage: this.annualMileage(),
         keepDuration: this.keepDuration(),
         activeTab: this.activeTab(),
-        homeChargerInstalled: this.homeChargerInstalled(),
+        chargerStatus: this.chargerStatus(),
         solar: this.solar(),
-        basicMode: this.basicMode(),
       },
       lease: {
         apr: this.leaseApr(),

@@ -172,7 +172,7 @@ export class TcoChart {
   /** Fixed height per breakpoint — keeps the chart secondary to the sliders. */
   protected readonly chartHeight = computed(() => {
     const w = this.viewportWidth();
-    if (w < MOBILE_BP) return 220;
+    if (w < MOBILE_BP) return 160;
     if (w < TABLET_BP) return 260;
     return 300;
   });

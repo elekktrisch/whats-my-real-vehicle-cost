@@ -16,7 +16,7 @@ const usLeaseShared = {
   maintenanceK: 0,
   fuelEfficiency: 28,
   fuelPrice: 3.5,
-  homeChargerInstalled: false,
+  chargerStatus: 'none' as const,
   solar: false,
   apr: 4.5,
   leaseTermMonths: 36,
@@ -212,7 +212,7 @@ describe('tcoBreakdown', () => {
       maintenanceK: 0,
       fuelEfficiency: 28,
       fuelPrice: 3.5,
-      homeChargerInstalled: false,
+      chargerStatus: 'none' as const,
       solar: false,
     };
     const lo = tcoBreakdown({ ...baseCash, opportunityCostRate: 0 });
@@ -236,7 +236,7 @@ describe('tcoBreakdown', () => {
       maintenanceK: 0,
       fuelEfficiency: 28,
       fuelPrice: 3.5,
-      homeChargerInstalled: false,
+      chargerStatus: 'none' as const,
       solar: false,
       apr: 6,
       loanTermMonths: 60,
@@ -261,7 +261,7 @@ describe('tcoBreakdown', () => {
       maintenanceK: 0,
       fuelEfficiency: 28,
       fuelPrice: 3.5,
-      homeChargerInstalled: false,
+      chargerStatus: 'none' as const,
       solar: false,
       opportunityCostRate: 0.05,
     };
@@ -300,7 +300,7 @@ describe('tcoBreakdown — maintenance age curve', () => {
     maintenanceK: maintenanceK('mid', 'ICE'), // 0.08
     fuelEfficiency: 28,
     fuelPrice: 3.5,
-    homeChargerInstalled: false,
+    chargerStatus: 'none' as const,
     solar: false,
     opportunityCostRate: 0,
   };
@@ -339,7 +339,7 @@ describe('tcoBreakdown — maintenance age curve', () => {
       maintenanceK: maintenanceK('mid', 'ICE'),
       fuelEfficiency: 28,
       fuelPrice: 3.5,
-      homeChargerInstalled: false,
+      chargerStatus: 'none' as const,
       solar: false,
       apr: 6,
       loanTermMonths: 60,
@@ -360,7 +360,7 @@ describe('tcoBreakdown — maintenance age curve', () => {
       maintenanceK: maintenanceK('mid', 'ICE'),
       fuelEfficiency: 28,
       fuelPrice: 3.5,
-      homeChargerInstalled: false,
+      chargerStatus: 'none' as const,
       solar: false,
       apr: 6,
       loanTermMonths: 60,
@@ -420,7 +420,7 @@ describe('tcoBreakdown — solar / home charger', () => {
     maintenanceK: maintenanceK('mid', 'EV'),
     fuelEfficiency: 3.5,
     fuelPrice: 0.16,
-    homeChargerInstalled: false,
+    chargerStatus: 'none' as const,
     solar: false,
     opportunityCostRate: 0,
   };
@@ -431,7 +431,7 @@ describe('tcoBreakdown — solar / home charger', () => {
   });
 
   it('charger on: install cost lands at month 0 (US default $1500)', () => {
-    const r = tcoBreakdown({ ...usEv, homeChargerInstalled: true });
+    const r = tcoBreakdown({ ...usEv, chargerStatus: 'buying' });
     expect(r.series[0].maintenance).toBeCloseTo(1500, 4);
     // And the step persists through the cumulative chain.
     expect(r.series[1].maintenance).toBeGreaterThan(1500);
@@ -443,20 +443,20 @@ describe('tcoBreakdown — solar / home charger', () => {
       locale: 'EU',
       fuelEfficiency: 17,
       fuelPrice: 0.32,
-      homeChargerInstalled: true,
+      chargerStatus: 'buying' as const,
     });
     expect(r.series[0].maintenance).toBeCloseTo(1200, 4);
   });
 
   it('charger on + solar: fuel cost drops to 15% of grid', () => {
-    const grid = tcoBreakdown({ ...usEv, homeChargerInstalled: true, solar: false });
-    const solar = tcoBreakdown({ ...usEv, homeChargerInstalled: true, solar: true });
+    const grid = tcoBreakdown({ ...usEv, chargerStatus: 'buying' as const, solar: false });
+    const solar = tcoBreakdown({ ...usEv, chargerStatus: 'buying' as const, solar: true });
     expect(solar.totals.fuel).toBeCloseTo(grid.totals.fuel * 0.15, 2);
   });
 
   it('solar without charger has no effect (gating)', () => {
-    const off = tcoBreakdown({ ...usEv, homeChargerInstalled: false, solar: false });
-    const solar = tcoBreakdown({ ...usEv, homeChargerInstalled: false, solar: true });
+    const off = tcoBreakdown({ ...usEv, chargerStatus: 'none' as const, solar: false });
+    const solar = tcoBreakdown({ ...usEv, chargerStatus: 'none' as const, solar: true });
     expect(solar.totals.fuel).toBeCloseTo(off.totals.fuel, 2);
   });
 
@@ -464,9 +464,18 @@ describe('tcoBreakdown — solar / home charger', () => {
     const r = tcoBreakdown({
       ...usEv,
       powertrain: 'ICE',
-      homeChargerInstalled: true,
+      chargerStatus: 'buying' as const,
     });
     expect(r.series[0].maintenance).toBe(0);
+  });
+
+  it('"installed" charger: solar applies but install cost is not added (sunk)', () => {
+    const grid = tcoBreakdown({ ...usEv, chargerStatus: 'installed' as const, solar: false });
+    const solar = tcoBreakdown({ ...usEv, chargerStatus: 'installed' as const, solar: true });
+    // No install step in the maintenance bucket at month 0.
+    expect(grid.series[0].maintenance).toBe(0);
+    // Solar still cuts fuel to 15% of grid.
+    expect(solar.totals.fuel).toBeCloseTo(grid.totals.fuel * 0.15, 2);
   });
 });
 
