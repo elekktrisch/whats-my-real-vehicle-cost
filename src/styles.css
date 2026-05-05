@@ -214,8 +214,14 @@
   }
   @media (min-width: 600px) {
     .hero-card .hero-grid {
-      grid-template-columns: 1fr auto 1fr;
-      gap: calc(1.25rem - 0.5rem * var(--p));
+      /* `auto auto auto` + justify-content: center clusters the columns
+       * around the arrow rather than stretching them to the card edges,
+       * so the values read closer together — especially noticeable when
+       * the captions/eyebrows collapse on compact and the columns shrink
+       * to just the headline numbers. */
+      grid-template-columns: auto auto auto;
+      justify-content: center;
+      gap: calc(1.5rem - 0.5rem * var(--p));
     }
   }
   /* The hero numbers themselves shrink, but never below ~1rem so they stay
@@ -231,13 +237,30 @@
   .hero-card .hero-num-sub {
     font-size: calc(1.05rem - 0.27rem * var(--p));
   }
-  /* Eyebrows + captions + the second monthly line collapse cleanly to 0. */
+  /* Eyebrows + captions + the second monthly line collapse cleanly to 0.
+   * `max-width` is also interpolated so they don't keep claiming horizontal
+   * column width once invisible — the auto-cols grid relies on the column
+   * shrinking to just the headline number when compact. `display: block`
+   * makes max-width take effect on the spans. */
   .hero-card .hero-eyebrow,
   .hero-card .hero-caption,
   .hero-card .hero-monthly {
+    display: block;
     opacity: calc(1 - var(--p));
     max-height: calc(40px * (1 - var(--p)));
+    max-width: calc(500px * (1 - var(--p)));
     overflow: hidden;
+  }
+  /* Inline monthly that fades in next to the down value as compact climbs.
+   * Mirror image of the elements above: starts at width 0 / opacity 0, ends
+   * at full width / opacity 1. White-space:nowrap keeps it on one line. */
+  .hero-card .hero-monthly-inline {
+    display: inline-block;
+    opacity: var(--p);
+    max-width: calc(220px * var(--p));
+    overflow: hidden;
+    white-space: nowrap;
+    vertical-align: baseline;
   }
   .hero-card .hero-fineprint {
     opacity: calc(1 - var(--p));

@@ -42,6 +42,14 @@ interface HeroData {
             <span class="hero-caption font-ui text-[0.78rem] text-tx-muted">
               {{ data().downCaption }}
             </span>
+            @if (data().termMonths) {
+              <!-- Inline monthly that fades in alongside the down value as
+                   the hero compresses; collapsed at p=0 so the full hero's
+                   down line stays "$X · downpayment caption" untouched. -->
+              <span class="hero-monthly-inline font-mono text-[0.85rem] text-tx-muted">
+                + {{ data().monthly }} monthly
+              </span>
+            }
           </div>
           <div class="hero-monthly flex items-baseline gap-2 flex-wrap mt-1">
             <span class="hero-num-sub font-mono font-medium text-tx tracking-[-0.02em]">

@@ -27,9 +27,13 @@ const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Loan', cash: 'Cas
 /** Scroll range over which the sticky region smoothly compresses. The
  * progress is clamped 0…1 and exposed as a CSS variable so the strip and
  * hero interpolate properties (padding, font-size, opacity) via calc().
- * No binary state-toggle, no layout-shift bounce, no scroll feedback loop. */
-const SHRINK_START = 400;
-const SHRINK_END = 800;
+ *
+ * A wide range works as hysteresis here: the per-frame delta in
+ * --compact-progress equals (scroll-velocity / (END − START)), so doubling
+ * the range halves the visual jump per frame. Less per-frame jump = less
+ * perceptible flicker on both desktop high-refresh and mobile compositors. */
+const SHRINK_START = 100;
+const SHRINK_END = 600;
 
 /**
  * The new comparison-first shell. Layout per plan §Page shape (order O1):
