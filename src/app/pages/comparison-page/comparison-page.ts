@@ -105,7 +105,7 @@ const SHRINK_END = 600;
           [recommendationReason]="recommendationReason()"
           [compact]="compact()"
         />
-        <div class="mt-3">
+        <div class="mt-3" [class.hero-fully-compact]="fullyCompact()">
           <app-hero-summary />
         </div>
       </div>
@@ -159,6 +159,12 @@ export class ComparisonPage {
     return (y - SHRINK_START) / (SHRINK_END - SHRINK_START);
   });
   protected readonly compact = computed(() => this.progress() > 0.5);
+  /** Distinct from `compact`: only true once compaction is *almost finished*,
+   * used to trigger the mobile-inline grid swap on the hero. By the time
+   * progress crosses ~0.9 the captions/eyebrows have already collapsed to
+   * near-zero opacity, so flipping the grid topology there reads as a
+   * settle-into-place rather than a mid-scroll snap. */
+  protected readonly fullyCompact = computed(() => this.progress() >= 0.9);
 
   /** Coalesce scroll events to one update per animation frame. High-refresh
    * desktops fire scroll faster than the paint pipeline; without this every

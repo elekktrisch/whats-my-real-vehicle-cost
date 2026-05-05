@@ -279,6 +279,31 @@
   @media (max-width: 599px) {
     .hero-card .hero-arrow svg {
       transform: rotate(45deg);
+      transition: transform 180ms ease-out;
+    }
+  }
+  /* Mobile-only inline layout once compaction is essentially done. The
+   * `hero-fully-compact` class is bound on the parent wrapper by
+   * comparison-page.ts when progress() ≥ 0.9. Switches the grid from a
+   * single stacked column to a centred 3-column row, hides the labels
+   * that have already faded to near-zero, and un-rotates the arrow back
+   * to its right-pointing orientation. The transform transition above
+   * smooths the rotation reset; the rest of the topology change is
+   * absorbed by the fact that everything else is already invisible. */
+  @media (max-width: 599px) {
+    .hero-fully-compact .hero-card .hero-grid {
+      grid-template-columns: auto auto auto;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .hero-fully-compact .hero-card .hero-arrow svg {
+      transform: none;
+    }
+    .hero-fully-compact .hero-card .hero-eyebrow,
+    .hero-fully-compact .hero-card .hero-caption,
+    .hero-fully-compact .hero-card .hero-monthly,
+    .hero-fully-compact .hero-card .hero-fineprint {
+      display: none;
     }
   }
 
