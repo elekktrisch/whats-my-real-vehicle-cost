@@ -77,6 +77,14 @@ export interface MonthlyTcoPoint {
   insurance: number;
   maintenance: number;
   leaseEnd: number;
+  // Cumulative *cash out of pocket* through this month — the second lens on
+  // the chart, drawn as an overlay line over the stacked-area cost layers.
+  // Sums the actual checks the user writes: lump sums (down, buyout,
+  // handback, full purchase) at the months they fire, monthly lease/loan
+  // payments while they accrue, plus running costs (insurance + maintenance
+  // + fuel) per month. Diverges from the cost stack by opportunity-cost +
+  // depreciation framing — that gap is the educational point.
+  cashOut: number;
 }
 
 export interface CostBreakdown {

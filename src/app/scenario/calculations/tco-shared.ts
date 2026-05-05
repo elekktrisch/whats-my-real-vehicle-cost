@@ -52,6 +52,7 @@ export function emptyPoint(month: number): MonthlyTcoPoint {
     insurance: 0,
     maintenance: 0,
     leaseEnd: 0,
+    cashOut: 0,
   };
 }
 

@@ -41,7 +41,10 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
   const monthlyInsurance = input.insuranceAnnual / 12;
 
   const series = allocateSeries(totalMonths);
-  series[0].maintenance = homeChargerInstallCost(input);
+  const chargerInstall = homeChargerInstallCost(input);
+  series[0].maintenance = chargerInstall;
+  series[0].cashOut = chargerInstall;
+  const monthlyLeaseFee = lease.depreciationFee + lease.financeFee;
 
   if (buyOut) {
     const leasePeriod = Math.min(term, totalMonths);
@@ -99,6 +102,25 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
         series[m].financing = prev.financing + monthlyOppCostBase;
       }
     }
+
+    // Cash flow pass — single forward sweep over all months.
+    for (let m = 1; m <= totalMonths; m++) {
+      const prev = series[m - 1];
+      const inLease = m <= leasePeriod;
+      const inc = inLease ? leaseInc : ownedInc;
+      const j = inLease ? m - 1 : m - 1 - leasePeriod;
+      const downThisMonth = m === 1 ? input.downPayment : 0;
+      const monthlyThisMonth = inLease ? monthlyLeaseFee : 0;
+      const buyoutThisMonth = m === leasePeriod ? buyoutTotal : 0;
+      series[m].cashOut =
+        prev.cashOut +
+        downThisMonth +
+        monthlyThisMonth +
+        buyoutThisMonth +
+        inc.fuel[j] +
+        inc.insurance[j] +
+        inc.maintenance[j];
+    }
     return summarize(series);
   }
 
@@ -142,6 +164,22 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
         cumLeaseEnd += input.earlyTerminationFee;
       }
       series[m].leaseEnd = cumLeaseEnd;
+
+      // Cash flow: down at cycle start, monthly lease fee every month, handback
+      // at cycle end (full or final-partial), early-exit on the keep < term
+      // partial. Running costs accrue per month.
+      const downThisMonth = i === 0 ? input.downPayment : 0;
+      let endFeeThisMonth = 0;
+      if (onCycleBoundary || finalPartial) endFeeThisMonth += handbackFee;
+      if (finalPartial && totalMonths < term) endFeeThisMonth += input.earlyTerminationFee;
+      series[m].cashOut =
+        prev.cashOut +
+        downThisMonth +
+        monthlyLeaseFee +
+        endFeeThisMonth +
+        inc.fuel[i] +
+        inc.insurance[i] +
+        inc.maintenance[i];
     }
     cycleStart += term;
   }

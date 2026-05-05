@@ -130,6 +130,16 @@
     outline: none;
     cursor: pointer;
   }
+  /* On touch devices, let vertical pans pass through to the page so the
+   * slider can't capture a scroll gesture that started on its track.
+   * Horizontal pans still adjust the value (the only direction sliders care
+   * about). Layer 2 — explicit edit-mode toggle — comes only if accidental
+   * scroll-grabs still happen in practice. */
+  @media (pointer: coarse) {
+    .slider {
+      touch-action: pan-y;
+    }
+  }
 
   .slider::-webkit-slider-thumb {
     -webkit-appearance: none;

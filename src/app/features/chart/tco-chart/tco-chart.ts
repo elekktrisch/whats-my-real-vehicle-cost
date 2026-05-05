@@ -59,6 +59,13 @@ const LAYERS: readonly LayerSpec[] = [
 const MOBILE_BP = 600;
 const TABLET_BP = 900;
 
+// Cash-out overlay line — dashed neutral gray, drawn on top of the stack.
+// Tracks pure cash flow (every check the user writes) so the gap to the
+// stacked-area total visualizes the financial cost on top of cash out
+// (opportunity cost + depreciation framing).
+const CASH_OUT_COLOR = '#dde3f0';
+const CASH_OUT_LABEL = 'Cash out of pocket';
+
 @Component({
   selector: 'app-tco-chart',
   imports: [BaseChartDirective],
@@ -80,6 +87,15 @@ const TABLET_BP = 900;
               {{ layer.label }}
             </span>
           }
+          <span
+            class="flex items-center gap-[6px] font-ui text-[0.75rem] text-tx-muted tracking-[0.04em]"
+          >
+            <span
+              class="inline-block w-3 h-0 border-t border-dashed"
+              [style.border-color]="cashOutColor"
+            ></span>
+            {{ cashOutLabel }}
+          </span>
         </div>
       </div>
 
@@ -106,7 +122,8 @@ const TABLET_BP = 900;
               @for (layer of layers; track layer.key) {
                 <th scope="col">{{ layer.label }}</th>
               }
-              <th scope="col">Total</th>
+              <th scope="col">Total cost</th>
+              <th scope="col">{{ cashOutLabel }}</th>
             </tr>
           </thead>
           <tbody>
@@ -117,6 +134,7 @@ const TABLET_BP = 900;
                   <td>{{ money(point[layer.key]) }}</td>
                 }
                 <td>{{ money(rowTotal(point)) }}</td>
+                <td>{{ money(point.cashOut) }}</td>
               </tr>
             }
         </tbody>
@@ -128,6 +146,8 @@ export class TcoChart {
   readonly breakdown = input.required<CostBreakdown>();
 
   protected readonly layers = LAYERS;
+  protected readonly cashOutColor = CASH_OUT_COLOR;
+  protected readonly cashOutLabel = CASH_OUT_LABEL;
   private readonly store = inject(ScenarioStore);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
@@ -164,7 +184,8 @@ export class TcoChart {
   protected readonly chartData = computed<ChartConfiguration<'line'>['data']>(() => {
     const series = this.breakdown().series;
     const labels = series.map((p) => `Mo ${p.month}`);
-    const datasets = LAYERS.map((layer) => ({
+    // Stacked-area cost layers — share `stack: 'cost'` so they sum vertically.
+    const stackDatasets = LAYERS.map((layer) => ({
       label: layer.label,
       data: series.map((p) => p[layer.key]),
       borderColor: layer.color,
@@ -175,8 +196,25 @@ export class TcoChart {
       pointRadius: 0,
       pointHoverRadius: 3,
       pointHoverBackgroundColor: layer.color,
+      stack: 'cost',
     }));
-    return { labels, datasets };
+    // Overlay line: dashed neutral, no fill, on its own stack so it doesn't
+    // sum with the cost layers — its Y is the raw cashOut value.
+    const overlayDataset = {
+      label: CASH_OUT_LABEL,
+      data: series.map((p) => p.cashOut),
+      borderColor: CASH_OUT_COLOR,
+      backgroundColor: 'transparent',
+      fill: false,
+      borderDash: [6, 4],
+      borderWidth: 1.5,
+      tension: 0.15,
+      pointRadius: 0,
+      pointHoverRadius: 3,
+      pointHoverBackgroundColor: CASH_OUT_COLOR,
+      stack: 'overlay',
+    };
+    return { labels, datasets: [...stackDatasets, overlayDataset] };
   });
 
   protected readonly chartOptions = computed<ChartConfiguration<'line'>['options']>(() => {
@@ -237,13 +275,17 @@ export class TcoChart {
 
   protected readonly ariaSummary = computed(() => {
     const series = this.breakdown().series;
-    const months = series.length > 0 ? series[series.length - 1].month : 0;
+    const last = series[series.length - 1];
+    const months = last?.month ?? 0;
     const total = this.breakdown().total;
+    const cashOut = last?.cashOut ?? 0;
     const totals = this.breakdown().totals;
     const largest = LAYERS.reduce((a, b) => (totals[a.key] >= totals[b.key] ? a : b));
-    return `Cumulative total cost of ownership over ${months} months. Total ${this.money(
+    return `Cumulative total cost of ownership over ${months} months. Total cost ${this.money(
       total,
-    )}. Largest component: ${largest.label} at ${this.money(totals[largest.key])}.`;
+    )}, cash out of pocket ${this.money(cashOut)}. Largest cost component: ${
+      largest.label
+    } at ${this.money(totals[largest.key])}.`;
   });
 
   protected money(v: number): string {

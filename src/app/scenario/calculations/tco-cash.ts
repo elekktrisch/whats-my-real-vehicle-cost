@@ -37,7 +37,10 @@ export function cashTco(input: CashTcoInputs): CostBreakdown {
   });
 
   const series = allocateSeries(totalMonths);
-  series[0].maintenance = homeChargerInstallCost(input);
+  const chargerInstall = homeChargerInstallCost(input);
+  series[0].maintenance = chargerInstall;
+  // Charger install fires at month 0 alongside the maintenance-bucket entry.
+  series[0].cashOut = chargerInstall;
 
   for (let m = 1; m <= totalMonths; m++) {
     const i = m - 1;
@@ -47,6 +50,10 @@ export function cashTco(input: CashTcoInputs): CostBreakdown {
     series[m].maintenance = prev.maintenance + inc.maintenance[i];
     series[m].depreciationOrLease = prev.depreciationOrLease + perMonthDepreciation;
     series[m].financing = opportunity[m];
+    // Cash flow: full purchase at month 1, then running costs each month.
+    const purchaseThisMonth = m === 1 ? input.purchasePrice : 0;
+    series[m].cashOut =
+      prev.cashOut + purchaseThisMonth + inc.fuel[i] + inc.insurance[i] + inc.maintenance[i];
   }
 
   return summarize(series);

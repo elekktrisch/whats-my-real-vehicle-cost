@@ -43,7 +43,9 @@ export function financeTco(input: FinanceTcoInputs): CostBreakdown {
   });
 
   const series = allocateSeries(totalMonths);
-  series[0].maintenance = homeChargerInstallCost(input);
+  const chargerInstall = homeChargerInstallCost(input);
+  series[0].maintenance = chargerInstall;
+  series[0].cashOut = chargerInstall;
 
   let balance = principal;
   for (let m = 1; m <= totalMonths; m++) {
@@ -62,6 +64,17 @@ export function financeTco(input: FinanceTcoInputs): CostBreakdown {
     series[m].depreciationOrLease =
       prev.depreciationOrLease + principalPart + (m === 1 ? input.downPayment : 0);
     series[m].financing = prev.financing + interestPart + monthlyOppCost;
+    // Cash flow: down at month 1, full loan payment (principal + interest)
+    // every month while the loan is active, plus running costs.
+    const downThisMonth = m === 1 ? input.downPayment : 0;
+    const loanPaymentThisMonth = m <= loanMonths && balance >= 0 ? principalPart + interestPart : 0;
+    series[m].cashOut =
+      prev.cashOut +
+      downThisMonth +
+      loanPaymentThisMonth +
+      inc.fuel[i] +
+      inc.insurance[i] +
+      inc.maintenance[i];
   }
 
   const totalDepreciation = Math.max(input.purchasePrice - input.residualValue, 0);
