@@ -402,8 +402,11 @@ export class ScenarioStore {
   }
 
   // Splash → comparison: unblocks autosave (writes `?s=<defaults>` on next
-  // tick) and tells AppShell to swap to the comparison page.
+  // tick) and tells AppShell to swap to the comparison page. Also seeds
+  // activeTab to the recommended mode so the user lands on the "best" one
+  // by default — they can override by clicking another card.
   engage(): void {
+    this.activeTab.set(this.recommendedTab().tab);
     this.hasReturningState.set(true);
   }
 
