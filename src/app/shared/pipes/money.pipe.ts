@@ -2,19 +2,11 @@ import { Pipe, PipeTransform, inject } from '@angular/core';
 import { ScenarioStore } from '../../scenario/scenario.store';
 import { formatCurrency } from '../../scenario/locale.config';
 
-/**
- * Locale-aware currency formatter for templates.
- *
- *   {{ 32000 | money }}             → "$32,000"
- *   {{ 0.42 | money:2 }}            → "$0.42"
- *   {{ 32500 | money:'compact' }}   → "$32.5k"
- *   {{ 800   | money:'compact' }}   → "$800"
- *
- * Impure because the rendered string depends on `store.locale()`, which can
- * change without the input value changing. The cost is a couple of extra
- * function calls per CD cycle — negligible compared to making a pure pipe
- * miss locale flips.
- */
+// {{ 32000 | money }}            → "$32,000"
+// {{ 0.42 | money:2 }}           → "$0.42"
+// {{ 32500 | money:'compact' }}  → "$32.5k"
+// Impure: output depends on `store.locale()`, which can flip without the
+// input changing.
 @Pipe({ name: 'money', pure: false })
 export class MoneyPipe implements PipeTransform {
   private readonly store = inject(ScenarioStore);

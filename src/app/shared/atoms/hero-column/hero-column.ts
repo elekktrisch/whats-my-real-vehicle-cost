@@ -1,11 +1,5 @@
 import { Component, input } from '@angular/core';
 
-/**
- * One side of the hero summary: optional icon, eyebrow, headline value,
- * sub-caption. Used twice (left = money out, right = asset) flanking the
- * hero arrow. The icon, eyebrow and caption all collapse cleanly when the
- * hero compacts on scroll — only `value` stays guaranteed visible.
- */
 @Component({
   selector: 'app-hero-column',
   template: `
@@ -45,7 +39,6 @@ export class HeroColumn {
   readonly value = input.required<string>();
   readonly caption = input<string | null>(null);
   readonly iconSrc = input<string | null>(null);
-  /** When true, the icon renders dimmed + desaturated — used for car.png on
-   * lease-renew where the user doesn't end up owning the asset. */
+  // Dimmed + desaturated — used for car.png on lease-renew (no asset retained).
   readonly dimIcon = input(false);
 }

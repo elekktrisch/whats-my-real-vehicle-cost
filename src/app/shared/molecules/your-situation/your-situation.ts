@@ -24,19 +24,6 @@ const SOLAR_OPTIONS: readonly ToggleOption[] = [
   { value: 'on', label: 'On' },
 ];
 
-/**
- * "Your situation" — personal/financial context that applies across all
- * financing methods.
- *
- *   - Opp-cost preference: 2-toggle (Savings 1% / Investing 6%). Sets
- *     `store.opportunityCostRate`. The two presets cover the common
- *     mental models without forcing the user to nail down a number.
- *   - Home charger plan: 3-option toggle (None / Installed / Buying).
- *     EV-only — the row hides for ICE.
- *   - Solar: on/off. Disabled when charger is None.
- *
- * Section is always visible; on ICE only the opp-cost toggle renders.
- */
 @Component({
   selector: 'app-your-situation',
   imports: [Toggle, SliderGroup],
@@ -111,11 +98,8 @@ export class YourSituation {
   protected readonly showEvControls = computed(() => this.store.powertrain() === 'EV');
   protected readonly solarEnabled = computed(() => this.store.chargerStatus() !== 'none');
 
-  /**
-   * Map the current numeric rate to one of the two presets. Anything < 3%
-   * snaps to "savings"; ≥ 3% snaps to "investing". Covers the case where a
-   * pre-existing URL or future custom rate doesn't match exactly.
-   */
+  // Snap to a preset: < 3% → savings, ≥ 3% → investing. Handles pre-existing
+  // URLs or future custom rates that don't match either preset exactly.
   protected readonly oppCostValue = computed(() =>
     this.store.opportunityCostRate() < 0.03 ? 'savings' : 'investing',
   );

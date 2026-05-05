@@ -1,13 +1,5 @@
 import { Component, computed, input, signal } from '@angular/core';
 
-/**
- * "+ Show overrides" / "− Hide overrides" disclosure. Per-section local
- * state, defaults closed, **not** persisted to URL — every session starts
- * with the section collapsed.
- *
- * Body styling (left accent bar + indent) lives on `.disclosure-body` in
- * styles.css so any consumer using the same conventions matches visually.
- */
 @Component({
   selector: 'app-disclosure',
   template: `
@@ -29,10 +21,8 @@ import { Component, computed, input, signal } from '@angular/core';
   `,
 })
 export class Disclosure {
-  /** Label when collapsed. e.g. "+ Show overrides". */
   readonly label = input.required<string>();
-  /** Label when expanded. Defaults to flipping the leading `+` to `−` on
-   * `label`; pass explicitly for asymmetric copy. */
+  // When omitted, the open label is the closed one with leading `+` flipped to `−`.
   readonly labelWhenOpen = input<string>('');
 
   protected readonly open = signal(false);

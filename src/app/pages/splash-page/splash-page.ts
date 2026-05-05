@@ -91,9 +91,6 @@ export class SplashPage {
   );
 
   protected getStarted(): void {
-    // Flips hasReturningState → autosave writes `?s=<defaults>` → AppShell
-    // swaps to the comparison page on next render. No router navigation —
-    // we're already at `/`.
     this.store.engage();
   }
 }

@@ -1,20 +1,6 @@
 import { Component, computed, input, output } from '@angular/core';
 import type { Tab } from '../../../scenario/scenario.types';
 
-/**
- * One mode's card on the comparison strip — also a tablist member. The card
- * is the *only* tab control: clicking it focuses the mode below the strip.
- *
- * Layout: each row is label-left / value-right, baseline-aligned.
- *
- * Compact mode (driven by parent's F2 shrink behavior past ~250px scroll):
- * drops the Total row. On mobile additionally drops the Per-distance row
- * (per plan §H mobile-tuned F2 — shrunk row = monthly + delta only).
- *
- * Mobile typography: row labels drop the uppercase + wide tracking on
- * narrow viewports so the label + value pair fits in ~110px-wide cards
- * without overflow.
- */
 @Component({
   selector: 'app-mode-card',
   template: `
@@ -50,10 +36,6 @@ import type { Tab } from '../../../scenario/scenario.types';
         }
       </header>
 
-      <!-- Total row collapses smoothly as the sticky region compacts —
-           opacity + max-height interpolation against --compact-progress,
-           same pattern the hero-summary uses. Avoids the DOM-swap jump
-           that a binary @if produces mid-scroll. -->
       <div class="mode-card-total flex items-baseline justify-between flex-wrap gap-1 sm:gap-2">
         <span [class]="rowLabelClass">Total</span>
         <span class="font-mono text-[0.78rem] sm:text-[0.85rem] text-tx tracking-[-0.02em]">
@@ -68,7 +50,7 @@ import type { Tab } from '../../../scenario/scenario.types';
         </span>
       </div>
 
-      <div [class]="perDistanceRowClass">
+      <div class="flex items-baseline justify-between flex-wrap gap-2 mt-[4px]">
         <span [class]="rowLabelClass">Per {{ distanceUnit() }}</span>
         <span class="font-mono text-[0.78rem] text-tx-muted tracking-[-0.02em]">
           {{ perDistance() }}
@@ -86,51 +68,32 @@ export class ModeCard {
   readonly monthly = input.required<string>();
   readonly perDistance = input.required<string>();
   readonly distanceUnit = input.required<string>();
-  /** Pre-formatted delta vs. recommended (e.g. "+$0.12 / mi"). null for the
-   * recommended card itself. */
   readonly delta = input<string | null>(null);
-  /** Compact / shrunk mode (parent decides when via scroll). */
   readonly compact = input(false);
-  /** Tab ID this button uses (for the corresponding panel's aria-labelledby). */
   readonly tabId = input.required<string>();
-  /** ID of the tabpanel this tab controls. */
   readonly panelId = input.required<string>();
 
   readonly select = output<Tab>();
 
-  /** Row labels — sentence case + normal tracking on narrow viewports so the
-   * label + value pair fits in ~110px-wide cards; uppercase eyebrow style
-   * returns at sm+ for the desktop look. */
   protected readonly rowLabelClass =
     'font-ui text-[0.75rem] text-tx-dim tracking-normal sm:tracking-[0.1em] normal-case sm:uppercase';
 
   protected readonly cardClass = computed(() => {
+    // min-w-0 lets the grid cell shrink below intrinsic content width — without
+    // it long delta strings would push the strip past the viewport.
     const base = [
-      // `min-w-0` lets the grid cell shrink below its intrinsic content width
-      // (grid items default to `min-width: auto`, which would push the strip
-      // wider than the viewport when content like a long delta string would
-      // otherwise refuse to wrap).
       'block w-full min-w-0 text-left rounded-[12px] transition-[box-shadow,background-color] duration-200',
-      // Tighter padding on narrow viewports — on a 360px screen each card
-      // is ~110px wide; padding has to give the numbers some space.
       'p-[10px] sm:p-[14px]',
       'border cursor-pointer',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
     ];
     if (this.active()) {
-      // `mode-card-shine-active` paints both the gradient and the accent
-      // rim/glow; the rim acts as the border, so we drop the utility
-      // border color to avoid a double outline.
+      // mode-card-shine-active paints the accent rim, which acts as the
+      // border — drop the utility border color to avoid a double outline.
       base.push('mode-card-shine-active border-transparent');
     } else {
       base.push('mode-card-shine border-border hover:border-border-strong text-tx-muted');
     }
     return base.join(' ');
   });
-
-  /** Per-distance row stays visible at every breakpoint, even when compact —
-   * cost-per-distance is the cross-mode apples-to-apples figure on the
-   * strip, valuable in the shrunk header just as much as in the full one. */
-  protected readonly perDistanceRowClass =
-    'flex items-baseline justify-between flex-wrap gap-2 mt-[4px]';
 }

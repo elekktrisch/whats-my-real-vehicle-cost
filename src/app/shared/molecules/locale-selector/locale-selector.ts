@@ -2,15 +2,7 @@ import { Component, inject } from '@angular/core';
 import { ScenarioStore } from '../../../scenario/scenario.store';
 import type { Locale } from '../../../scenario/scenario.types';
 
-/**
- * Locale selector with inline SVG flags. Toggle atom can't render SVG inside
- * its labels (text-only via {{ }} interpolation), so this is a small custom
- * segmented control that mimics the Toggle styling.
- *
- * Flags are simplified-but-recognizable: 13 stripes + blue canton for US;
- * 12 yellow dots in a ring on blue for EU. Crisp at every size on every OS,
- * unlike emoji flags (Windows renders those as letter pairs).
- */
+// Inline SVG flags (not emoji — Windows renders flag emoji as letter pairs).
 @Component({
   selector: 'app-locale-selector',
   template: `
@@ -66,7 +58,7 @@ import type { Locale } from '../../../scenario/scenario.types';
 export class LocaleSelector {
   protected readonly store = inject(ScenarioStore);
 
-  /** 12 stars in a circle of radius 5, evenly spaced (30° apart). */
+  // 12 stars in a circle of radius 5, 30° apart.
   protected readonly euStars = Array.from({ length: 12 }, (_, i) => {
     const angle = (i * Math.PI) / 6 - Math.PI / 2;
     return { x: +(5 * Math.cos(angle)).toFixed(3), y: +(5 * Math.sin(angle)).toFixed(3) };
@@ -74,7 +66,6 @@ export class LocaleSelector {
 
   protected optionClass(active: boolean): string {
     return [
-      // Mobile (icon-only): tighter px-2; desktop: px-3 with text alongside.
       'inline-flex items-center justify-center px-2 sm:px-3 h-7 rounded-[6px]',
       'transition-[background-color,color] duration-150 cursor-pointer',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',

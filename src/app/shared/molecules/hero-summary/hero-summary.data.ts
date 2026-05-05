@@ -3,15 +3,12 @@ import { formatCurrency } from '../../../scenario/locale.config';
 import type { ScenarioStore } from '../../../scenario/scenario.store';
 
 export interface HeroData {
-  /** Total non-recurring cash out across all events: every lease-cycle
-   * down payment, plus the buyout in lease-buyout mode, plus the loan/cash
-   * down payment. The "lump sums" the user has to write checks for. */
+  // Total non-recurring cash out — sum of every lease-cycle down payment,
+  // any buyout, and the loan/cash down payment. The "lump sums" the user
+  // has to write checks for.
   down: string;
-  /** Sub-line under `down` explaining what's in the sum. */
   downCaption: string;
-  /** null for cash (no recurring payment). */
   monthly: string | null;
-  /** Months the recurring payment runs for. Cash → 0. */
   termMonths: number;
   asset: string;
   assetCaption: string;
@@ -41,8 +38,7 @@ export function leaseHeroData(store: ScenarioStore): HeroData {
         ? `${fmt(initialDp)} down + ${fmt(buyout)} buyout (incl. early-exit penalty)`
         : `${fmt(initialDp)} down + ${fmt(buyout)} buyout`;
   } else {
-    // Final partial cycle is modeled as the user signing a shorter last lease,
-    // so ceil(keep/term) is the number of cycles incl. that partial one.
+    // ceil() because a partial final cycle is modeled as a shorter last lease.
     const cycles = Math.max(Math.ceil(keepMonths / term), 1);
     totalUpfront = cycles * initialDp;
     downCaption =
@@ -56,8 +52,8 @@ export function leaseHeroData(store: ScenarioStore): HeroData {
     downCaption,
     monthly: fmt(monthly),
     termMonths: term,
-    // residualValue() is already evaluated at vehicleAge + keepDuration, which
-    // covers both the buyout-then-own tail and additional renew cycles.
+    // residualValue() already accounts for vehicleAge + keepDuration, covering
+    // both the buyout-then-own tail and additional renew cycles.
     asset: choice === 'buyOut' ? fmt(store.residualValue()) : fmt(0),
     assetCaption:
       choice === 'buyOut'

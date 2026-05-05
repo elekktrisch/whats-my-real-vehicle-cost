@@ -2,20 +2,6 @@ import { Component, ElementRef, HostListener, computed, inject, input } from '@a
 
 let nextId = 0;
 
-/**
- * A small "?" affordance whose description appears in a hover/focus tooltip.
- *
- * Phase G a11y:
- *   - Real `<button>` (focusable, keyboard-activatable).
- *   - Tooltip surfaces on `:hover`, `:focus-visible`, and `:focus-within`
- *     (the styles.css `.info-badge::after` rule handles all three).
- *   - `Escape` blurs the button so the tooltip dismisses.
- *   - `aria-describedby` links the button to a visually-hidden `<span>` that
- *     mirrors the tooltip text — screen readers read it as the button's
- *     description without needing the visual tooltip to fire.
- *   - Hit area ≥ 24×24 (WCAG 2.5.8); the visual badge stays at 16×16 inside
- *     padding so the design rhythm doesn't shift.
- */
 @Component({
   selector: 'app-info-badge',
   template: `
@@ -42,7 +28,6 @@ export class InfoBadge {
   private readonly uid = ++nextId;
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
 
-  /** Esc dismisses the tooltip by blurring the button. */
   @HostListener('keydown.escape')
   protected onEscape(): void {
     const btn = this.host.nativeElement.querySelector('button') as HTMLButtonElement | null;

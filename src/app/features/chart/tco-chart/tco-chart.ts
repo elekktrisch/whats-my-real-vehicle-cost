@@ -59,17 +59,6 @@ const LAYERS: readonly LayerSpec[] = [
 const MOBILE_BP = 600;
 const TABLET_BP = 900;
 
-/**
- * Stacked-area chart of cumulative TCO by month, broken down by cost
- * category. Single component (no separate mobile variant) — the responsive
- * options swap tick density / fonts / aspect ratio at viewport breakpoints.
- *
- * Accessibility:
- *   - Visually-hidden `<table>` always rendered, mirrors every series point
- *     so screen readers get the full data.
- *   - Canvas has `role="img"` + a one-line `aria-label` summary (months,
- *     total, largest cost component).
- */
 @Component({
   selector: 'app-tco-chart',
   imports: [BaseChartDirective],
@@ -94,9 +83,6 @@ const TABLET_BP = 900;
         </div>
       </div>
 
-      <!-- Fixed-height container — Chart.js fills it because
-           maintainAspectRatio is false. Keeps the chart visually secondary
-           so the sliders below stay above the fold. -->
       <div class="relative w-full" [style.height.px]="chartHeight()">
         <canvas
           baseChart
@@ -108,15 +94,9 @@ const TABLET_BP = 900;
         ></canvas>
       </div>
 
-      <!-- Visually-hidden data table — the source of truth for screen
-           readers. Never rendered visually; aria-label on the canvas covers
-           the headline figure. Wrapped in an sr-only div because tables
-           have a special layout algorithm that ignores width/height
-           constraints when filled with content. The div obeys the
-           containment; the table inside sits in clipped 1×1 territory.
-           Sampled at year boundaries so the row count is bounded by keep
-           duration in years, not months — keeps the DOM small at long
-           keeps. -->
+      <!-- sr-only table covers full data; aria-label on the canvas is just
+           a headline. Year-aligned samples (≤ 15 rows) avoid the DOM/CD load
+           of one-row-per-month at long keeps. -->
       <div class="sr-only">
         <table>
           <caption>Cumulative total cost of ownership by year and category</caption>
@@ -152,12 +132,10 @@ export class TcoChart {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
 
-  /** Drives breakpoint-dependent chart options. */
   private readonly viewportWidth = signal<number>(
     typeof window === 'undefined' ? 1200 : window.innerWidth,
   );
-  /** Chart.js animations are JS-driven, so the CSS media query in styles.css
-   * doesn't reach them. We mirror it here. */
+  // Chart.js animations are JS-driven; the CSS media query doesn't reach them.
   private readonly reducedMotion = signal<boolean>(
     this.isBrowser && typeof window !== 'undefined'
       ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -176,7 +154,6 @@ export class TcoChart {
     mq.addEventListener?.('change', (e) => this.reducedMotion.set(e.matches));
   }
 
-  /** Fixed height per breakpoint — keeps the chart secondary to the sliders. */
   protected readonly chartHeight = computed(() => {
     const w = this.viewportWidth();
     if (w < MOBILE_BP) return 160;
@@ -202,11 +179,6 @@ export class TcoChart {
     return { labels, datasets };
   });
 
-  /**
-   * Responsive Chart.js options. Recomputes on viewport-width changes;
-   * ng2-charts re-applies the options reference. Three breakpoints —
-   * mobile (compact ticks, taller aspect), tablet, desktop.
-   */
   protected readonly chartOptions = computed<ChartConfiguration<'line'>['options']>(() => {
     const w = this.viewportWidth();
     const isMobile = w < MOBILE_BP;
@@ -263,8 +235,6 @@ export class TcoChart {
     };
   });
 
-  /** One-line headline for the canvas's aria-label — the table covers the
-   * full data, this just gives screen readers a "what is this chart" hook. */
   protected readonly ariaSummary = computed(() => {
     const series = this.breakdown().series;
     const months = series.length > 0 ? series[series.length - 1].month : 0;
@@ -286,11 +256,6 @@ export class TcoChart {
     return sum;
   }
 
-  /** Year-aligned samples for the sr-only data table. The full series has
-   * one point per month — at a 15-year keep that's 180 rows, which has
-   * caused observable layout pressure even with `position: absolute`.
-   * Yearly samples (typically ≤ 15 rows) are a far better DOM/CD load and
-   * still give screen readers a useful read-out of the cost trajectory. */
   protected readonly yearlySamples = computed<MonthlyTcoPoint[]>(() => {
     const series = this.breakdown().series;
     if (series.length === 0) return [];

@@ -4,11 +4,6 @@ import { NumberInput } from '../../atoms/number-input/number-input';
 import { LocaleSelector } from '../locale-selector/locale-selector';
 import { PowertrainSelector } from '../powertrain-selector/powertrain-selector';
 
-/**
- * Topmost row on the comparison page: negotiated price + locale + powertrain.
- * Two-row layout on mobile (price row, then selectors row); single row on
- * sm+. The eyebrow over the price input is hidden below sm so the row fits.
- */
 @Component({
   selector: 'app-page-header',
   imports: [NumberInput, LocaleSelector, PowertrainSelector],

@@ -5,10 +5,6 @@ import { formatCurrency } from '../../../scenario/locale.config';
 import { HeroColumn } from '../../atoms/hero-column/hero-column';
 import { cashHeroData, financeHeroData, leaseHeroData, type HeroData } from './hero-summary.data';
 
-/**
- * Headline above the chart: cash out of pocket → owned asset value, with
- * the recurring monthly payment (if any) and a year-1 running-cost fineprint.
- */
 @Component({
   selector: 'app-hero-summary',
   imports: [HeroColumn],
@@ -75,9 +71,8 @@ export class HeroSummary {
     return cashHeroData(this.store);
   });
 
-  /** Year-1 running-cost rate (insurance + maintenance + fuel-for-one-year);
-   * representative anchor for the fineprint. Maintenance climbs with age via
-   * the curve, but year-1 reads cleanly. */
+  // Year-1 anchor for the fineprint. Maintenance climbs with age via the
+  // curve, but year-1 reads cleanly.
   protected readonly runningCostsAnnual = computed(() => {
     const fuel = fuelCostOverYears({
       efficiency: this.store.fuelEfficiency(),

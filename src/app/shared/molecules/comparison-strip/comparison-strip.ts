@@ -12,8 +12,6 @@ import { isPlatformBrowser } from '@angular/common';
 import type { Tab } from '../../../scenario/scenario.types';
 import { ModeCard } from '../mode-card/mode-card';
 
-/** Single mode's data feeding one card. The strip stays presentational —
- * the container builds these from the store's three breakdowns. */
 export interface ModeCardData {
   mode: Tab;
   label: string;
@@ -25,25 +23,6 @@ export interface ModeCardData {
 
 const MODES: readonly Tab[] = ['lease', 'finance', 'cash'];
 
-/**
- * Sticky strip of three mode-cards. Strip alone sticks; the surrounding
- * header scrolls away. The strip's own background is a vertical gradient
- * from the body bg to transparent over the last 24px, so content
- * scrolling underneath disappears smoothly instead of knife-edging.
- *
- * The recommendation explanation slots inside the sticky block (between the
- * cards and the fade band) so it stays visible alongside the cards.
- *
- * F2 shrink: past ~250px scroll desktop / ~120px mobile, the strip switches
- * the cards to compact (drops Total + sparkline; keeps Monthly + per-distance).
- *
- * Tablist semantics: roving tabindex, arrow keys move focus between cards,
- * Enter/Space activates (the underlying button click already handles this).
- *
- * Anti-flicker: solid (not blurred) background, `will-change: transform` to
- * force the strip into its own compositor layer — chart.js canvas behind
- * the strip can otherwise cause sub-pixel repaint flicker on scroll.
- */
 @Component({
   selector: 'app-comparison-strip',
   imports: [ModeCard],
@@ -91,13 +70,7 @@ export class ComparisonStrip {
   readonly active = model.required<Tab>();
   readonly recommended = input<Tab | null>(null);
   readonly distanceUnit = input.required<string>();
-  /** One-line locale-aware explanation rendered under the cards inside the
-   * sticky block so it stays visible alongside the strip. */
   readonly recommendationReason = input<string>('');
-  /** F2 shrink — driven by the parent's scroll detection. The strip itself
-   * no longer owns the sticky wrapper or the scroll listener; the page
-   * coordinates one signal for both the strip and the hero-summary that
-   * sits next to it in the sticky region. */
   readonly compact = input(false);
 
   @ViewChild('stripEl', { static: true }) stripEl?: ElementRef<HTMLElement>;
@@ -105,8 +78,8 @@ export class ComparisonStrip {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
 
-  /** Stable visual order is always lease → finance → cash regardless of
-   * which is recommended. Consistency matters more than ranking here. */
+  // Visual order is always lease → finance → cash regardless of which is
+  // recommended — consistency matters more than ranking here.
   protected readonly orderedCards = computed(() => {
     const byMode = new Map(this.cards().map((c) => [c.mode, c]));
     return MODES.map((m) => byMode.get(m)).filter((c): c is ModeCardData => !!c);
@@ -123,8 +96,6 @@ export class ComparisonStrip {
     this.active.set(mode);
   }
 
-  /** Roving-tabindex arrow-key handling. Left/Right move focus; Home/End
-   * jump to first/last. Enter/Space activate via the button click. */
   protected onKeydown(event: KeyboardEvent): void {
     const order = this.orderedCards().map((c) => c.mode);
     const current = order.indexOf(this.active());

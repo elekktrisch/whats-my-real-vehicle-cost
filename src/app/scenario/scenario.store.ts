@@ -58,9 +58,8 @@ export class ScenarioStore {
   readonly loanTerm = signal(this.initial.finance.loanTerm);
   readonly financeDownPayment = signal(this.initial.finance.downPayment);
 
-  /** The active tab's down payment, for components that need a single value
-   * tied to the current tab (vehicle context bar, hero, recommendation). Cash
-   * tab returns purchasePrice since cash purchase ties up the full amount. */
+  // Cash returns purchasePrice — full amount is "tied up" — so consumers can
+  // treat the active down payment uniformly across modes.
   readonly activeDownPayment = computed(() => {
     const tab = this.activeTab();
     if (tab === 'lease') return this.leaseDownPayment();
@@ -71,7 +70,6 @@ export class ScenarioStore {
     const tab = this.activeTab();
     if (tab === 'lease') this.leaseDownPayment.set(value);
     else if (tab === 'finance') this.financeDownPayment.set(value);
-    // cash: noop — driven by purchase price
   }
 
   readonly opportunityCostRate = signal(this.initial.cash.opportunityCostRate);
@@ -82,9 +80,9 @@ export class ScenarioStore {
   );
   private readonly _fuelPriceOverride = signal<number | null>(this.initial.overrides.fuelPrice);
 
-  /** Autosave gate — true once APP_INITIALIZER finishes, regardless of cold/warm boot. */
+  // Autosave gate — true once APP_INITIALIZER finishes (cold or warm boot).
   readonly hasHydrated = signal(false);
-  /** Splash skip seam — true only if URL or localStorage carried user state. */
+  // Splash skip seam — true if the URL carried user state, or once engaged.
   readonly hasReturningState = signal(false);
   private readonly _isHydrating = signal(false);
   readonly isHydrating = this._isHydrating.asReadonly();
@@ -102,7 +100,6 @@ export class ScenarioStore {
     return cfg.currencyAfter ? ' ' + cfg.currencySymbol : '';
   });
 
-  /** What the car is expected to be worth at the end of the keep period. */
   private readonly residualValueDefault = computed(() => {
     const endAge = this.vehicleAge() + this.keepDuration();
     return Math.round(this.msrp() * depreciationFactor(endAge));
@@ -118,17 +115,16 @@ export class ScenarioStore {
     const cfg = this.localeConfig();
     return this.purchasePrice() * cfg.insuranceRate * this.categoryMultipliers().insurance;
   });
-  // Year-0 base — the age curve lives in the calc layer (`maintenanceAt`),
-  // applied per-month with `maintenanceK(category, powertrain)`. No override
-  // — the redesign demoted maintenance to a fully-derived display row.
+  // Year-0 base; the age curve is applied per-month in the calc layer via
+  // `maintenanceAt` and `maintenanceK`. Maintenance has no override slot —
+  // it's a fully-derived display.
   readonly maintenance = computed(() => {
     const baseRate = this.powertrain() === 'EV' ? 0.007 : 0.015;
     return this.msrp() * baseRate * this.categoryMultipliers().maintenance;
   });
-  /** Heavy drivers wear cars out faster — multiply the age-curve coefficient
-   * by `annualMileage / nominalMileage` so the maintenance band steepens
-   * proportionally. Year-0 base stays driven by MSRP × baseRate (calendar-
-   * based items still apply at low mileage); only the curve growth scales. */
+  // Heavy drivers wear cars out faster — scale the age-curve coefficient by
+  // annualMileage / nominal so the maintenance band steepens. Year-0 base
+  // stays MSRP-driven (calendar items still apply at low mileage).
   private readonly mileageFactor = computed(() => {
     const nominal = this.locale() === 'US' ? 12000 : 15000;
     return Math.max(this.annualMileage() / nominal, 0);
@@ -179,9 +175,8 @@ export class ScenarioStore {
     () => this._excessWearOverride() ?? LEASE_END_DEFAULTS.excessWearEstimate,
   );
   readonly buyoutFee = computed(() => this._buyoutFeeOverride() ?? LEASE_END_DEFAULTS.buyoutFee);
-  /** Default approximates a typical lessor's early-exit table: a share of the
-   * full depreciation (purchasePrice − residualValue) proportional to how much
-   * of the lease term remains. Zero when keep ≥ term (no early exit). */
+  // Default approximates a typical lessor's early-exit table — a share of
+  // total depreciation proportional to remaining lease term. 0 when keep ≥ term.
   private readonly earlyTerminationFeeDefault = computed(() => {
     const term = this.leaseTerm();
     const keepMonths = this.keepDuration() * 12;
@@ -190,9 +185,7 @@ export class ScenarioStore {
     const totalDepreciation = Math.max(this.purchasePrice() - this.residualValue(), 0);
     return remainingFraction * totalDepreciation;
   });
-  /** Hard cap so the slider can't exceed 90% of the financed portion. The
-   * lease's own down payment is what's relevant here (slider lives in the
-   * lease-end-section). */
+  // Cap at 90% of the financed portion so the slider can't exceed it.
   readonly earlyTerminationFeeMax = computed(() =>
     Math.max(0.9 * (this.purchasePrice() - this.leaseDownPayment()), 0),
   );
@@ -311,11 +304,8 @@ export class ScenarioStore {
     return this.cashBreakdown;
   }
 
-  /**
-   * Drop every running-cost override so the next read returns the locale/powertrain
-   * default. Called when the user switches US/EU or ICE/EV — the existing override
-   * (e.g. $2000 US insurance, 28 mpg, $3.5/gal) is meaningless under the new combo.
-   */
+  // Drop running-cost overrides on locale/powertrain change — the previous
+  // values (e.g. $2000 US insurance, 28 mpg) are meaningless under the new combo.
   clearRunningCostOverrides(): void {
     this._insuranceOverride.set(null);
     this._fuelEfficiencyOverride.set(null);
@@ -343,9 +333,7 @@ export class ScenarioStore {
     map[slot].set(value);
   }
 
-  /** Setting charger status to 'none' also disables solar (solar without a
-   * home charger has no effect — keep the two flags coherent). Other
-   * transitions preserve the user's solar choice. */
+  // 'none' also disables solar — solar without a home charger has no effect.
   setChargerStatus(value: ChargerStatus): void {
     this.chargerStatus.set(value);
     if (value === 'none') this.solar.set(false);
@@ -420,8 +408,8 @@ export class ScenarioStore {
         locale: this.locale(),
         powertrain: this.powertrain(),
         purchasePrice: this.purchasePrice(),
-        // Persist null when the user is on the auto-derived default — keeps
-        // URLs short and lets the curve update if the user changes age/keep.
+        // Persist null on auto-derived; keeps URLs short and lets the curve
+        // update if age/keep change.
         residualValue: this._residualValueOverride(),
         vehicleAge: this.vehicleAge(),
         annualMileage: this.annualMileage(),
@@ -462,18 +450,12 @@ export class ScenarioStore {
     this.hasHydrated.set(true);
   }
 
-  /** Splash → comparison transition: flips `hasReturningState`, which both
-   * unblocks the autosave-to-URL effect (writing `?s=<defaults>` for the
-   * first time) and tells `AppShell` to swap to the comparison page. */
+  // Splash → comparison: unblocks autosave (writes `?s=<defaults>` on next
+  // tick) and tells AppShell to swap to the comparison page.
   engage(): void {
     this.hasReturningState.set(true);
   }
 
-  /** Comparison → splash transition: applies fresh defaults, clears the
-   * URL's `s` param, and flips `hasReturningState` back to false so the
-   * AppShell renders the splash again. The autosave effect is gated on
-   * `hasReturningState`, so it stays quiet after this — the user lands on
-   * a clean splash with a clean URL. */
   reset(): void {
     this.applySnapshot(defaultScenario());
     this.hasReturningState.set(false);
@@ -491,20 +473,18 @@ export class ScenarioStore {
 
   constructor() {
     let timer: ReturnType<typeof setTimeout> | null = null;
+    // Gated on hasReturningState so a fresh visitor's URL doesn't silently
+    // get `?s=<defaults>` (which would skip splash on reload).
     effect(() => {
       const snap = this.snapshot();
-      // Hold off on URL writes until the user crosses the splash threshold
-      // (or arrived with a returning URL). Otherwise a fresh visitor's URL
-      // would silently get `?s=<defaults>` and they'd skip splash on reload.
       if (this.isHydrating() || !this.hasHydrated() || !this.hasReturningState()) return;
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => this.persist(snap), 200);
     });
 
-    // Cross-field invariants: down payments and any residual override can
-    // never exceed the purchase price. Re-clamp whenever purchase price moves
-    // down. We clamp the OVERRIDE only (the auto-derived default is always
-    // ≤ price by construction since depreciationFactor ≤ 1).
+    // Cross-field clamping: down payments and any residual override stay
+    // ≤ purchase price. Auto-derived residual default needs no clamp —
+    // depreciationFactor ≤ 1 keeps it bounded by construction.
     effect(() => {
       const price = this.purchasePrice();
       if (this.isHydrating()) return;
@@ -516,9 +496,8 @@ export class ScenarioStore {
       }
     });
 
-    // Re-track the auto-derived residual whenever its drivers change. Without
-    // this, a user-set residual (say 20k for a 5-yr keep) would stay frozen
-    // even after the user bumped keep to 10 yr. Baseline lets us distinguish
+    // When the residual's drivers change (price/age/keep), drop a stale
+    // override so the auto-derived value tracks again. Baseline distinguishes
     // "first run after hydration" from "user actually changed an input".
     let residualBaseline: { price: number; age: number; keep: number } | null = null;
     effect(() => {
@@ -547,7 +526,7 @@ export class ScenarioStore {
       tree.queryParams = { [URL_PARAM]: encodeSnapshot(snap) };
       this.location.replaceState(this.router.serializeUrl(tree));
     } catch {
-      // router/location not ready; URL sync skipped.
+      // router/location not ready
     }
   }
 }

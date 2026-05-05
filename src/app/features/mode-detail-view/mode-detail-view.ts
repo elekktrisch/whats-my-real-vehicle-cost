@@ -7,16 +7,6 @@ import { LeaseFields } from './lease-fields';
 import { FinanceFields } from './finance-fields';
 import { CashFields } from './cash-fields';
 
-/**
- * Everything below the sticky region (strip + hero summary live up
- * there now). Lays out:
- *
- *   "Tweak the levers" arrow  →  chart  →  mode-fields
- *                              →  Vehicle  →  Your situation
- *
- * The arrow is a button — clicking it scrolls past the chart down to the
- * per-mode fields anchor (`#mode-fields-section`).
- */
 @Component({
   selector: 'app-mode-detail-view',
   imports: [
@@ -29,10 +19,6 @@ import { CashFields } from './cash-fields';
   ],
   template: `
     <div class="flex flex-col gap-5">
-      <!-- "Skip past the chart" affordance. Click → smooth-scroll to the
-           per-mode fields below. The big chevron + bob keep the eye on it
-           when the page first loads; reduced-motion users see it static
-           via the global @media rule in styles.css. -->
       <button
         type="button"
         (click)="scrollToLevers()"
@@ -60,8 +46,7 @@ import { CashFields } from './cash-fields';
 
       <app-tco-chart [breakdown]="activeBreakdown()" />
 
-      <!-- Anchor for the arrow's click-to-scroll. scroll-mt keeps the
-           target from tucking under the sticky region above. -->
+      <!-- scroll-mt keeps the click-to-scroll target from tucking under the sticky region. -->
       <div id="mode-fields-section" class="scroll-mt-[260px] sm:scroll-mt-[300px]">
         @switch (store.activeTab()) {
           @case ('lease') {

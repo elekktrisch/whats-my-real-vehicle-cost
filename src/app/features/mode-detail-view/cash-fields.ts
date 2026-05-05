@@ -1,10 +1,5 @@
 import { Component } from '@angular/core';
 
-/**
- * Cash has no per-mode controls — purchase price + opportunity-cost rate
- * (set in "Your situation") cover everything. Render a small note inside
- * a tabpanel so the screen-reader/tab semantics stay consistent.
- */
 @Component({
   selector: 'app-cash-fields',
   template: `

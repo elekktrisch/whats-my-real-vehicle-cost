@@ -378,12 +378,11 @@
   }
 
   /* ── Comparison-strip sticky background ─────────────────────────────────
-   * 24px gradient fade on desktop, 16px on mobile (plan §F2 — mobile fade
-   * band shrinks). `will-change: transform` was helpful when the strip's
-   * inner contents were static (chart.js canvas underneath would otherwise
-   * flicker on scroll), but with the hero now compressing inside the
-   * sticky region the constant compositor-layer reflow trades one flicker
-   * for another. Plain background performs better. */
+   * 24 px gradient fade on desktop, 16 px on mobile so content scrolling
+   * underneath the strip dissolves rather than knife-edges. No
+   * `will-change: transform` — promoting to a compositor layer trades
+   * canvas-underneath flicker for compositor-layer reflow flicker once the
+   * hero is compressing inside the sticky region. */
   .comparison-strip-bg {
     background: linear-gradient(
       to bottom,
@@ -447,10 +446,8 @@
 }
 
 /* ── Reduced-motion preference ───────────────────────────────────────────
- * Plan §Concrete changes: single CSS block disables the F2 shrink animation,
- * the gradient-fade transition, and slider thumb / tooltip transitions.
- * Chart.js animations are JS-driven — TcoChart reads the same media query
- * and passes `animation: false` to Chart.js. */
+ * Chart.js animations are JS-driven — TcoChart mirrors this media query in
+ * code and passes `animation: false`. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -25,10 +25,10 @@ export interface TcoBaseInputs {
   keepDurationYears: number;
   downPayment: number;
   insuranceAnnual: number;
-  // Year-0 annual maintenance, *before* the age curve. The curve is applied
-  // per-month inside TCO using `maintenanceK` and a mode-specific age clock
-  // (lease-renew resets every cycle; lease-buyout flat through term then
-  // climbs from year 1 of the owned tail; finance/cash starts at vehicleAge).
+  // Year-0 annual maintenance, before the age curve. The curve uses
+  // `maintenanceK` with a mode-specific age clock — lease-renew resets each
+  // cycle; lease-buyout is flat through the lease then climbs from owned-year-1;
+  // finance/cash starts at `vehicleAge`.
   maintenanceBase: number;
   maintenanceK: number;
   fuelEfficiency: number;
@@ -111,16 +111,11 @@ interface OwnedWindowIncrements {
   maintenance: number[];
 }
 
-/**
- * Per-month increments for fuel + insurance + maintenance over an
- * owned-months window with a starting age. Maintenance follows the linear
- * age curve (`base × (1 + k × age)`); fuel and insurance are flat per-month.
- *
- * Each TCO mode composes these: lease-renew calls once per cycle (startAge=0
- * each time → sawtooth), lease-buyout calls twice (lease portion with k=0
- * for flat maintenance, then owned tail with k from category × powertrain),
- * finance/cash calls once for the full keep with startAge=vehicleAge.
- */
+// Per-month fuel + insurance + maintenance over an owned-months window.
+// Maintenance follows `base × (1 + k × age)`; the others are flat per-month.
+// Lease-renew calls this once per cycle with startAge=0 (sawtooth);
+// lease-buyout calls twice (lease portion k=0, owned tail k from category);
+// finance/cash calls once with startAge=vehicleAge.
 function buildOwnedMonthsSeries(input: OwnedWindowInputs): OwnedWindowIncrements {
   const months = Math.max(input.durationMonths, 0);
   const fuel = new Array<number>(months).fill(input.monthlyFuel);
@@ -148,9 +143,8 @@ function fuelTotalForMonths(input: TcoBaseInputs, months: number): number {
   });
 }
 
+// Only 'buying' adds install cost; 'installed' is sunk, don't double-count.
 function homeChargerInstallCost(input: TcoBaseInputs): number {
-  // Sunk cost on `'installed'` (already paid out-of-pocket) — don't double-count
-  // it as a future expense. Only `'buying'` adds the install cost to TCO.
   if (input.powertrain !== 'EV' || input.chargerStatus !== 'buying') return 0;
   return LOCALE_CONFIG[input.locale].defaultHomeChargerInstall;
 }
@@ -188,15 +182,13 @@ function leaseTco(input: LeaseTcoInputs): CostBreakdown {
   const monthlyInsurance = input.insuranceAnnual / 12;
 
   const series = allocateSeries(totalMonths);
-  // Home-charger install fires at month 0 and propagates via the cumulative
-  // chain that follows. Same shape as the old slider-driven step.
   series[0].maintenance = homeChargerInstallCost(input);
 
   if (buyOut) {
     const leasePeriod = Math.min(term, totalMonths);
     const ownedMonths = totalMonths - leasePeriod;
 
-    // Lease portion: flat maintenance (k=0). Fuel/insurance accrue normally.
+    // Lease portion: flat maintenance (k=0); owned tail starts age clock at 0.
     const leaseInc = buildOwnedMonthsSeries({
       startAgeYears: 0,
       durationMonths: leasePeriod,
@@ -205,7 +197,6 @@ function leaseTco(input: LeaseTcoInputs): CostBreakdown {
       maintenanceBase: input.maintenanceBase,
       maintenanceK: 0,
     });
-    // Owned tail: maintenance climbs from year 1 of the owned tail (startAge=0).
     const ownedInc = buildOwnedMonthsSeries({
       startAgeYears: 0,
       durationMonths: ownedMonths,
@@ -225,7 +216,6 @@ function leaseTco(input: LeaseTcoInputs): CostBreakdown {
       series[m].maintenance = prev.maintenance + inc.maintenance[j];
     }
 
-    // Lease payments + opportunity cost on the down payment during the lease.
     for (let m = 1; m <= leasePeriod; m++) {
       const prev = series[m - 1];
       series[m].depreciationOrLease =
@@ -233,7 +223,6 @@ function leaseTco(input: LeaseTcoInputs): CostBreakdown {
       series[m].financing = prev.financing + lease.financeFee + monthlyOppCostBase;
     }
 
-    // Buying out before the lease term ends owes the lessor's early-exit fee.
     const earlyExitPenalty = totalMonths < term ? input.earlyTerminationFee : 0;
     const buyoutTotal = input.residualValue + input.buyoutFee + earlyExitPenalty;
     if (leasePeriod <= totalMonths) {
@@ -242,7 +231,6 @@ function leaseTco(input: LeaseTcoInputs): CostBreakdown {
       }
     }
 
-    // Owned tail: continue depreciating the bought-out car.
     if (ownedMonths > 0) {
       const ownedDepreciation = Math.max(input.residualValue - input.residualValue * 0.6, 0);
       const perMonth = ownedDepreciation / ownedMonths;
@@ -255,7 +243,7 @@ function leaseTco(input: LeaseTcoInputs): CostBreakdown {
     return summarize(series);
   }
 
-  // Renew lease — rolling cycles, each a new car (age resets to 0).
+  // Renew lease: rolling cycles, each a new car (age resets to 0).
   const handbackFee = input.dispositionFee + input.excessWearEstimate;
   let cumulativeDownPaid = 0;
   let cumLeaseEnd = 0;
@@ -289,9 +277,8 @@ function leaseTco(input: LeaseTcoInputs): CostBreakdown {
       const onCycleBoundary = m === cycleEnd && cycleLen === term;
       const finalPartial = m === totalMonths && totalMonths % term !== 0;
       if (onCycleBoundary || finalPartial) cumLeaseEnd += handbackFee;
-      // Early termination only fires for a single partial cycle (keep < term).
-      // A partial FINAL cycle with keep > term is modeled as the user signing
-      // a shorter last lease — no penalty.
+      // Early termination fires only for a single partial cycle (keep < term).
+      // Partial FINAL cycles when keep > term model "shorter last lease" — no penalty.
       if (finalPartial && totalMonths < term) {
         cumLeaseEnd += input.earlyTerminationFee;
       }
@@ -312,9 +299,8 @@ function financeTco(input: FinanceTcoInputs): CostBreakdown {
     termMonths: input.loanTermMonths,
   });
   const monthlyInterestRate = input.apr / 100 / 12;
-  // Linear opportunity cost on the down payment — same shape as the lease tab.
-  // Without this, "100% down on a loan" would look cheaper than cash, which
-  // it isn't (same capital tied up).
+  // Opportunity cost on the down payment — without this, "100% down on a loan"
+  // would look cheaper than cash, which it isn't (same capital tied up).
   const monthlyOppCost = (input.downPayment * input.opportunityCostRate) / 12;
 
   const fuelTotal = fuelTotalForMonths(input, totalMonths);
