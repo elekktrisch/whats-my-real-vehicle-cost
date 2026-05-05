@@ -5,17 +5,8 @@ import type { ScenarioStore } from './scenario.store';
 import { URL_PARAM, encodeSnapshot } from './scenario.serializer';
 import type { ScenarioSnapshot } from './scenario.types';
 
-// Wires up the three side-effects that keep the store coherent with the
-// outside world: URL autosave, cross-field clamping (down payments + residual
-// override ≤ purchase price), and residual-baseline tracking (drop a stale
-// override when its drivers change).
-//
-// Must be called from the store constructor so `effect()` picks up the
-// surrounding injection context.
 export function setupAutosave(store: ScenarioStore, router: Router, location: Location): void {
   let timer: ReturnType<typeof setTimeout> | null = null;
-  // Gated on hasReturningState so a fresh visitor's URL doesn't silently get
-  // `?s=<defaults>` (which would skip splash on reload).
   effect(() => {
     const snap = store.snapshot();
     if (store.isHydrating() || !store.hasHydrated() || !store.hasReturningState()) return;
@@ -23,8 +14,6 @@ export function setupAutosave(store: ScenarioStore, router: Router, location: Lo
     timer = setTimeout(() => persist(snap, router, location), 200);
   });
 
-  // Auto-derived residual default needs no clamp — depreciationFactor ≤ 1
-  // keeps it bounded by construction, so we only clamp the override.
   effect(() => {
     const price = store.purchasePrice();
     if (store.isHydrating()) return;
@@ -36,8 +25,6 @@ export function setupAutosave(store: ScenarioStore, router: Router, location: Lo
     }
   });
 
-  // Drop stale residual override when its drivers change. Baseline lets us
-  // distinguish "first run after hydration" from "user actually changed an input".
   let residualBaseline: { price: number; age: number; keep: number } | null = null;
   effect(() => {
     const price = store.purchasePrice();

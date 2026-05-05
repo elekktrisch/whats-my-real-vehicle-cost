@@ -21,8 +21,6 @@ import { recommendTab } from './calculations/recommendation';
 import { costPerDistance, effectiveMonthly, tcoBreakdown } from './calculations/tco';
 import { setupAutosave } from './scenario.persistence';
 
-export type TcoSlot = 'insurance' | 'fuelEfficiency' | 'fuelPrice';
-
 @Injectable({ providedIn: 'root' })
 export class ScenarioStore {
   private readonly initial = defaultScenario();
@@ -30,10 +28,10 @@ export class ScenarioStore {
   readonly locale = signal<Locale>(this.initial.globals.locale);
   readonly powertrain = signal<Powertrain>(this.initial.globals.powertrain);
   readonly purchasePrice = signal(this.initial.globals.purchasePrice);
-  private readonly _residualValueOverride = signal<number | null>(
-    this.initial.globals.residualValue,
-  );
-  readonly residualValueOverride = this._residualValueOverride.asReadonly();
+  // Override-pattern: each `xOverride` is a `WritableSignal<T | null>` where
+  // `null` means "auto-derive from defaults". The corresponding public
+  // computed (e.g. `insurance`) returns override ?? default.
+  readonly residualValueOverride = signal<number | null>(this.initial.globals.residualValue);
   readonly vehicleAge = signal(this.initial.globals.vehicleAge);
   readonly annualMileage = signal(this.initial.globals.annualMileage);
   readonly keepDuration = signal(this.initial.globals.keepDuration);
@@ -44,42 +42,25 @@ export class ScenarioStore {
   readonly leaseApr = signal(this.initial.lease.apr);
   readonly leaseTerm = signal(this.initial.lease.leaseTerm);
   readonly leaseDownPayment = signal(this.initial.lease.downPayment);
-  private readonly _leaseEndOverride = signal<LeaseEndChoice | null>(null);
-  private readonly _dispositionFeeOverride = signal<number | null>(this.initial.lease.dispositionFee);
-  private readonly _mileageOverageRateOverride = signal<number | null>(
+  readonly leaseEndChoiceOverride = signal<LeaseEndChoice | null>(null);
+  readonly dispositionFeeOverride = signal<number | null>(this.initial.lease.dispositionFee);
+  readonly mileageOverageRateOverride = signal<number | null>(
     this.initial.lease.mileageOverageRate,
   );
-  private readonly _excessWearOverride = signal<number | null>(this.initial.lease.excessWearEstimate);
-  private readonly _buyoutFeeOverride = signal<number | null>(this.initial.lease.buyoutFee);
-  private readonly _earlyTerminationFeeOverride = signal<number | null>(
+  readonly excessWearOverride = signal<number | null>(this.initial.lease.excessWearEstimate);
+  readonly buyoutFeeOverride = signal<number | null>(this.initial.lease.buyoutFee);
+  readonly earlyTerminationFeeOverride = signal<number | null>(
     this.initial.lease.earlyTerminationFee,
   );
 
   readonly financeApr = signal(this.initial.finance.apr);
   readonly loanTerm = signal(this.initial.finance.loanTerm);
   readonly financeDownPayment = signal(this.initial.finance.downPayment);
-
-  // Cash returns purchasePrice — full amount is "tied up" — so consumers can
-  // treat the active down payment uniformly across modes.
-  readonly activeDownPayment = computed(() => {
-    const tab = this.activeTab();
-    if (tab === 'lease') return this.leaseDownPayment();
-    if (tab === 'finance') return this.financeDownPayment();
-    return this.purchasePrice();
-  });
-  setActiveDownPayment(value: number): void {
-    const tab = this.activeTab();
-    if (tab === 'lease') this.leaseDownPayment.set(value);
-    else if (tab === 'finance') this.financeDownPayment.set(value);
-  }
-
   readonly opportunityCostRate = signal(this.initial.cash.opportunityCostRate);
 
-  private readonly _insuranceOverride = signal<number | null>(this.initial.overrides.insurance);
-  private readonly _fuelEfficiencyOverride = signal<number | null>(
-    this.initial.overrides.fuelEfficiency,
-  );
-  private readonly _fuelPriceOverride = signal<number | null>(this.initial.overrides.fuelPrice);
+  readonly insuranceOverride = signal<number | null>(this.initial.overrides.insurance);
+  readonly fuelEfficiencyOverride = signal<number | null>(this.initial.overrides.fuelEfficiency);
+  readonly fuelPriceOverride = signal<number | null>(this.initial.overrides.fuelPrice);
 
   // Autosave gate — true once APP_INITIALIZER finishes (cold or warm boot).
   readonly hasHydrated = signal(false);
@@ -106,10 +87,10 @@ export class ScenarioStore {
     return Math.round(this.msrp() * depreciationFactor(endAge));
   });
   readonly residualValue = computed(
-    () => this._residualValueOverride() ?? this.residualValueDefault(),
+    () => this.residualValueOverride() ?? this.residualValueDefault(),
   );
   setResidualValue(value: number | null): void {
-    this._residualValueOverride.set(value);
+    this.residualValueOverride.set(value);
   }
 
   private insuranceDefault = computed(() => {
@@ -140,11 +121,11 @@ export class ScenarioStore {
     fuelPriceDefault(this.locale(), this.powertrain()),
   );
 
-  readonly insurance = computed(() => this._insuranceOverride() ?? this.insuranceDefault());
+  readonly insurance = computed(() => this.insuranceOverride() ?? this.insuranceDefault());
   readonly fuelEfficiency = computed(
-    () => this._fuelEfficiencyOverride() ?? this.fuelEfficiencyDefaultSignal(),
+    () => this.fuelEfficiencyOverride() ?? this.fuelEfficiencyDefaultSignal(),
   );
-  readonly fuelPrice = computed(() => this._fuelPriceOverride() ?? this.fuelPriceDefaultSignal());
+  readonly fuelPrice = computed(() => this.fuelPriceOverride() ?? this.fuelPriceDefaultSignal());
 
   readonly recommendedTab = computed(() => {
     const annualMiles = this.annualMileage();
@@ -161,21 +142,21 @@ export class ScenarioStore {
   });
 
   readonly leaseEndChoice = computed<LeaseEndChoice>(() => {
-    const override = this._leaseEndOverride();
+    const override = this.leaseEndChoiceOverride();
     if (override) return override;
     return this.keepDuration() * 12 > this.leaseTerm() ? 'buyOut' : 'handBack';
   });
 
   readonly dispositionFee = computed(
-    () => this._dispositionFeeOverride() ?? LEASE_END_DEFAULTS.dispositionFee,
+    () => this.dispositionFeeOverride() ?? LEASE_END_DEFAULTS.dispositionFee,
   );
   readonly mileageOverageRate = computed(
-    () => this._mileageOverageRateOverride() ?? LEASE_END_DEFAULTS.mileageOverageRate,
+    () => this.mileageOverageRateOverride() ?? LEASE_END_DEFAULTS.mileageOverageRate,
   );
   readonly excessWearEstimate = computed(
-    () => this._excessWearOverride() ?? LEASE_END_DEFAULTS.excessWearEstimate,
+    () => this.excessWearOverride() ?? LEASE_END_DEFAULTS.excessWearEstimate,
   );
-  readonly buyoutFee = computed(() => this._buyoutFeeOverride() ?? LEASE_END_DEFAULTS.buyoutFee);
+  readonly buyoutFee = computed(() => this.buyoutFeeOverride() ?? LEASE_END_DEFAULTS.buyoutFee);
   // Default approximates a typical lessor's early-exit table — a share of
   // total depreciation proportional to remaining lease term. 0 when keep ≥ term.
   private readonly earlyTerminationFeeDefault = computed(() => {
@@ -191,7 +172,7 @@ export class ScenarioStore {
     Math.max(0.9 * (this.purchasePrice() - this.leaseDownPayment()), 0),
   );
   readonly earlyTerminationFee = computed(() => {
-    const override = this._earlyTerminationFeeOverride();
+    const override = this.earlyTerminationFeeOverride();
     const value = override ?? this.earlyTerminationFeeDefault();
     return Math.min(value, this.earlyTerminationFeeMax());
   });
@@ -285,13 +266,6 @@ export class ScenarioStore {
     }),
   );
 
-  readonly breakdownForActiveTab = computed<CostBreakdown>(() => {
-    const tab = this.activeTab();
-    if (tab === 'lease') return this.leaseBreakdown();
-    if (tab === 'finance') return this.financeBreakdown();
-    return this.cashBreakdown();
-  });
-
   readonly effectiveMonthly = (tab: Tab): Signal<number> =>
     computed(() => effectiveMonthly(this.breakdownFor(tab)(), this.keepDuration()));
   readonly costPerDistance = (tab: Tab): Signal<number> =>
@@ -308,9 +282,9 @@ export class ScenarioStore {
   // Drop running-cost overrides on locale/powertrain change — the previous
   // values (e.g. $2000 US insurance, 28 mpg) are meaningless under the new combo.
   clearRunningCostOverrides(): void {
-    this._insuranceOverride.set(null);
-    this._fuelEfficiencyOverride.set(null);
-    this._fuelPriceOverride.set(null);
+    this.insuranceOverride.set(null);
+    this.fuelEfficiencyOverride.set(null);
+    this.fuelPriceOverride.set(null);
   }
 
   setLocale(v: Locale): void {
@@ -325,15 +299,6 @@ export class ScenarioStore {
     this.clearRunningCostOverrides();
   }
 
-  setOverride(slot: TcoSlot, value: number | null): void {
-    const map: Record<TcoSlot, ReturnType<typeof signal<number | null>>> = {
-      insurance: this._insuranceOverride,
-      fuelEfficiency: this._fuelEfficiencyOverride,
-      fuelPrice: this._fuelPriceOverride,
-    };
-    map[slot].set(value);
-  }
-
   // 'none' also disables solar — solar without a home charger has no effect.
   setChargerStatus(value: ChargerStatus): void {
     this.chargerStatus.set(value);
@@ -341,22 +306,7 @@ export class ScenarioStore {
   }
 
   setLeaseEndChoice(value: LeaseEndChoice | null): void {
-    this._leaseEndOverride.set(value);
-  }
-  setDispositionFee(value: number | null): void {
-    this._dispositionFeeOverride.set(value);
-  }
-  setMileageOverageRate(value: number | null): void {
-    this._mileageOverageRateOverride.set(value);
-  }
-  setExcessWearEstimate(value: number | null): void {
-    this._excessWearOverride.set(value);
-  }
-  setBuyoutFee(value: number | null): void {
-    this._buyoutFeeOverride.set(value);
-  }
-  setEarlyTerminationFee(value: number | null): void {
-    this._earlyTerminationFeeOverride.set(value);
+    this.leaseEndChoiceOverride.set(value);
   }
 
   applySnapshot(snap: Partial<ScenarioSnapshot>): void {
@@ -372,7 +322,7 @@ export class ScenarioStore {
       this.locale.set(merged.globals.locale);
       this.powertrain.set(merged.globals.powertrain);
       this.purchasePrice.set(merged.globals.purchasePrice);
-      this._residualValueOverride.set(merged.globals.residualValue);
+      this.residualValueOverride.set(merged.globals.residualValue);
       this.vehicleAge.set(merged.globals.vehicleAge);
       this.annualMileage.set(merged.globals.annualMileage);
       this.keepDuration.set(merged.globals.keepDuration);
@@ -383,21 +333,21 @@ export class ScenarioStore {
       this.leaseApr.set(merged.lease.apr);
       this.leaseTerm.set(merged.lease.leaseTerm);
       this.leaseDownPayment.set(merged.lease.downPayment);
-      this._leaseEndOverride.set(merged.lease.leaseEndChoice);
-      this._dispositionFeeOverride.set(merged.lease.dispositionFee);
-      this._mileageOverageRateOverride.set(merged.lease.mileageOverageRate);
-      this._excessWearOverride.set(merged.lease.excessWearEstimate);
-      this._buyoutFeeOverride.set(merged.lease.buyoutFee);
-      this._earlyTerminationFeeOverride.set(merged.lease.earlyTerminationFee);
+      this.leaseEndChoiceOverride.set(merged.lease.leaseEndChoice);
+      this.dispositionFeeOverride.set(merged.lease.dispositionFee);
+      this.mileageOverageRateOverride.set(merged.lease.mileageOverageRate);
+      this.excessWearOverride.set(merged.lease.excessWearEstimate);
+      this.buyoutFeeOverride.set(merged.lease.buyoutFee);
+      this.earlyTerminationFeeOverride.set(merged.lease.earlyTerminationFee);
 
       this.financeApr.set(merged.finance.apr);
       this.loanTerm.set(merged.finance.loanTerm);
       this.financeDownPayment.set(merged.finance.downPayment);
       this.opportunityCostRate.set(merged.cash.opportunityCostRate);
 
-      this._insuranceOverride.set(merged.overrides.insurance);
-      this._fuelEfficiencyOverride.set(merged.overrides.fuelEfficiency);
-      this._fuelPriceOverride.set(merged.overrides.fuelPrice);
+      this.insuranceOverride.set(merged.overrides.insurance);
+      this.fuelEfficiencyOverride.set(merged.overrides.fuelEfficiency);
+      this.fuelPriceOverride.set(merged.overrides.fuelPrice);
     } finally {
       this._isHydrating.set(false);
     }
@@ -411,7 +361,7 @@ export class ScenarioStore {
         purchasePrice: this.purchasePrice(),
         // Persist null on auto-derived; keeps URLs short and lets the curve
         // update if age/keep change.
-        residualValue: this._residualValueOverride(),
+        residualValue: this.residualValueOverride(),
         vehicleAge: this.vehicleAge(),
         annualMileage: this.annualMileage(),
         keepDuration: this.keepDuration(),
@@ -423,12 +373,12 @@ export class ScenarioStore {
         apr: this.leaseApr(),
         leaseTerm: this.leaseTerm(),
         downPayment: this.leaseDownPayment(),
-        leaseEndChoice: this._leaseEndOverride(),
-        dispositionFee: this._dispositionFeeOverride(),
-        mileageOverageRate: this._mileageOverageRateOverride(),
-        excessWearEstimate: this._excessWearOverride(),
-        buyoutFee: this._buyoutFeeOverride(),
-        earlyTerminationFee: this._earlyTerminationFeeOverride(),
+        leaseEndChoice: this.leaseEndChoiceOverride(),
+        dispositionFee: this.dispositionFeeOverride(),
+        mileageOverageRate: this.mileageOverageRateOverride(),
+        excessWearEstimate: this.excessWearOverride(),
+        buyoutFee: this.buyoutFeeOverride(),
+        earlyTerminationFee: this.earlyTerminationFeeOverride(),
       },
       finance: {
         apr: this.financeApr(),
@@ -439,9 +389,9 @@ export class ScenarioStore {
         opportunityCostRate: this.opportunityCostRate(),
       },
       overrides: {
-        insurance: this._insuranceOverride(),
-        fuelEfficiency: this._fuelEfficiencyOverride(),
-        fuelPrice: this._fuelPriceOverride(),
+        insurance: this.insuranceOverride(),
+        fuelEfficiency: this.fuelEfficiencyOverride(),
+        fuelPrice: this.fuelPriceOverride(),
       },
     };
   }

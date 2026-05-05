@@ -7,11 +7,7 @@ export interface FuelCostInputs {
   years: number;
   powertrain: Powertrain;
   locale: Locale;
-  /** EV-only: 'none' | 'installed' | 'buying'. Solar is only meaningful when
-   * status !== 'none'. ICE callers may pass any value; it's ignored. */
   chargerStatus: ChargerStatus;
-  /** EV-only: 85% home (free from solar) + 15% public (grid rate). Without
-   * a charger (`chargerStatus === 'none'`) the solar flag has no effect. */
   solar: boolean;
 }
 

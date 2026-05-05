@@ -3,13 +3,6 @@ export type Powertrain = 'ICE' | 'EV';
 export type Tab = 'lease' | 'finance' | 'cash';
 export type VehicleCategory = 'economy' | 'mid' | 'luxury';
 export type LeaseEndChoice = 'handBack' | 'buyOut';
-/**
- * Home charger status — replaces the old `homeChargerInstalled: boolean`.
- *  - `'none'`     : public-charging only; no install cost; solar disabled.
- *  - `'installed'`: charger already paid for (sunk cost); solar available.
- *  - `'buying'`   : charger to be installed; install cost added at month 0;
- *                   solar available.
- */
 export type ChargerStatus = 'none' | 'installed' | 'buying';
 
 export interface CategoryMultipliers {
@@ -27,9 +20,7 @@ export interface Globals {
   annualMileage: number;
   keepDuration: number;
   activeTab: Tab;
-  /** EV-only: home wall charger plan — gates solar AND the install cost. */
   chargerStatus: ChargerStatus;
-  /** EV-only: solar at home (85% home / 15% public split). Gated by charger. */
   solar: boolean;
 }
 

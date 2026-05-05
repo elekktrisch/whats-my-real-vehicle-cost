@@ -63,7 +63,7 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
             [prefix]="store.currencyPrefix()"
             [suffix]="store.currencySuffix()"
             [value]="store.dispositionFee()"
-            (valueChange)="store.setDispositionFee($event)"
+            (valueChange)="store.dispositionFeeOverride.set($event)"
           />
           <app-slider-control
             label="Excess wear estimate"
@@ -76,7 +76,7 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
             [prefix]="store.currencyPrefix()"
             [suffix]="store.currencySuffix()"
             [value]="store.excessWearEstimate()"
-            (valueChange)="store.setExcessWearEstimate($event)"
+            (valueChange)="store.excessWearOverride.set($event)"
           />
           <app-slider-control
             [label]="'Mileage overage rate (per ' + distanceUnit() + ')'"
@@ -90,7 +90,7 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
             [prefix]="store.currencyPrefix()"
             [suffix]="mileageOverageSuffix()"
             [value]="store.mileageOverageRate()"
-            (valueChange)="store.setMileageOverageRate($event)"
+            (valueChange)="store.mileageOverageRateOverride.set($event)"
           />
         } @else {
           <app-slider-control
@@ -104,7 +104,7 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
             [prefix]="store.currencyPrefix()"
             [suffix]="store.currencySuffix()"
             [value]="store.buyoutFee()"
-            (valueChange)="store.setBuyoutFee($event)"
+            (valueChange)="store.buyoutFeeOverride.set($event)"
           />
         }
         <div
@@ -122,7 +122,7 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
             [prefix]="store.currencyPrefix()"
             [suffix]="store.currencySuffix()"
             [value]="store.earlyTerminationFee()"
-            (valueChange)="store.setEarlyTerminationFee($event)"
+            (valueChange)="store.earlyTerminationFeeOverride.set($event)"
           />
           @if (!earlyTerminationApplies()) {
             <div class="font-ui text-[0.75rem] text-tx-dim -mt-3 leading-snug">

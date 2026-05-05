@@ -86,7 +86,7 @@ import { MoneyPipe } from '../../pipes/money.pipe';
             [prefix]="store.currencyPrefix()"
             [suffix]="store.currencySuffix()"
             [value]="store.insurance()"
-            (valueChange)="store.setOverride('insurance', $event)"
+            (valueChange)="store.insuranceOverride.set($event)"
           />
           <app-slider-control
             [label]="fuelEfficiencyLabel()"
@@ -99,7 +99,7 @@ import { MoneyPipe } from '../../pipes/money.pipe';
             [maxLabel]="fuelEfficiencyMaxLabel()"
             [suffix]="' ' + fuelEfficiencyUnit()"
             [value]="store.fuelEfficiency()"
-            (valueChange)="store.setOverride('fuelEfficiency', $event)"
+            (valueChange)="store.fuelEfficiencyOverride.set($event)"
           />
           <app-slider-control
             [label]="fuelPriceLabel()"
@@ -113,7 +113,7 @@ import { MoneyPipe } from '../../pipes/money.pipe';
             [prefix]="fuelPriceSymbol()"
             [suffix]="fuelPriceSuffix()"
             [value]="store.fuelPrice()"
-            (valueChange)="store.setOverride('fuelPrice', $event)"
+            (valueChange)="store.fuelPriceOverride.set($event)"
           />
           <app-maintenance-display />
         </div>
