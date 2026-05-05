@@ -40,19 +40,21 @@ const MOBILE_BP = 600;
       class="max-w-[1200px] mx-auto px-4 sm:px-7 pb-[72px] relative z-[1] overflow-x-clip"
       [attr.data-scrolled]="scrolled()"
     >
-      <app-page-header />
+      <div class="sticky top-0 z-20">
+        <app-page-header />
 
-      <div class="comparison-strip-bg sticky top-0 z-20 pt-2 pb-[18px] sm:pt-3 sm:pb-[28px]">
-        <app-comparison-strip
-          [cards]="cards()"
-          [active]="store.activeTab()"
-          (activeChange)="store.activeTab.set($event)"
-          [recommended]="recommended()"
-          [distanceUnit]="distanceUnit()"
-          [recommendationReason]="recommendationReason()"
-        />
-        <div class="mt-3">
-          <app-hero-summary />
+        <div class="comparison-strip-bg pt-2 pb-[18px] sm:pt-3 sm:pb-[28px]">
+          <app-comparison-strip
+            [cards]="cards()"
+            [active]="store.activeTab()"
+            (activeChange)="store.activeTab.set($event)"
+            [recommended]="recommended()"
+            [distanceUnit]="distanceUnit()"
+            [recommendationReason]="recommendationReason()"
+          />
+          <div class="mt-3">
+            <app-hero-summary />
+          </div>
         </div>
       </div>
 

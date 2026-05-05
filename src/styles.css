@@ -202,16 +202,18 @@
       padding: 1rem;
     }
   }
+  /* 3-column always: left number → arrow → right number. Mobile labels are
+   * shortened (hero-summary template + hero-column atom) so the columns fit
+   * without stacking. */
   .hero-card .hero-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: auto auto auto;
     align-items: center;
+    justify-content: center;
     gap: 0.75rem;
   }
   @media (min-width: 600px) {
     .hero-card .hero-grid {
-      grid-template-columns: auto auto auto;
-      justify-content: center;
       gap: 1.5rem;
     }
   }
@@ -225,6 +227,97 @@
   }
   .hero-card .hero-num-sub {
     font-size: 1.05rem;
+  }
+  .hero-card .hero-arrow svg {
+    width: 44px;
+    height: 44px;
+  }
+  @media (max-width: 599px) {
+    .hero-card .hero-arrow svg {
+      width: 28px;
+      height: 28px;
+    }
+  }
+
+  /* + Details disclosure under the hero arrow. Each row: label on the left
+   * (with optional detail sub-text), amount on the right. Final row marks
+   * the total with a top border. */
+  .hero-details {
+    margin-top: 1rem;
+  }
+  .hero-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .hero-breakdown .breakdown-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .hero-breakdown .breakdown-label {
+    font-family: var(--font-ui);
+    font-size: 0.82rem;
+    color: var(--color-tx-muted);
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+  .hero-breakdown .breakdown-detail {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--color-tx-dim);
+  }
+  .hero-breakdown .breakdown-amount {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--color-tx);
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+  }
+  .hero-breakdown .breakdown-total {
+    margin-top: 0.5rem;
+    padding-top: 0.625rem;
+    border-top: 1px solid var(--color-border);
+  }
+  .hero-breakdown .breakdown-total .breakdown-label {
+    color: var(--color-tx);
+    font-weight: 500;
+  }
+  .hero-breakdown .breakdown-total .breakdown-amount {
+    font-weight: 500;
+    font-size: 0.95rem;
+  }
+
+  /* Money / car icons above the hero columns. Anchor the money→asset story.
+   * Compact state: collapse to height 0 (icons aren't part of the headline
+   * read-out). Dim treatment is applied to car.png on lease-renew where the
+   * user doesn't end up owning the asset. */
+  .hero-column-icon {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    opacity: 1;
+    overflow: hidden;
+    transition: opacity 200ms ease-out, max-height 200ms ease-out, filter 200ms ease-out;
+    max-height: 40px;
+  }
+  @media (max-width: 599px) {
+    .hero-column-icon {
+      width: 32px;
+      height: 32px;
+      max-height: 32px;
+    }
+  }
+  .hero-column-icon-dim {
+    opacity: 0.35;
+    filter: grayscale(1);
+  }
+  [data-scrolled='true'] .hero-card .hero-column-icon {
+    opacity: 0;
+    max-height: 0;
   }
   /* Explicit `max-height` on the default state so the transition has a
    * numeric starting point — `max-height: none` ↔ `0` doesn't interpolate.
@@ -261,13 +354,24 @@
     margin-top: 0;
     padding-top: 0;
   }
-  /* Mobile single-column grid: arrow points downward to follow the visual
-   * flow. Transitioned only for the rotation, not tied to scroll. */
-  @media (max-width: 599px) {
-    .hero-card .hero-arrow svg {
-      transform: rotate(45deg);
-      transition: transform 180ms ease-out;
-    }
+
+  /* Top row joins the sticky stack; dims to background style in compact so
+   * the comparison strip stays the dominant focus. Hover or focus-within
+   * pops it back to full so editing the price / locale / powertrain stays
+   * one click away. */
+  .page-header {
+    opacity: 1;
+    filter: none;
+    transition: opacity 200ms ease-out, filter 200ms ease-out;
+  }
+  [data-scrolled='true'] .page-header {
+    opacity: 0.55;
+    filter: grayscale(0.4);
+  }
+  [data-scrolled='true'] .page-header:hover,
+  [data-scrolled='true'] .page-header:focus-within {
+    opacity: 1;
+    filter: none;
   }
 
   .mode-card-total,

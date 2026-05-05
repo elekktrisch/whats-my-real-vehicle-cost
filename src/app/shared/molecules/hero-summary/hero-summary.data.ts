@@ -1,17 +1,82 @@
 import { financePayment } from '../../../scenario/calculations/financing';
+import { fuelCostOverYears } from '../../../scenario/calculations/fuel';
 import { formatCurrency } from '../../../scenario/locale.config';
 import type { ScenarioStore } from '../../../scenario/scenario.store';
 
+export interface BreakdownItem {
+  label: string;
+  // Pre-formatted currency.
+  amount: string;
+  // Optional sub-text under the label, e.g. "$450 × 36 mo" or "3 × $5,000".
+  detail?: string;
+}
+
 export interface HeroData {
-  // Total non-recurring cash out — sum of every lease-cycle down payment,
-  // any buyout, and the loan/cash down payment. The "lump sums" the user
-  // has to write checks for.
-  down: string;
-  downCaption: string;
-  monthly: string | null;
-  termMonths: number;
+  // Big headline number — total cash-out over the keep duration. Sums every
+  // check the user writes: down payments, monthly lease/loan payments, handback
+  // fees, buyout, plus running costs (insurance + maintenance + fuel).
+  outOfPocket: string;
+  outOfPocketCaption: string;
+  outOfPocketCaptionMobile: string;
+  // Per-line breakdown shown in the [+ Details] disclosure.
+  breakdown: BreakdownItem[];
+  // Asset side
   asset: string;
   assetCaption: string;
+  assetCaptionMobile: string;
+  // false on lease-renew (vehicle returned, asset value = 0); drives the
+  // dimmed car.png treatment.
+  retainsAsset: boolean;
+}
+
+// Compact-currency helper for mobile captions: "$5,000" → "$5k", "$32,500" → "$32.5k".
+function compactMoney(v: number, store: ScenarioStore): string {
+  const cfg = store.localeConfig();
+  const abs = Math.abs(v);
+  const k = abs >= 1000 ? `${Math.round(abs / 100) / 10}k` : String(Math.round(abs));
+  const sign = v < 0 ? '-' : '';
+  return cfg.currencyAfter ? `${sign}${k} ${cfg.currencySymbol}` : `${sign}${cfg.currencySymbol}${k}`;
+}
+
+interface RunningCosts {
+  insurance: number;
+  maintenance: number;
+  fuel: number;
+  total: number;
+}
+
+// Insurance + maintenance + fuel totals over the keep horizon. Calls into the
+// existing fuel calc rather than reading from `store.<mode>Breakdown()` so we
+// can be honest about "this is fuel cost during the years you actually drive
+// the car" without picking up depreciation/opportunity-cost layers that are
+// in the breakdown but aren't cash flows.
+function runningCostsOverKeep(store: ScenarioStore): RunningCosts {
+  const keep = store.keepDuration();
+  const insurance = store.insurance() * keep;
+  const maintenance = store.maintenance() * keep;
+  const fuel = fuelCostOverYears({
+    efficiency: store.fuelEfficiency(),
+    fuelPrice: store.fuelPrice(),
+    annualMileage: store.annualMileage(),
+    years: keep,
+    powertrain: store.powertrain(),
+    locale: store.locale(),
+    chargerStatus: store.chargerStatus(),
+    solar: store.solar(),
+  });
+  return { insurance, maintenance, fuel, total: insurance + maintenance + fuel };
+}
+
+function runningCostItems(rc: RunningCosts, fmt: (v: number) => string): BreakdownItem[] {
+  return [
+    { label: 'Insurance', amount: fmt(rc.insurance) },
+    { label: 'Maintenance', amount: fmt(rc.maintenance) },
+    { label: 'Fuel / electricity', amount: fmt(rc.fuel) },
+  ];
+}
+
+function captionForKeep(keep: number): { full: string; mobile: string } {
+  return { full: `over ${keep} years`, mobile: `over ${keep} yr` };
 }
 
 export function leaseHeroData(store: ScenarioStore): HeroData {
@@ -20,45 +85,85 @@ export function leaseHeroData(store: ScenarioStore): HeroData {
   const fmt = (v: number) => formatCurrency(v, locale, 0);
 
   const lease = store.leasePaymentDetails();
-  const monthly = lease.depreciationFee + lease.financeFee;
+  const monthlyLease = lease.depreciationFee + lease.financeFee;
   const choice = store.leaseEndChoice();
   const term = store.leaseTerm();
   const termYears = Math.round(term / 12);
   const keepMonths = Math.max(keep * 12, 1);
   const initialDp = store.leaseDownPayment();
+  const rc = runningCostsOverKeep(store);
 
-  let totalUpfront: number;
-  let downCaption: string;
+  const items: BreakdownItem[] = [];
+  let total = 0;
+
   if (choice === 'buyOut') {
+    const leasePeriod = Math.min(term, keepMonths);
+    const monthlySum = monthlyLease * leasePeriod;
     const earlyExit = keepMonths < term ? store.earlyTerminationFee() : 0;
     const buyout = store.residualValue() + store.buyoutFee() + earlyExit;
-    totalUpfront = initialDp + buyout;
-    downCaption =
-      earlyExit > 0
-        ? `${fmt(initialDp)} down + ${fmt(buyout)} buyout (incl. early-exit penalty)`
-        : `${fmt(initialDp)} down + ${fmt(buyout)} buyout`;
+
+    items.push({ label: 'Down payment', amount: fmt(initialDp) });
+    items.push({
+      label: 'Lease payments',
+      amount: fmt(monthlySum),
+      detail: `${fmt(monthlyLease)} × ${leasePeriod} mo`,
+    });
+    const buyoutDetailParts = [`${fmt(store.residualValue())} residual`];
+    if (store.buyoutFee()) buyoutDetailParts.push(`${fmt(store.buyoutFee())} fee`);
+    if (earlyExit > 0) buyoutDetailParts.push(`${fmt(earlyExit)} early-exit`);
+    items.push({
+      label: 'Buyout',
+      amount: fmt(buyout),
+      detail: buyoutDetailParts.join(' + '),
+    });
+    total = initialDp + monthlySum + buyout;
   } else {
-    // ceil() because a partial final cycle is modeled as a shorter last lease.
+    // Renew lease — N cycles, each a fresh down + handback at boundary.
     const cycles = Math.max(Math.ceil(keepMonths / term), 1);
-    totalUpfront = cycles * initialDp;
-    downCaption =
-      cycles > 1
-        ? `${cycles} × ${fmt(initialDp)} downpayment (one per cycle)`
-        : 'initial downpayment';
+    const downSum = cycles * initialDp;
+    const monthlySum = monthlyLease * keepMonths;
+    const handbackFee = store.dispositionFee() + store.excessWearEstimate();
+    const handbackSum = cycles * handbackFee;
+
+    items.push({
+      label: cycles > 1 ? 'Down payments' : 'Down payment',
+      amount: fmt(downSum),
+      detail: cycles > 1 ? `${cycles} × ${fmt(initialDp)}` : undefined,
+    });
+    items.push({
+      label: 'Lease payments',
+      amount: fmt(monthlySum),
+      detail: `${fmt(monthlyLease)} × ${keepMonths} mo`,
+    });
+    items.push({
+      label: cycles > 1 ? 'Handback fees' : 'Handback fee',
+      amount: fmt(handbackSum),
+      detail: cycles > 1 ? `${cycles} × ${fmt(handbackFee)}` : undefined,
+    });
+    total = downSum + monthlySum + handbackSum;
   }
 
+  items.push(...runningCostItems(rc, fmt));
+  total += rc.total;
+
+  const cap = captionForKeep(keep);
+  const asset = choice === 'buyOut' ? fmt(store.residualValue()) : fmt(0);
+  const assetCaption =
+    choice === 'buyOut'
+      ? `after ${keep} years (bought out at year ${termYears})`
+      : `after ${keep} years (vehicle returned)`;
+  const assetCaptionMobile =
+    choice === 'buyOut' ? `after ${keep} yr · bought out` : `after ${keep} yr · returned`;
+
   return {
-    down: fmt(totalUpfront),
-    downCaption,
-    monthly: fmt(monthly),
-    termMonths: term,
-    // residualValue() already accounts for vehicleAge + keepDuration, covering
-    // both the buyout-then-own tail and additional renew cycles.
-    asset: choice === 'buyOut' ? fmt(store.residualValue()) : fmt(0),
-    assetCaption:
-      choice === 'buyOut'
-        ? `after ${keep} years (bought out at year ${termYears})`
-        : `after ${keep} years (vehicle returned)`,
+    outOfPocket: fmt(total),
+    outOfPocketCaption: cap.full,
+    outOfPocketCaptionMobile: cap.mobile,
+    breakdown: items,
+    asset,
+    assetCaption,
+    assetCaptionMobile,
+    retainsAsset: choice === 'buyOut',
   };
 }
 
@@ -73,14 +178,33 @@ export function financeHeroData(store: ScenarioStore): HeroData {
     apr: store.financeApr(),
     termMonths: store.loanTerm(),
   });
+  const keepMonths = Math.max(keep * 12, 1);
+  const loanMonths = Math.min(store.loanTerm(), keepMonths);
+  const monthlySum = monthly * loanMonths;
+  const downSum = store.financeDownPayment();
+  const rc = runningCostsOverKeep(store);
+
+  const items: BreakdownItem[] = [];
+  if (downSum > 0) items.push({ label: 'Down payment', amount: fmt(downSum) });
+  items.push({
+    label: 'Loan payments',
+    amount: fmt(monthlySum),
+    detail: `${fmt(monthly)} × ${loanMonths} mo`,
+  });
+  items.push(...runningCostItems(rc, fmt));
+
+  const total = downSum + monthlySum + rc.total;
+  const cap = captionForKeep(keep);
 
   return {
-    down: fmt(store.financeDownPayment()),
-    downCaption: 'initial downpayment',
-    monthly: fmt(monthly),
-    termMonths: store.loanTerm(),
+    outOfPocket: fmt(total),
+    outOfPocketCaption: cap.full,
+    outOfPocketCaptionMobile: cap.mobile,
+    breakdown: items,
     asset: fmt(store.residualValue()),
     assetCaption: `after ${keep} years`,
+    assetCaptionMobile: `after ${keep} yr`,
+    retainsAsset: true,
   };
 }
 
@@ -89,12 +213,25 @@ export function cashHeroData(store: ScenarioStore): HeroData {
   const keep = store.keepDuration();
   const fmt = (v: number) => formatCurrency(v, locale, 0);
 
+  const purchase = store.purchasePrice();
+  const rc = runningCostsOverKeep(store);
+
+  const items: BreakdownItem[] = [
+    { label: 'Purchase price', amount: fmt(purchase) },
+    ...runningCostItems(rc, fmt),
+  ];
+
+  const total = purchase + rc.total;
+  const cap = captionForKeep(keep);
+
   return {
-    down: fmt(store.purchasePrice()),
-    downCaption: 'full purchase price',
-    monthly: fmt(0),
-    termMonths: 0,
+    outOfPocket: fmt(total),
+    outOfPocketCaption: cap.full,
+    outOfPocketCaptionMobile: cap.mobile,
+    breakdown: items,
     asset: fmt(store.residualValue()),
     assetCaption: `after ${keep} years`,
+    assetCaptionMobile: `after ${keep} yr`,
+    retainsAsset: true,
   };
 }

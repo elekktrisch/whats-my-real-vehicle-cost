@@ -8,10 +8,10 @@ import { PowertrainSelector } from '../powertrain-selector/powertrain-selector';
   selector: 'app-page-header',
   imports: [NumberInput, LocaleSelector, PowertrainSelector],
   template: `
-    <header class="pt-7 pb-[18px] border-b border-border">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-        <label class="header-input flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-          <span class="font-ui text-[0.75rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
+    <header class="page-header pt-7 pb-[18px] border-b border-border bg-bg">
+      <div class="flex flex-row items-center justify-between gap-3">
+        <label class="header-input flex flex-row items-center gap-3 min-w-0">
+          <span class="hidden sm:inline font-ui text-[0.75rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
             Negotiated price
           </span>
           <app-number-input
@@ -24,7 +24,7 @@ import { PowertrainSelector } from '../powertrain-selector/powertrain-selector';
             size="lg"
           />
         </label>
-        <div class="flex items-center gap-3 justify-between sm:justify-end">
+        <div class="flex items-center gap-3">
           <app-locale-selector />
           <app-powertrain-selector />
         </div>

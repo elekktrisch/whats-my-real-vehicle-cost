@@ -11,101 +11,108 @@ function makeStore(): ScenarioStore {
 }
 
 describe('leaseHeroData', () => {
-  it('renew lease (1 cycle): downCaption is "initial downpayment"', () => {
+  it('renew lease (1 cycle): includes Down + Lease + Handback + running costs', () => {
     const store = makeStore();
     store.leaseTerm.set(36);
     store.keepDuration.set(3);
     store.leaseEndChoiceOverride.set('handBack');
-    store.leaseDownPayment.set(4_000);
 
     const data = leaseHeroData(store);
-    expect(data.downCaption).toBe('initial downpayment');
-    expect(data.termMonths).toBe(36);
-    expect(data.asset).toContain('0'); // handback → asset = $0
+    const labels = data.breakdown.map((b) => b.label);
+    expect(labels).toContain('Down payment');
+    expect(labels).toContain('Lease payments');
+    expect(labels).toContain('Handback fee');
+    expect(labels).toContain('Insurance');
+    expect(labels).toContain('Maintenance');
+    expect(labels).toContain('Fuel / electricity');
+    expect(data.outOfPocketCaption).toBe('over 3 years');
+    expect(data.outOfPocketCaptionMobile).toBe('over 3 yr');
   });
 
-  it('renew lease (multi-cycle): downCaption shows N × down', () => {
+  it('renew lease (multi-cycle): pluralizes labels and shows cycle count in detail', () => {
     const store = makeStore();
     store.leaseTerm.set(36);
-    store.keepDuration.set(6); // 2 cycles
+    store.keepDuration.set(6);
     store.leaseEndChoiceOverride.set('handBack');
     store.leaseDownPayment.set(5_000);
 
     const data = leaseHeroData(store);
-    expect(data.downCaption).toMatch(/2 ×/);
-    expect(data.downCaption).toMatch(/one per cycle/);
-    expect(data.assetCaption).toMatch(/vehicle returned/);
+    const down = data.breakdown.find((b) => b.label === 'Down payments');
+    expect(down).toBeTruthy();
+    expect(down?.detail).toMatch(/2 ×/);
+    expect(data.breakdown.find((b) => b.label === 'Handback fees')).toBeTruthy();
   });
 
-  it('renew lease (partial final cycle): rounded up to ceil(keep/term)', () => {
-    const store = makeStore();
-    store.leaseTerm.set(36);
-    store.keepDuration.set(5); // 60 mo, ceil(60/36) = 2 cycles
-    store.leaseEndChoiceOverride.set('handBack');
-
-    const data = leaseHeroData(store);
-    expect(data.downCaption).toMatch(/2 ×/);
-  });
-
-  it('buyout: downCaption shows down + buyout', () => {
+  it('buyout: breakdown lists Down + Lease + Buyout', () => {
     const store = makeStore();
     store.leaseTerm.set(36);
     store.keepDuration.set(5);
     store.leaseEndChoiceOverride.set('buyOut');
 
     const data = leaseHeroData(store);
-    expect(data.downCaption).toMatch(/down/);
-    expect(data.downCaption).toMatch(/buyout/);
+    const labels = data.breakdown.map((b) => b.label);
+    expect(labels).toContain('Down payment');
+    expect(labels).toContain('Lease payments');
+    expect(labels).toContain('Buyout');
     expect(data.assetCaption).toMatch(/bought out at year/);
   });
 
-  it('buyout + early exit (keep < term): caption mentions early-exit penalty', () => {
+  it('buyout + early exit: detail mentions early-exit penalty', () => {
     const store = makeStore();
     store.leaseTerm.set(36);
-    store.keepDuration.set(2); // 24 mo < 36
+    store.keepDuration.set(2);
     store.leaseEndChoiceOverride.set('buyOut');
     store.earlyTerminationFeeOverride.set(500);
 
     const data = leaseHeroData(store);
-    expect(data.downCaption).toMatch(/early-exit penalty/);
+    const buyout = data.breakdown.find((b) => b.label === 'Buyout');
+    expect(buyout?.detail).toMatch(/early-exit/);
+  });
+
+  it('retainsAsset: false on handback, true on buyout', () => {
+    const store = makeStore();
+    store.leaseEndChoiceOverride.set('handBack');
+    expect(leaseHeroData(store).retainsAsset).toBe(false);
+    store.leaseEndChoiceOverride.set('buyOut');
+    expect(leaseHeroData(store).retainsAsset).toBe(true);
   });
 });
 
 describe('financeHeroData', () => {
-  it('returns down + monthly + asset for the keep duration', () => {
+  it('breakdown lists Down + Loan + running costs', () => {
     const store = makeStore();
-    store.purchasePrice.set(35_000);
     store.financeDownPayment.set(5_000);
-    store.financeApr.set(6);
     store.loanTerm.set(60);
     store.keepDuration.set(5);
 
     const data = financeHeroData(store);
-    expect(data.downCaption).toBe('initial downpayment');
-    expect(data.termMonths).toBe(60);
-    expect(data.monthly).toBeTruthy();
-    expect(data.assetCaption).toMatch(/after 5 years/);
+    const labels = data.breakdown.map((b) => b.label);
+    expect(labels).toContain('Down payment');
+    expect(labels).toContain('Loan payments');
+    expect(labels).toContain('Insurance');
+    expect(data.outOfPocket).toBeTruthy();
   });
 
-  it('zero down payment is valid', () => {
+  it('zero down payment: skips the Down line', () => {
     const store = makeStore();
     store.financeDownPayment.set(0);
 
     const data = financeHeroData(store);
-    expect(data.down).toBeTruthy();
-    expect(data.termMonths).toBeGreaterThan(0);
+    expect(data.breakdown.find((b) => b.label === 'Down payment')).toBeUndefined();
+    expect(data.breakdown.find((b) => b.label === 'Loan payments')).toBeTruthy();
   });
 });
 
 describe('cashHeroData', () => {
-  it('down = full purchase price; no monthly term', () => {
+  it('breakdown lists Purchase + running costs', () => {
     const store = makeStore();
     store.purchasePrice.set(28_000);
     store.keepDuration.set(7);
 
     const data = cashHeroData(store);
-    expect(data.downCaption).toBe('full purchase price');
-    expect(data.termMonths).toBe(0);
-    expect(data.assetCaption).toMatch(/after 7 years/);
+    const labels = data.breakdown.map((b) => b.label);
+    expect(labels[0]).toBe('Purchase price');
+    expect(labels).toContain('Insurance');
+    expect(data.outOfPocketCaption).toBe('over 7 years');
   });
 });
