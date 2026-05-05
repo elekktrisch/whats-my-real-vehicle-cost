@@ -1,4 +1,4 @@
-import { Injectable, Signal, computed, effect, inject, signal } from '@angular/core';
+import { Injectable, Signal, computed, inject, signal } from '@angular/core';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { LOCALE_CONFIG, fuelEfficiencyDefault, fuelPriceDefault } from './locale.config';
@@ -19,7 +19,7 @@ import { leasePayment } from './calculations/financing';
 import { maintenanceK } from './calculations/maintenance';
 import { recommendTab } from './calculations/recommendation';
 import { costPerDistance, effectiveMonthly, tcoBreakdown } from './calculations/tco';
-import { URL_PARAM, encodeSnapshot } from './scenario.serializer';
+import { setupAutosave } from './scenario.persistence';
 
 export type TcoSlot = 'insurance' | 'fuelEfficiency' | 'fuelPrice';
 
@@ -33,6 +33,7 @@ export class ScenarioStore {
   private readonly _residualValueOverride = signal<number | null>(
     this.initial.globals.residualValue,
   );
+  readonly residualValueOverride = this._residualValueOverride.asReadonly();
   readonly vehicleAge = signal(this.initial.globals.vehicleAge);
   readonly annualMileage = signal(this.initial.globals.annualMileage);
   readonly keepDuration = signal(this.initial.globals.keepDuration);
@@ -472,61 +473,6 @@ export class ScenarioStore {
   private readonly location = inject(Location);
 
   constructor() {
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    // Gated on hasReturningState so a fresh visitor's URL doesn't silently
-    // get `?s=<defaults>` (which would skip splash on reload).
-    effect(() => {
-      const snap = this.snapshot();
-      if (this.isHydrating() || !this.hasHydrated() || !this.hasReturningState()) return;
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => this.persist(snap), 200);
-    });
-
-    // Cross-field clamping: down payments and any residual override stay
-    // ≤ purchase price. Auto-derived residual default needs no clamp —
-    // depreciationFactor ≤ 1 keeps it bounded by construction.
-    effect(() => {
-      const price = this.purchasePrice();
-      if (this.isHydrating()) return;
-      if (this.leaseDownPayment() > price) this.leaseDownPayment.set(price);
-      if (this.financeDownPayment() > price) this.financeDownPayment.set(price);
-      const residualOverride = this._residualValueOverride();
-      if (residualOverride !== null && residualOverride > price) {
-        this._residualValueOverride.set(price);
-      }
-    });
-
-    // When the residual's drivers change (price/age/keep), drop a stale
-    // override so the auto-derived value tracks again. Baseline distinguishes
-    // "first run after hydration" from "user actually changed an input".
-    let residualBaseline: { price: number; age: number; keep: number } | null = null;
-    effect(() => {
-      const price = this.purchasePrice();
-      const age = this.vehicleAge();
-      const keep = this.keepDuration();
-      if (this.isHydrating() || !this.hasHydrated()) return;
-      if (residualBaseline === null) {
-        residualBaseline = { price, age, keep };
-        return;
-      }
-      if (
-        price !== residualBaseline.price ||
-        age !== residualBaseline.age ||
-        keep !== residualBaseline.keep
-      ) {
-        this._residualValueOverride.set(null);
-        residualBaseline = { price, age, keep };
-      }
-    });
-  }
-
-  private persist(snap: ScenarioSnapshot): void {
-    try {
-      const tree = this.router.parseUrl(this.router.url);
-      tree.queryParams = { [URL_PARAM]: encodeSnapshot(snap) };
-      this.location.replaceState(this.router.serializeUrl(tree));
-    } catch {
-      // router/location not ready
-    }
+    setupAutosave(this, this.router, this.location);
   }
 }
