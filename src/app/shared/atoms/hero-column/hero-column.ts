@@ -20,10 +20,10 @@ import { Component, input } from '@angular/core';
         />
       }
       @if (eyebrowMobile(); as mob) {
-        <span class="hero-eyebrow hidden sm:inline font-ui text-[0.75rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
+        <span class="hero-eyebrow hidden sm:block font-ui text-[0.75rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
           {{ eyebrow() }}
         </span>
-        <span class="hero-eyebrow inline sm:hidden font-ui text-[0.75rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
+        <span class="hero-eyebrow block sm:hidden font-ui text-[0.75rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
           {{ mob }}
         </span>
       } @else {
@@ -36,8 +36,8 @@ import { Component, input } from '@angular/core';
       </span>
       @if (caption(); as cap) {
         @if (captionMobile(); as mob) {
-          <span class="hero-caption hidden sm:inline font-ui text-[0.78rem] text-tx-muted">{{ cap }}</span>
-          <span class="hero-caption inline sm:hidden font-ui text-[0.78rem] text-tx-muted">{{ mob }}</span>
+          <span class="hero-caption hidden sm:block font-ui text-[0.78rem] text-tx-muted">{{ cap }}</span>
+          <span class="hero-caption block sm:hidden font-ui text-[0.78rem] text-tx-muted">{{ mob }}</span>
         } @else {
           <span class="hero-caption font-ui text-[0.78rem] text-tx-muted">{{ cap }}</span>
         }

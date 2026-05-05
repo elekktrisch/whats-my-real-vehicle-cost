@@ -235,9 +235,6 @@
       font-size: 1.25rem;
     }
   }
-  .hero-card .hero-num-sub {
-    font-size: 1.05rem;
-  }
   .hero-card .hero-arrow svg {
     width: 44px;
     height: 44px;
@@ -342,7 +339,7 @@
     object-fit: contain;
     opacity: 1;
     overflow: hidden;
-    transition: opacity 200ms ease-out, max-height 200ms ease-out, filter 200ms ease-out;
+    transition: opacity 1s ease-out, max-height 1s ease-out, filter 1s ease-out;
     max-height: 40px;
   }
   @media (max-width: 599px) {
@@ -360,17 +357,17 @@
     opacity: 0;
     max-height: 0;
   }
-  /* Explicit `max-height` on the default state so the transition has a
-   * numeric starting point — `max-height: none` ↔ `0` doesn't interpolate.
-   * Values are tight to real content so the visual collapse fills the
-   * 200 ms window rather than staying static then snapping at the end. */
+  /* `display: block` is the load-bearing detail — these are <span> elements
+   * via Tailwind utilities; without explicit block they're inline and don't
+   * respect max-height, which kills the height-collapse transition. Explicit
+   * max-height on the default state so the transition has a numeric starting
+   * point (max-height: none ↔ 0 doesn't interpolate). */
   .hero-card .hero-eyebrow,
-  .hero-card .hero-caption,
-  .hero-card .hero-fineprint {
+  .hero-card .hero-caption {
+    display: block;
     opacity: 1;
     overflow: hidden;
-    transition: opacity 200ms ease-out, max-height 200ms ease-out,
-                margin-top 200ms ease-out, padding-top 200ms ease-out;
+    transition: opacity 1s ease-out, max-height 1s ease-out;
   }
   .hero-card .hero-eyebrow {
     max-height: 24px;
@@ -378,22 +375,24 @@
   .hero-card .hero-caption {
     max-height: 48px;
   }
-  .hero-card .hero-fineprint {
-    max-height: 80px;
-    margin-top: 1rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--color-border);
-  }
   [data-scrolled='true'] .hero-card .hero-eyebrow,
   [data-scrolled='true'] .hero-card .hero-caption {
     opacity: 0;
     max-height: 0;
   }
-  [data-scrolled='true'] .hero-card .hero-fineprint {
+  /* + Details disclosure also collapses on scroll so the compact hero is
+   * just [icon → number → arrow → number → icon]. */
+  .hero-details {
+    opacity: 1;
+    max-height: 600px;
+    overflow: hidden;
+    transition: opacity 1s ease-out, max-height 1s ease-out,
+                margin-top 1s ease-out;
+  }
+  [data-scrolled='true'] .hero-details {
     opacity: 0;
     max-height: 0;
     margin-top: 0;
-    padding-top: 0;
   }
 
   /* Top row joins the sticky stack; dims to background style in compact so
@@ -403,7 +402,7 @@
   .page-header {
     opacity: 1;
     filter: none;
-    transition: opacity 200ms ease-out, filter 200ms ease-out;
+    transition: opacity 1s ease-out, filter 1s ease-out;
   }
   [data-scrolled='true'] .page-header {
     opacity: 0.55;
@@ -419,8 +418,8 @@
   .recommendation-reason {
     opacity: 1;
     overflow: hidden;
-    transition: opacity 200ms ease-out, max-height 200ms ease-out,
-                margin-top 200ms ease-out;
+    transition: opacity 1s ease-out, max-height 1s ease-out,
+                margin-top 1s ease-out;
   }
   .mode-card-total {
     max-height: 28px;
@@ -567,9 +566,10 @@
   scroll-margin-top: 220px;
 }
 
-/* ── Reduced-motion preference ───────────────────────────────────────────
+/* ── Reduced-motion preference (TEMPORARILY DISABLED FOR ANIMATION DEBUG) ─
  * Chart.js animations are JS-driven — TcoChart mirrors this media query in
  * code and passes `animation: false`. */
+/*
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -580,3 +580,4 @@
     scroll-behavior: auto !important;
   }
 }
+*/
