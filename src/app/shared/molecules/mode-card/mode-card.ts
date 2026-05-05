@@ -50,14 +50,16 @@ import type { Tab } from '../../../scenario/scenario.types';
         }
       </header>
 
-      @if (!compact()) {
-        <div class="flex items-baseline justify-between flex-wrap gap-1 sm:gap-2 mt-[10px]">
-          <span [class]="rowLabelClass">Total</span>
-          <span class="font-mono text-[0.78rem] sm:text-[0.85rem] text-tx tracking-[-0.02em]">
-            {{ total() }}
-          </span>
-        </div>
-      }
+      <!-- Total row collapses smoothly as the sticky region compacts —
+           opacity + max-height interpolation against --compact-progress,
+           same pattern the hero-summary uses. Avoids the DOM-swap jump
+           that a binary @if produces mid-scroll. -->
+      <div class="mode-card-total flex items-baseline justify-between flex-wrap gap-1 sm:gap-2">
+        <span [class]="rowLabelClass">Total</span>
+        <span class="font-mono text-[0.78rem] sm:text-[0.85rem] text-tx tracking-[-0.02em]">
+          {{ total() }}
+        </span>
+      </div>
 
       <div class="flex items-baseline justify-between flex-wrap gap-1 sm:gap-2 mt-[6px]">
         <span [class]="rowLabelClass">Monthly</span>
@@ -123,7 +125,6 @@ export class ModeCard {
     } else {
       base.push('mode-card-shine border-border hover:border-border-strong text-tx-muted');
     }
-    if (this.compact()) base.push('p-[8px] sm:p-[10px]');
     return base.join(' ');
   });
 

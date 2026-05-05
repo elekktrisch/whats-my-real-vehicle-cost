@@ -110,28 +110,35 @@ const TABLET_BP = 900;
 
       <!-- Visually-hidden data table — the source of truth for screen
            readers. Never rendered visually; aria-label on the canvas covers
-           the headline figure. -->
-      <table class="sr-only">
-        <caption>Cumulative total cost of ownership by month and category</caption>
-        <thead>
-          <tr>
-            <th scope="col">Month</th>
-            @for (layer of layers; track layer.key) {
-              <th scope="col">{{ layer.label }}</th>
-            }
-            <th scope="col">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (point of breakdown().series; track point.month) {
+           the headline figure. Wrapped in an sr-only div because tables
+           have a special layout algorithm that ignores width/height
+           constraints when filled with content. The div obeys the
+           containment; the table inside sits in clipped 1×1 territory.
+           Sampled at year boundaries so the row count is bounded by keep
+           duration in years, not months — keeps the DOM small at long
+           keeps. -->
+      <div class="sr-only">
+        <table>
+          <caption>Cumulative total cost of ownership by year and category</caption>
+          <thead>
             <tr>
-              <th scope="row">{{ point.month }}</th>
+              <th scope="col">Year</th>
               @for (layer of layers; track layer.key) {
-                <td>{{ money(point[layer.key]) }}</td>
+                <th scope="col">{{ layer.label }}</th>
               }
-              <td>{{ money(rowTotal(point)) }}</td>
+              <th scope="col">Total</th>
             </tr>
-          }
+          </thead>
+          <tbody>
+            @for (point of yearlySamples(); track point.month) {
+              <tr>
+                <th scope="row">{{ point.month / 12 }}</th>
+                @for (layer of layers; track layer.key) {
+                  <td>{{ money(point[layer.key]) }}</td>
+                }
+                <td>{{ money(rowTotal(point)) }}</td>
+              </tr>
+            }
         </tbody>
       </table>
     </div>
@@ -278,4 +285,15 @@ export class TcoChart {
     for (const layer of LAYERS) sum += point[layer.key];
     return sum;
   }
+
+  /** Year-aligned samples for the sr-only data table. The full series has
+   * one point per month — at a 15-year keep that's 180 rows, which has
+   * caused observable layout pressure even with `position: absolute`.
+   * Yearly samples (typically ≤ 15 rows) are a far better DOM/CD load and
+   * still give screen readers a useful read-out of the cost trajectory. */
+  protected readonly yearlySamples = computed<MonthlyTcoPoint[]>(() => {
+    const series = this.breakdown().series;
+    if (series.length === 0) return [];
+    return series.filter((p) => p.month > 0 && p.month % 12 === 0);
+  });
 }

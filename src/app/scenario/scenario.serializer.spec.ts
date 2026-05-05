@@ -20,7 +20,7 @@ describe('scenario.serializer', () => {
       expect(recovered.globals?.purchasePrice).toBe(snap.globals.purchasePrice);
       expect(recovered.globals?.keepDuration).toBe(snap.globals.keepDuration);
       expect(recovered.globals?.activeTab).toBe(snap.globals.activeTab);
-      expect(recovered.globals?.chargerStatus).toBe('installed');
+      expect(recovered.globals?.chargerStatus).toBe('buying');
       expect(recovered.globals?.solar).toBe(true);
       expect(recovered.lease?.apr).toBe(snap.lease.apr);
       expect(recovered.finance?.loanTerm).toBe(snap.finance.loanTerm);

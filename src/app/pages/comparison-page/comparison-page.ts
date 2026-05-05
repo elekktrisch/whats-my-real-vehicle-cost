@@ -24,9 +24,12 @@ import type { CostBreakdown, Tab } from '../../scenario/scenario.types';
 
 const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Loan', cash: 'Cash' };
 
-const SHRINK_THRESHOLD_DESKTOP = 250;
-const SHRINK_THRESHOLD_MOBILE = 400;
-const MOBILE_BREAKPOINT_PX = 600;
+/** Scroll range over which the sticky region smoothly compresses. The
+ * progress is clamped 0…1 and exposed as a CSS variable so the strip and
+ * hero interpolate properties (padding, font-size, opacity) via calc().
+ * No binary state-toggle, no layout-shift bounce, no scroll feedback loop. */
+const SHRINK_START = 400;
+const SHRINK_END = 800;
 
 /**
  * The new comparison-first shell. Layout per plan §Page shape (order O1):
@@ -87,6 +90,7 @@ const MOBILE_BREAKPOINT_PX = 600;
            .comparison-strip-bg. -->
       <div
         class="comparison-strip-bg sticky top-0 z-20 pt-2 pb-[18px] sm:pt-3 sm:pb-[28px]"
+        [style.--compact-progress]="progress()"
       >
         <app-comparison-strip
           [cards]="cards()"
@@ -98,7 +102,7 @@ const MOBILE_BREAKPOINT_PX = 600;
           [compact]="compact()"
         />
         <div class="mt-3">
-          <app-hero-summary [compact]="compact()" />
+          <app-hero-summary />
         </div>
       </div>
 
@@ -136,42 +140,36 @@ export class ComparisonPage {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
 
-  /** F2 shrink — past the enter threshold both the strip and the hero
-   * collapse. Two stabilizers prevent flicker:
-   *   1. Hysteresis: exit threshold sits well below enter, so the
-   *      sticky's own shrinkage (≈ 150 px on mobile when the hero
-   *      collapses) can't drop scrollY back below exit.
-   *   2. Toggle lockout: after switching state we ignore further scroll
-   *      events for 200 ms, giving the browser time to settle the layout
-   *      reflow before we re-evaluate.
-   *
-   * The mobile thresholds are deliberately generous (enter ~220, exit ~70)
-   * because the gap between them must exceed the layout-shift magnitude to
-   * absorb the bounce. */
-  private readonly compactState = signal(false);
-  protected readonly compact = this.compactState.asReadonly();
-  private lastToggleAt = 0;
+  /** Smooth scroll-driven compaction. `progress` is 0 below SHRINK_START,
+   * 1 above SHRINK_END, and linearly interpolated in between. Bound to
+   * `--compact-progress` on the sticky region; descendants pick it up via
+   * CSS calc() to interpolate their own properties. The boolean `compact`
+   * is derived from progress for any consumer that still wants a binary
+   * (e.g. for ARIA hints or @if-branched copy). */
+  private readonly scrollY = signal(0);
+  protected readonly progress = computed(() => {
+    if (!this.isBrowser) return 0;
+    const y = this.scrollY();
+    if (y <= SHRINK_START) return 0;
+    if (y >= SHRINK_END) return 1;
+    return (y - SHRINK_START) / (SHRINK_END - SHRINK_START);
+  });
+  protected readonly compact = computed(() => this.progress() > 0.5);
 
+  /** Coalesce scroll events to one update per animation frame. High-refresh
+   * desktops fire scroll faster than the paint pipeline; without this every
+   * tick triggers Angular CD + ~10 calc()-driven layout recalcs and the
+   * compositor falls behind, surfacing as flicker. */
+  private rafScheduled = false;
   @HostListener('window:scroll')
   protected onScroll(): void {
     if (!this.isBrowser || typeof window === 'undefined') return;
-    const now = performance.now();
-    if (now - this.lastToggleAt < 200) return; // recent toggle — let layout settle
-    const y = window.scrollY;
-    const isMobile = window.innerWidth < MOBILE_BREAKPOINT_PX;
-    const enter = isMobile ? SHRINK_THRESHOLD_MOBILE : SHRINK_THRESHOLD_DESKTOP;
-    const exit = isMobile ? 70 : Math.floor(enter / 2);
-    if (this.compactState()) {
-      if (y < exit) {
-        this.compactState.set(false);
-        this.lastToggleAt = now;
-      }
-    } else {
-      if (y > enter) {
-        this.compactState.set(true);
-        this.lastToggleAt = now;
-      }
-    }
+    if (this.rafScheduled) return;
+    this.rafScheduled = true;
+    requestAnimationFrame(() => {
+      this.rafScheduled = false;
+      this.scrollY.set(window.scrollY);
+    });
   }
 
   /** Shared "ghost button" styling for the bottom action row. */
