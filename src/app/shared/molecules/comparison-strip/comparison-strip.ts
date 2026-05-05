@@ -1,13 +1,11 @@
 import {
   Component,
   ElementRef,
-  HostListener,
   PLATFORM_ID,
   ViewChild,
   computed,
   inject,
   model,
-  signal,
   input,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
@@ -26,10 +24,6 @@ export interface ModeCardData {
 }
 
 const MODES: readonly Tab[] = ['lease', 'finance', 'cash'];
-
-const SHRINK_THRESHOLD_DESKTOP = 250;
-const SHRINK_THRESHOLD_MOBILE = 120;
-const MOBILE_BREAKPOINT_PX = 600;
 
 /**
  * Sticky strip of three mode-cards. Strip alone sticks; the surrounding
@@ -54,11 +48,7 @@ const MOBILE_BREAKPOINT_PX = 600;
   selector: 'app-comparison-strip',
   imports: [ModeCard],
   template: `
-    <div
-      #stripEl
-      class="comparison-strip-bg sticky top-0 z-20 pt-2 pb-[18px] sm:pt-3 sm:pb-[28px]"
-      [attr.data-compact]="compact()"
-    >
+    <div #stripEl [attr.data-compact]="compact()">
       <div
         role="tablist"
         aria-label="Financing modes"
@@ -104,22 +94,16 @@ export class ComparisonStrip {
   /** One-line locale-aware explanation rendered under the cards inside the
    * sticky block so it stays visible alongside the strip. */
   readonly recommendationReason = input<string>('');
+  /** F2 shrink — driven by the parent's scroll detection. The strip itself
+   * no longer owns the sticky wrapper or the scroll listener; the page
+   * coordinates one signal for both the strip and the hero-summary that
+   * sits next to it in the sticky region. */
+  readonly compact = input(false);
 
   @ViewChild('stripEl', { static: true }) stripEl?: ElementRef<HTMLElement>;
 
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
-
-  // F2 shrink — driven by window scroll position.
-  private readonly scrollY = signal(0);
-  protected readonly compact = computed(() => {
-    if (!this.isBrowser) return false;
-    const threshold =
-      typeof window !== 'undefined' && window.innerWidth < MOBILE_BREAKPOINT_PX
-        ? SHRINK_THRESHOLD_MOBILE
-        : SHRINK_THRESHOLD_DESKTOP;
-    return this.scrollY() > threshold;
-  });
 
   /** Stable visual order is always lease → finance → cash regardless of
    * which is recommended. Consistency matters more than ranking here. */
@@ -133,12 +117,6 @@ export class ComparisonStrip {
   }
   protected panelId(mode: Tab): string {
     return `modepanel-${mode}`;
-  }
-
-  @HostListener('window:scroll')
-  protected onScroll(): void {
-    if (!this.isBrowser || typeof window === 'undefined') return;
-    this.scrollY.set(window.scrollY);
   }
 
   protected onSelect(mode: Tab): void {

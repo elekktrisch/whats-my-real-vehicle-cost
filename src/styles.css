@@ -259,10 +259,12 @@
 
   /* ── Comparison-strip sticky background ─────────────────────────────────
    * 24px gradient fade on desktop, 16px on mobile (plan §F2 — mobile fade
-   * band shrinks). Plus will-change to keep the strip on its own compositor
-   * layer (chart.js canvas underneath would otherwise flicker on scroll). */
+   * band shrinks). `will-change: transform` was helpful when the strip's
+   * inner contents were static (chart.js canvas underneath would otherwise
+   * flicker on scroll), but with the hero now compressing inside the
+   * sticky region the constant compositor-layer reflow trades one flicker
+   * for another. Plain background performs better. */
   .comparison-strip-bg {
-    will-change: transform;
     background: linear-gradient(
       to bottom,
       var(--color-bg) 0%,

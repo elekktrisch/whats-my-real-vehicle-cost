@@ -66,7 +66,7 @@ import type { Tab } from '../../../scenario/scenario.types';
         </span>
       </div>
 
-      <div [class]="perDistanceRowClass()">
+      <div [class]="perDistanceRowClass">
         <span [class]="rowLabelClass">Per {{ distanceUnit() }}</span>
         <span class="font-mono text-[0.78rem] text-tx-muted tracking-[-0.02em]">
           {{ perDistance() }}
@@ -127,9 +127,9 @@ export class ModeCard {
     return base.join(' ');
   });
 
-  /** Per-distance row visibility — collapses on mobile when compact. */
-  protected readonly perDistanceRowClass = computed(() => {
-    const base = 'items-baseline justify-between flex-wrap gap-2 mt-[4px]';
-    return this.compact() ? `hidden sm:flex ${base}` : `flex ${base}`;
-  });
+  /** Per-distance row stays visible at every breakpoint, even when compact —
+   * cost-per-distance is the cross-mode apples-to-apples figure on the
+   * strip, valuable in the shrunk header just as much as in the full one. */
+  protected readonly perDistanceRowClass =
+    'flex items-baseline justify-between flex-wrap gap-2 mt-[4px]';
 }

@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { ScenarioStore } from '../../../scenario/scenario.store';
 import { financePayment } from '../../../scenario/calculations/financing';
 import { fuelCostOverYears } from '../../../scenario/calculations/fuel';
@@ -29,66 +29,109 @@ interface HeroData {
 @Component({
   selector: 'app-hero-summary',
   template: `
-    <section class="bg-surface border border-border rounded-xl p-4 sm:p-5">
-      <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-5">
-        <div class="flex flex-col gap-1">
-          <span class="font-ui text-[0.75rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
-            Out of pocket
+    @if (compact()) {
+      <!-- Compressed view: a single horizontal row inside a flat strip,
+           no card chrome, no captions, no running-costs fineprint. Sits in
+           the sticky region under the comparison strip while scrolling. -->
+      <section
+        class="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4 px-3 py-1"
+      >
+        <div class="flex items-baseline gap-2 flex-wrap min-w-0">
+          <span class="font-mono text-[0.95rem] sm:text-[1.05rem] font-medium text-tx tracking-[-0.02em]">
+            {{ data().down }}
           </span>
-          <div class="flex items-baseline gap-2 flex-wrap">
+          @if (data().monthly) {
+            <span class="font-mono text-[0.78rem] text-tx-muted">
+              + {{ data().monthly }} / mo
+            </span>
+          }
+        </div>
+        <svg
+          viewBox="0 0 56 56"
+          width="22"
+          height="22"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="text-accent/60"
+          aria-hidden="true"
+        >
+          <path d="M10 28h32 M30 14l14 14-14 14" />
+        </svg>
+        <span class="text-right font-mono text-[0.95rem] sm:text-[1.05rem] font-medium text-tx tracking-[-0.02em]">
+          {{ data().asset }}
+        </span>
+      </section>
+    } @else {
+      <section class="bg-surface border border-border rounded-xl p-4 sm:p-5">
+        <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-5">
+          <div class="flex flex-col gap-1">
+            <span class="font-ui text-[0.75rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
+              Out of pocket
+            </span>
+            <div class="flex items-baseline gap-2 flex-wrap">
+              <span class="font-mono text-[1.25rem] sm:text-[1.4rem] font-medium text-tx tracking-[-0.02em]">
+                {{ data().down }}
+              </span>
+              <span class="font-ui text-[0.78rem] text-tx-muted">{{ data().downCaption }}</span>
+            </div>
+            <div class="flex items-baseline gap-2 flex-wrap mt-1">
+              <span class="font-mono text-[1.05rem] font-medium text-tx tracking-[-0.02em]">
+                {{ data().monthly }} monthly
+              </span>
+              <span class="font-ui text-[0.78rem] text-tx-muted">
+                @if ( data().termMonths ) {
+                  for {{ data().termMonths }} months
+                } @else {
+                  (no monthly payments)
+                }
+              </span>
+            </div>
+          </div>
+          <!-- Money → asset arrow. Horizontal between columns on desktop;
+               rotates 45° (downward) when columns stack on mobile. -->
+          <div class="flex justify-center text-accent/60 py-1 sm:py-0">
+            <svg
+              viewBox="0 0 56 56"
+              width="44"
+              height="44"
+              fill="none"
+              stroke="white"
+              stroke-width="3.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="rotate-45 sm:rotate-0"
+              aria-hidden="true"
+            >
+              <path d="M10 28h32 M30 14l14 14-14 14" />
+            </svg>
+          </div>
+          <div class="flex flex-col gap-1 text-right">
+            <span class="font-ui text-[0.75rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
+              Owned Asset value
+            </span>
             <span class="font-mono text-[1.25rem] sm:text-[1.4rem] font-medium text-tx tracking-[-0.02em]">
-              {{ data().down }}
+              {{ data().asset }}
             </span>
-            <span class="font-ui text-[0.78rem] text-tx-muted">{{ data().downCaption }}</span>
-          </div>
-          <div class="flex items-baseline gap-2 flex-wrap mt-1">
-            <span class="font-mono text-[1.05rem] font-medium text-tx tracking-[-0.02em]">
-              {{ data().monthly }} monthly
-            </span>
-            <span class="font-ui text-[0.78rem] text-tx-muted">
-              @if ( data().termMonths ) {
-                for {{ data().termMonths }} months
-              } @else {
-                (no monthly payments)
-              }
-            </span>
+            <span class="font-ui text-[0.78rem] text-tx-muted">{{ data().assetCaption }}</span>
           </div>
         </div>
-        <!-- Money → asset arrow. Horizontal between columns on desktop;
-             rotates 90° (downward) when columns stack on mobile. -->
-        <div class="flex justify-center text-accent/60 py-1 sm:py-0">
-          <svg
-            viewBox="0 0 56 56"
-            width="44"
-            height="44"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="3.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="rotate-90 sm:rotate-0"
-            aria-hidden="true"
-          >
-            <path d="M10 28h32 M30 14l14 14-14 14" />
-          </svg>
-        </div>
-        <div class="flex flex-col gap-1 text-right">
-          <span class="font-ui text-[0.75rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
-            Owned Asset value
-          </span>
-          <span class="font-mono text-[1.25rem] sm:text-[1.4rem] font-medium text-tx tracking-[-0.02em]">
-            {{ data().asset }}
-          </span>
-          <span class="font-ui text-[0.78rem] text-tx-muted">{{ data().assetCaption }}</span>
-        </div>
-      </div>
-      <p class="font-ui text-[0.72rem] text-tx-dim leading-relaxed mt-4 pt-3 border-t border-border">
-        Plus ≈ {{ runningCostsAnnual() }} / yr in insurance, maintenance and fuel.
-      </p>
-    </section>
+        <p class="font-ui text-[0.72rem] text-tx-dim leading-relaxed mt-4 pt-3 border-t border-border">
+          Plus ≈ {{ runningCostsAnnual() }} / yr in insurance, maintenance and fuel.
+        </p>
+      </section>
+    }
   `,
 })
 export class HeroSummary {
+  /** Driven by comparison-page's scroll detection — when true, the hero
+   * collapses to a single-row condensed view (no card chrome, no captions,
+   * no running-costs fineprint). Stays in the sticky region while the
+   * page scrolls. */
+  readonly compact = input(false);
+
   private readonly store = inject(ScenarioStore);
 
   protected readonly data = computed<HeroData>(() => {

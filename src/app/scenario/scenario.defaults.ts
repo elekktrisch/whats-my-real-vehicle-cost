@@ -23,7 +23,7 @@ export function defaultScenario(localeOverride?: Locale): ScenarioSnapshot {
       // Default for EV: assume the user already has a home charger
       // installed (no install cost added to TCO) and solar on. ICE ignores
       // both fields, so the values are inert there.
-      chargerStatus: 'installed',
+      chargerStatus: 'buying',
       solar: true,
     },
     lease: {

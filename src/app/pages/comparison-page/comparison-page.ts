@@ -1,4 +1,12 @@
-import { Component, computed, inject } from '@angular/core';
+import {
+  Component,
+  HostListener,
+  PLATFORM_ID,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { ScenarioStore } from '../../scenario/scenario.store';
 import { SHARE_PARAM, encodeShareSnapshot } from '../../scenario/scenario.serializer';
 import { NumberInput } from '../../shared/atoms/number-input/number-input';
@@ -9,11 +17,16 @@ import {
   ComparisonStrip,
   ModeCardData,
 } from '../../shared/molecules/comparison-strip/comparison-strip';
+import { HeroSummary } from '../../shared/molecules/hero-summary/hero-summary';
 import { ModeDetailView } from '../../features/mode-detail-view/mode-detail-view';
 import { formatCurrency } from '../../scenario/locale.config';
 import type { CostBreakdown, Tab } from '../../scenario/scenario.types';
 
 const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Loan', cash: 'Cash' };
+
+const SHRINK_THRESHOLD_DESKTOP = 250;
+const SHRINK_THRESHOLD_MOBILE = 400;
+const MOBILE_BREAKPOINT_PX = 600;
 
 /**
  * The new comparison-first shell. Layout per plan §Page shape (order O1):
@@ -33,6 +46,7 @@ const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Loan', cash: 'Cas
     LocaleSelector,
     PowertrainSelector,
     ComparisonStrip,
+    HeroSummary,
     ModeDetailView,
   ],
   template: `
@@ -67,14 +81,26 @@ const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Loan', cash: 'Cas
         </div>
       </header>
 
-      <app-comparison-strip
-        [cards]="cards()"
-        [active]="store.activeTab()"
-        (activeChange)="store.activeTab.set($event)"
-        [recommended]="recommended()"
-        [distanceUnit]="distanceUnit()"
-        [recommendationReason]="recommendationReason()"
-      />
+      <!-- Sticky region: comparison strip + hero summary. Both compress
+           together past the scroll threshold (driven by compact() below).
+           The 24 px gradient fade band at the bottom comes from
+           .comparison-strip-bg. -->
+      <div
+        class="comparison-strip-bg sticky top-0 z-20 pt-2 pb-[18px] sm:pt-3 sm:pb-[28px]"
+      >
+        <app-comparison-strip
+          [cards]="cards()"
+          [active]="store.activeTab()"
+          (activeChange)="store.activeTab.set($event)"
+          [recommended]="recommended()"
+          [distanceUnit]="distanceUnit()"
+          [recommendationReason]="recommendationReason()"
+          [compact]="compact()"
+        />
+        <div class="mt-3">
+          <app-hero-summary [compact]="compact()" />
+        </div>
+      </div>
 
       <app-mode-detail-view />
 
@@ -106,6 +132,47 @@ const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Loan', cash: 'Cas
 })
 export class ComparisonPage {
   protected readonly store = inject(ScenarioStore);
+
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = isPlatformBrowser(this.platformId);
+
+  /** F2 shrink — past the enter threshold both the strip and the hero
+   * collapse. Two stabilizers prevent flicker:
+   *   1. Hysteresis: exit threshold sits well below enter, so the
+   *      sticky's own shrinkage (≈ 150 px on mobile when the hero
+   *      collapses) can't drop scrollY back below exit.
+   *   2. Toggle lockout: after switching state we ignore further scroll
+   *      events for 200 ms, giving the browser time to settle the layout
+   *      reflow before we re-evaluate.
+   *
+   * The mobile thresholds are deliberately generous (enter ~220, exit ~70)
+   * because the gap between them must exceed the layout-shift magnitude to
+   * absorb the bounce. */
+  private readonly compactState = signal(false);
+  protected readonly compact = this.compactState.asReadonly();
+  private lastToggleAt = 0;
+
+  @HostListener('window:scroll')
+  protected onScroll(): void {
+    if (!this.isBrowser || typeof window === 'undefined') return;
+    const now = performance.now();
+    if (now - this.lastToggleAt < 200) return; // recent toggle — let layout settle
+    const y = window.scrollY;
+    const isMobile = window.innerWidth < MOBILE_BREAKPOINT_PX;
+    const enter = isMobile ? SHRINK_THRESHOLD_MOBILE : SHRINK_THRESHOLD_DESKTOP;
+    const exit = isMobile ? 70 : Math.floor(enter / 2);
+    if (this.compactState()) {
+      if (y < exit) {
+        this.compactState.set(false);
+        this.lastToggleAt = now;
+      }
+    } else {
+      if (y > enter) {
+        this.compactState.set(true);
+        this.lastToggleAt = now;
+      }
+    }
+  }
 
   /** Shared "ghost button" styling for the bottom action row. */
   protected readonly actionBtnClass =
