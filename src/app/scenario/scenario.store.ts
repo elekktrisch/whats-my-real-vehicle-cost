@@ -117,8 +117,16 @@ export class ScenarioStore {
     const baseRate = this.powertrain() === 'EV' ? 0.007 : 0.015;
     return this.msrp() * baseRate * this.categoryMultipliers().maintenance;
   });
-  readonly maintenanceK = computed(() =>
-    maintenanceK(this.vehicleCategory(), this.powertrain()),
+  /** Heavy drivers wear cars out faster — multiply the age-curve coefficient
+   * by `annualMileage / nominalMileage` so the maintenance band steepens
+   * proportionally. Year-0 base stays driven by MSRP × baseRate (calendar-
+   * based items still apply at low mileage); only the curve growth scales. */
+  private readonly mileageFactor = computed(() => {
+    const nominal = this.locale() === 'US' ? 12000 : 15000;
+    return Math.max(this.annualMileage() / nominal, 0);
+  });
+  readonly maintenanceK = computed(
+    () => maintenanceK(this.vehicleCategory(), this.powertrain()) * this.mileageFactor(),
   );
   private fuelEfficiencyDefaultSignal = computed(() =>
     fuelEfficiencyDefault(this.locale(), this.powertrain()),
