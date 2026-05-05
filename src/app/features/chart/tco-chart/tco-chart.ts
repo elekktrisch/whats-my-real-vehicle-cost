@@ -75,27 +75,35 @@ const CASH_OUT_LABEL = 'Cash out of pocket';
         <span class="font-ui text-[0.75rem] font-medium tracking-[0.13em] uppercase text-tx-dim">
           Cumulative total cost of ownership
         </span>
-        <div class="flex flex-wrap gap-x-4 gap-y-1">
+        <div class="flex flex-wrap gap-x-1 gap-y-1">
           @for (layer of layers; track layer.key) {
-            <span
-              class="flex items-center gap-[6px] font-ui text-[0.75rem] text-tx-muted tracking-[0.04em]"
+            <button
+              type="button"
+              class="legend-toggle"
+              [class.legend-toggle-off]="hiddenSeries().has(layer.key)"
+              [attr.aria-pressed]="!hiddenSeries().has(layer.key)"
+              (click)="toggle(layer.key)"
             >
               <span
                 class="w-3 h-2 rounded-[2px] inline-block"
                 [style.background]="layer.color"
               ></span>
               {{ layer.label }}
-            </span>
+            </button>
           }
-          <span
-            class="flex items-center gap-[6px] font-ui text-[0.75rem] text-tx-muted tracking-[0.04em]"
+          <button
+            type="button"
+            class="legend-toggle"
+            [class.legend-toggle-off]="hiddenSeries().has('cashOut')"
+            [attr.aria-pressed]="!hiddenSeries().has('cashOut')"
+            (click)="toggle('cashOut')"
           >
             <span
               class="inline-block w-3 h-0 border-t border-dashed"
               [style.border-color]="cashOutColor"
             ></span>
             {{ cashOutLabel }}
-          </span>
+          </button>
         </div>
       </div>
 
@@ -148,7 +156,18 @@ export class TcoChart {
   protected readonly layers = LAYERS;
   protected readonly cashOutColor = CASH_OUT_COLOR;
   protected readonly cashOutLabel = CASH_OUT_LABEL;
+  // Per-session legend toggle state — ephemeral, never persisted to URL.
+  protected readonly hiddenSeries = signal<Set<CostCategory | 'cashOut'>>(new Set());
   private readonly store = inject(ScenarioStore);
+
+  protected toggle(key: CostCategory | 'cashOut'): void {
+    this.hiddenSeries.update((s) => {
+      const next = new Set(s);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
 
@@ -183,6 +202,7 @@ export class TcoChart {
 
   protected readonly chartData = computed<ChartConfiguration<'line'>['data']>(() => {
     const series = this.breakdown().series;
+    const hidden = this.hiddenSeries();
     const labels = series.map((p) => `Mo ${p.month}`);
     // Stacked-area cost layers — share `stack: 'cost'` so they sum vertically.
     const stackDatasets = LAYERS.map((layer) => ({
@@ -197,6 +217,7 @@ export class TcoChart {
       pointHoverRadius: 3,
       pointHoverBackgroundColor: layer.color,
       stack: 'cost',
+      hidden: hidden.has(layer.key),
     }));
     // Overlay line: dashed neutral, no fill, on its own stack so it doesn't
     // sum with the cost layers — its Y is the raw cashOut value.
@@ -213,6 +234,7 @@ export class TcoChart {
       pointHoverRadius: 3,
       pointHoverBackgroundColor: CASH_OUT_COLOR,
       stack: 'overlay',
+      hidden: hidden.has('cashOut'),
     };
     return { labels, datasets: [...stackDatasets, overlayDataset] };
   });

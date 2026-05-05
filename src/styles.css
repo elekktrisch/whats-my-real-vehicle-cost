@@ -249,6 +249,37 @@
     }
   }
 
+  /* Chart legend entries are clickable buttons that toggle their dataset's
+   * visibility. Toggled-off state: dimmed + struck-through, but the swatch
+   * stays full-color so the affordance reads as "click to bring it back". */
+  .legend-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    padding: 2px 6px;
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    color: var(--color-tx-muted);
+    letter-spacing: 0.04em;
+    border-radius: 4px;
+    transition: opacity 150ms ease-out, color 150ms ease-out;
+  }
+  .legend-toggle:hover {
+    color: var(--color-tx);
+    background: rgba(255, 255, 255, 0.04);
+  }
+  .legend-toggle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(79, 142, 247, 0.5);
+  }
+  .legend-toggle-off {
+    opacity: 0.3;
+    text-decoration: line-through;
+  }
+
   /* + Details disclosure under the hero arrow. Each row: label on the left
    * (with optional detail sub-text), amount on the right. Final row marks
    * the total with a top border. */
