@@ -239,6 +239,7 @@
   }
   .hero-card .hero-num {
     font-size: 1.4rem;
+    white-space: nowrap;
     transition: font-size 300ms ease-out !important;
   }
   @media (max-width: 599px) {
@@ -400,6 +401,7 @@
     display: block;
     opacity: 1;
     overflow: hidden;
+    white-space: nowrap;
     transition: opacity 300ms ease-out , max-height 300ms ease-out !important;
   }
   .hero-card .hero-eyebrow {

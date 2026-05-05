@@ -254,9 +254,13 @@ export class TcoChart {
       maintainAspectRatio: false,
       animation: this.reducedMotion() ? false : { duration: 240 },
       interaction: { mode: 'index', intersect: false },
+      // Disable hover/tooltip events on mobile — touch capture interferes
+      // with vertical scrolling on the chart canvas.
+      events: isMobile ? [] : undefined,
       plugins: {
         legend: { display: false },
         tooltip: {
+          enabled: !isMobile,
           backgroundColor: '#141e33',
           borderColor: 'rgba(255,255,255,0.10)',
           borderWidth: 1,
