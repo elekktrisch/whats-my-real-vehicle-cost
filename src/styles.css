@@ -93,7 +93,6 @@
     border: 1px solid var(--color-border-strong);
     color: var(--color-tx);
     font-family: var(--font-ui);
-    /* Plan §Font-size policy: tooltip body → 14px (text-sm). */
     font-size: 0.875rem;
     font-weight: 400;
     line-height: 1.55;
@@ -368,10 +367,9 @@
     50% { transform: translateY(6px); opacity: 0.95; }
   }
 
-  /* ── Disclosure body — visual treatment for revealed advanced fields ────
-   * `<app-disclosure>` opens to a body with a 2 px accent bar on the left
-   * and a small indent so the contents read as nested under the button.
-   * Plan §Q7 = A. */
+  /* ── Disclosure body ─────────────────────────────────────────────────────
+   * 2 px accent bar on the left + small indent so the body reads as nested
+   * under the disclosure button. */
   .disclosure-body {
     border-left: 2px solid var(--color-accent-soft);
     padding-left: 12px;
