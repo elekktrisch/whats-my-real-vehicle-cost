@@ -1,0 +1,53 @@
+import type { CostBreakdown } from '../scenario.types';
+import { opportunityCostMonthly } from './opportunity';
+import {
+  TcoBaseInputs,
+  allocateSeries,
+  buildOwnedMonthsSeries,
+  fuelTotalForMonths,
+  homeChargerInstallCost,
+  summarize,
+} from './tco-shared';
+
+export interface CashTcoInputs extends TcoBaseInputs {
+  tab: 'cash';
+  opportunityCostRate: number;
+}
+
+export function cashTco(input: CashTcoInputs): CostBreakdown {
+  const totalMonths = Math.max(Math.round(input.keepDurationYears * 12), 1);
+  const totalDepreciation = Math.max(input.purchasePrice - input.residualValue, 0);
+  const perMonthDepreciation = totalDepreciation / totalMonths;
+  const opportunity = opportunityCostMonthly(
+    input.purchasePrice,
+    input.opportunityCostRate,
+    totalMonths,
+  );
+
+  const fuelTotal = fuelTotalForMonths(input, totalMonths);
+  const monthlyFuel = totalMonths > 0 ? fuelTotal / totalMonths : 0;
+  const monthlyInsurance = input.insuranceAnnual / 12;
+  const inc = buildOwnedMonthsSeries({
+    startAgeYears: input.vehicleAge,
+    durationMonths: totalMonths,
+    monthlyFuel,
+    monthlyInsurance,
+    maintenanceBase: input.maintenanceBase,
+    maintenanceK: input.maintenanceK,
+  });
+
+  const series = allocateSeries(totalMonths);
+  series[0].maintenance = homeChargerInstallCost(input);
+
+  for (let m = 1; m <= totalMonths; m++) {
+    const i = m - 1;
+    const prev = series[m - 1];
+    series[m].fuel = prev.fuel + inc.fuel[i];
+    series[m].insurance = prev.insurance + inc.insurance[i];
+    series[m].maintenance = prev.maintenance + inc.maintenance[i];
+    series[m].depreciationOrLease = prev.depreciationOrLease + perMonthDepreciation;
+    series[m].financing = opportunity[m];
+  }
+
+  return summarize(series);
+}
