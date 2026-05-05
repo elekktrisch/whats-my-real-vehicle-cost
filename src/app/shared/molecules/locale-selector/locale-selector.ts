@@ -32,7 +32,7 @@ import type { Locale } from '../../../scenario/scenario.types';
           </g>
           <rect width="12" height="10.77" fill="#3c3b6e" />
         </svg>
-        <span class="hidden sm:inline ml-[6px] font-ui text-[0.75rem] font-medium tracking-[0.06em] uppercase">US</span>
+        <span class="ml-[6px] font-ui text-[0.75rem] font-medium tracking-[0.06em] uppercase">US</span>
       </button>
       <button
         type="button"
@@ -50,7 +50,7 @@ import type { Locale } from '../../../scenario/scenario.types';
             }
           </g>
         </svg>
-        <span class="hidden sm:inline ml-[6px] font-ui text-[0.75rem] font-medium tracking-[0.06em] uppercase">EU</span>
+        <span class="ml-[6px] font-ui text-[0.75rem] font-medium tracking-[0.06em] uppercase">EU</span>
       </button>
     </div>
   `,

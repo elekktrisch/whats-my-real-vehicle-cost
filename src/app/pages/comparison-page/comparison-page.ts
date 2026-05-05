@@ -27,8 +27,8 @@ const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Loan', cash: 'Cas
 // collapse-induced layout shift can push scroll position back across it.
 // Wider gap on mobile to absorb iOS address-bar resize during scroll.
 const HYSTERESIS = {
-  desktop: { down: 300, up: 150 },
-  mobile: { down: 300, up: 100 },
+  desktop: { down: 250, up: 20 },
+  mobile: { down: 250, up: 20 },
 };
 const MOBILE_BP = 600;
 
@@ -43,7 +43,7 @@ const MOBILE_BP = 600;
       <div class="sticky top-0 z-20">
         <app-page-header />
 
-        <div class="comparison-strip-bg pt-2 pb-[18px] sm:pt-3 sm:pb-[28px]">
+        <div class="comparison-strip-bg sticky-strip-pad">
           <app-comparison-strip
             [cards]="cards()"
             [active]="store.activeTab()"
@@ -52,7 +52,7 @@ const MOBILE_BP = 600;
             [distanceUnit]="distanceUnit()"
             [recommendationReason]="recommendationReason()"
           />
-          <div class="mt-3">
+          <div class="strip-to-hero-gap">
             <app-hero-summary />
           </div>
         </div>

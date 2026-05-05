@@ -1,4 +1,4 @@
-import { Component, computed, input, signal } from '@angular/core';
+import { Component, computed, input, model } from '@angular/core';
 
 @Component({
   selector: 'app-disclosure',
@@ -25,7 +25,9 @@ export class Disclosure {
   // When omitted, the open label is the closed one with leading `+` flipped to `−`.
   readonly labelWhenOpen = input<string>('');
 
-  protected readonly open = signal(false);
+  // Two-way bindable so consumers can force-close (e.g. on scroll) without
+  // disturbing the user-driven toggle behavior in the default-internal case.
+  readonly open = model(false);
 
   protected readonly buttonText = computed(() => {
     if (this.open()) {

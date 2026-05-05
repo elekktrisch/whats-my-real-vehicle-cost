@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { ScenarioStore } from '../../../scenario/scenario.store';
 import { HeroColumn } from '../../atoms/hero-column/hero-column';
 import { Disclosure } from '../disclosure/disclosure';
@@ -10,9 +10,16 @@ import { cashHeroData, financeHeroData, leaseHeroData, type HeroData } from './h
   template: `
     <section class="hero-card">
       <div class="hero-grid">
+        <img
+          class="hero-column-icon hero-column-icon-left"
+          src="money.png"
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          decoding="async"
+        />
         <app-hero-column
           side="left"
-          iconSrc="money.png"
           eyebrow="Out of pocket"
           [value]="data().outOfPocket"
           [caption]="data().outOfPocketCaption"
@@ -35,18 +42,25 @@ import { cashHeroData, financeHeroData, leaseHeroData, type HeroData } from './h
 
         <app-hero-column
           side="right"
-          iconSrc="car.png"
-          [dimIcon]="!data().retainsAsset"
           eyebrow="Owned Asset value"
           eyebrowMobile="Asset value"
           [value]="data().asset"
           [caption]="data().assetCaption"
           [captionMobile]="data().assetCaptionMobile"
         />
+        <img
+          class="hero-column-icon hero-column-icon-right"
+          [class.hero-column-icon-dim]="!data().retainsAsset"
+          src="car.png"
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          decoding="async"
+        />
       </div>
 
       <div class="hero-details">
-        <app-disclosure label="+ Details">
+        <app-disclosure label="+ Details" [(open)]="detailsOpen">
           <dl class="hero-breakdown">
             @for (item of data().breakdown; track item.label) {
               <div class="breakdown-row">
@@ -71,6 +85,16 @@ import { cashHeroData, financeHeroData, leaseHeroData, type HeroData } from './h
 })
 export class HeroSummary {
   private readonly store = inject(ScenarioStore);
+
+  // Closing on every scroll event (not just when [data-scrolled] flips) so
+  // the .hero-details wrapper is always shrinking from a known-small height
+  // (just the disclosure button) when the compact-state transition fires.
+  protected readonly detailsOpen = signal(false);
+
+  @HostListener('window:scroll')
+  protected onScroll(): void {
+    if (this.detailsOpen()) this.detailsOpen.set(false);
+  }
 
   protected readonly data = computed<HeroData>(() => {
     const tab = this.store.activeTab();

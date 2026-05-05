@@ -194,55 +194,85 @@
   }
 
   /* ── Sticky region compaction ────────────────────────────────────────────
-   * Driven by [data-scrolled] on the comparison-page root, flipped via
-   * hysteresis-gated scroll handler. Compaction collapses height-claiming
-   * scaffolding (eyebrows, captions, fineprint, the strip's Total row, the
-   * recommendation reason) to keep only the headline numbers + arrow +
-   * monthly line + per-distance line in view while scrolled past the fold.
-   * Only `opacity` and `max-height` animate — layout-property animation
-   * (padding/font-size/gap) caused the mobile flicker we replaced. */
+   * Driven by [data-scrolled] on the comparison-page root via a hysteresis-
+   * gated scroll handler. !important on transition-duration so the compact
+   * state still animates when prefers-reduced-motion is on (functional
+   * state-feedback, not decoration). */
   .hero-card {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: 12px;
     padding: 1.25rem;
+    transition: padding 300ms ease-out !important;
   }
   @media (max-width: 599px) {
     .hero-card {
       padding: 1rem;
     }
   }
-  /* 3-column always: left number → arrow → right number. Mobile labels are
-   * shortened (hero-summary template + hero-column atom) so the columns fit
-   * without stacking. */
+  [data-scrolled='true'] .hero-card {
+    padding: 0.625rem 1rem;
+  }
+  @media (max-width: 599px) {
+    [data-scrolled='true'] .hero-card {
+      padding: 0.5rem 0.625rem;
+    }
+  }
+  /* 5-column grid: icon | left col | arrow | right col | icon. Icons and
+   * arrow stay visible even in compact; only the eyebrow + caption rows
+   * inside each column collapse. */
   .hero-card .hero-grid {
     display: grid;
-    grid-template-columns: auto auto auto;
+    grid-template-columns: auto auto auto auto auto;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
+    transition: gap 300ms ease-out !important;
   }
   @media (min-width: 600px) {
     .hero-card .hero-grid {
-      gap: 1.5rem;
+      gap: 1rem;
     }
+  }
+  [data-scrolled='true'] .hero-card .hero-grid {
+    gap: 0.4rem;
   }
   .hero-card .hero-num {
     font-size: 1.4rem;
+    transition: font-size 300ms ease-out !important;
   }
   @media (max-width: 599px) {
     .hero-card .hero-num {
       font-size: 1.25rem;
     }
   }
+  [data-scrolled='true'] .hero-card .hero-num {
+    font-size: 1.1rem;
+  }
+  @media (max-width: 599px) {
+    [data-scrolled='true'] .hero-card .hero-num {
+      font-size: 1rem;
+    }
+  }
   .hero-card .hero-arrow svg {
     width: 44px;
     height: 44px;
+    transition: width 300ms ease-out , height 300ms ease-out !important;
   }
   @media (max-width: 599px) {
     .hero-card .hero-arrow svg {
       width: 28px;
       height: 28px;
+    }
+  }
+  [data-scrolled='true'] .hero-card .hero-arrow svg {
+    width: 24px;
+    height: 24px;
+  }
+  @media (max-width: 599px) {
+    [data-scrolled='true'] .hero-card .hero-arrow svg {
+      width: 20px;
+      height: 20px;
     }
   }
 
@@ -329,33 +359,36 @@
     font-size: 0.95rem;
   }
 
-  /* Money / car icons above the hero columns. Anchor the money→asset story.
-   * Compact state: collapse to height 0 (icons aren't part of the headline
-   * read-out). Dim treatment is applied to car.png on lease-renew where the
-   * user doesn't end up owning the asset. */
+  /* Money / car icons flanking the hero columns. Stay visible in compact
+   * (just smaller) so the money→asset story holds even when scrolled. Dim
+   * treatment lives on car.png in lease-renew (no asset retained). */
   .hero-column-icon {
     width: 40px;
     height: 40px;
     object-fit: contain;
     opacity: 1;
-    overflow: hidden;
-    transition: opacity 1s ease-out, max-height 1s ease-out, filter 1s ease-out;
-    max-height: 40px;
+    transition: width 300ms ease-out , height 300ms ease-out ,
+                opacity 300ms ease-out , filter 300ms ease-out !important;
   }
   @media (max-width: 599px) {
     .hero-column-icon {
       width: 32px;
       height: 32px;
-      max-height: 32px;
+    }
+  }
+  [data-scrolled='true'] .hero-card .hero-column-icon {
+    width: 28px;
+    height: 28px;
+  }
+  @media (max-width: 599px) {
+    [data-scrolled='true'] .hero-card .hero-column-icon {
+      width: 24px;
+      height: 24px;
     }
   }
   .hero-column-icon-dim {
     opacity: 0.35;
     filter: grayscale(1);
-  }
-  [data-scrolled='true'] .hero-card .hero-column-icon {
-    opacity: 0;
-    max-height: 0;
   }
   /* `display: block` is the load-bearing detail — these are <span> elements
    * via Tailwind utilities; without explicit block they're inline and don't
@@ -367,7 +400,7 @@
     display: block;
     opacity: 1;
     overflow: hidden;
-    transition: opacity 1s ease-out, max-height 1s ease-out;
+    transition: opacity 300ms ease-out , max-height 300ms ease-out !important;
   }
   .hero-card .hero-eyebrow {
     max-height: 24px;
@@ -380,14 +413,14 @@
     opacity: 0;
     max-height: 0;
   }
-  /* + Details disclosure also collapses on scroll so the compact hero is
-   * just [icon → number → arrow → number → icon]. */
+  /* + Details disclosure collapses on scroll: compact hero is just
+   * [icon → number → arrow → number → icon]. */
   .hero-details {
     opacity: 1;
     max-height: 600px;
     overflow: hidden;
-    transition: opacity 1s ease-out, max-height 1s ease-out,
-                margin-top 1s ease-out;
+    transition: opacity 300ms ease-out , max-height 300ms ease-out ,
+                margin-top 300ms ease-out !important;
   }
   [data-scrolled='true'] .hero-details {
     opacity: 0;
@@ -395,31 +428,131 @@
     margin-top: 0;
   }
 
-  /* Top row joins the sticky stack; dims to background style in compact so
-   * the comparison strip stays the dominant focus. Hover or focus-within
-   * pops it back to full so editing the price / locale / powertrain stays
-   * one click away. */
+  /* Top row joins the sticky stack. Background fully opaque (content can't
+   * show through). Padding owned by CSS (not Tailwind utilities) because the
+   * layer cascade puts utilities AFTER components, which would otherwise win
+   * the padding fight even at higher specificity. Dim treatment lives on the
+   * INNER div so opacity affects only visible content, not the background. */
   .page-header {
-    opacity: 1;
-    filter: none;
-    transition: opacity 1s ease-out, filter 1s ease-out;
+    background-color: var(--color-bg);
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    transition: padding-top 300ms ease-out , padding-bottom 300ms ease-out !important;
+  }
+  @media (min-width: 600px) {
+    .page-header {
+      padding-top: 1.25rem;
+      padding-bottom: 1.25rem;
+    }
   }
   [data-scrolled='true'] .page-header {
+    padding-top: 0.125rem;
+    padding-bottom: 0.125rem;
+  }
+  @media (min-width: 600px) {
+    [data-scrolled='true'] .page-header {
+      padding-top: 0.375rem;
+      padding-bottom: 0.375rem;
+    }
+  }
+  .page-header-inner {
+    opacity: 1;
+    filter: none;
+    transition: opacity 300ms ease-out , filter 300ms ease-out !important;
+  }
+  [data-scrolled='true'] .page-header-inner {
     opacity: 0.55;
     filter: grayscale(0.4);
   }
-  [data-scrolled='true'] .page-header:hover,
-  [data-scrolled='true'] .page-header:focus-within {
+  [data-scrolled='true'] .page-header:hover .page-header-inner,
+  [data-scrolled='true'] .page-header:focus-within .page-header-inner {
     opacity: 1;
     filter: none;
+  }
+  /* Mobile non-compact: stack into 2 rows (input row, toggles row). Mobile
+   * compact: force back to single row so the toggle compaction can take
+   * effect. !important to beat Tailwind's `flex-col` utility (later layer).
+   * Desktop stays single row always. */
+  @media (max-width: 599px) {
+    [data-scrolled='true'] .page-header-inner {
+      flex-direction: row !important;
+      align-items: center !important;
+    }
+  }
+  /* Number-input atom is `inline-flex` by default, which sizes to content.
+   * In the page-header the input should fill its label (which has flex-1),
+   * so override the host display + inner wrapper width. */
+  .header-input app-number-input {
+    display: block;
+    min-width: 0;
+  }
+  .header-input app-number-input > div {
+    width: 100%;
+  }
+  /* Compact-state toggle compaction: MOBILE ONLY. Non-selected radio
+   * buttons collapse to width 0 so locale + powertrain shrink to just the
+   * active option each. !important on padding/border to beat the Tailwind
+   * `px-2`/`px-3`/border classes (which are in a later layer). */
+  .page-header [role='radio'] {
+    overflow: hidden;
+    transition: max-width 300ms ease-out , min-width 300ms ease-out ,
+                padding 300ms ease-out , opacity 300ms ease-out !important;
+  }
+  @media (max-width: 599px) {
+    [data-scrolled='true'] .page-header [aria-checked='false'] {
+      min-width: 0 !important;
+      max-width: 0 !important;
+      width: 0 !important;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      margin: 0 !important;
+      border-width: 0 !important;
+      opacity: 0;
+      pointer-events: none;
+    }
+    [data-scrolled='true'] .page-header:hover [aria-checked='false'],
+    [data-scrolled='true'] .page-header:focus-within [aria-checked='false'] {
+      min-width: auto !important;
+      max-width: 200px !important;
+      width: auto !important;
+      padding-left: revert !important;
+      padding-right: revert !important;
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
+  /* Strip's outer padding + the gap between strip and hero. Both shrink in
+   * compact so the sticky stack hugs together at the top. */
+  .sticky-strip-pad {
+    padding-top: 0.5rem;
+    padding-bottom: 1.125rem;
+    transition: padding-top 300ms ease-out , padding-bottom 300ms ease-out !important;
+  }
+  @media (min-width: 600px) {
+    .sticky-strip-pad {
+      padding-top: 0.75rem;
+      padding-bottom: 1.75rem;
+    }
+  }
+  [data-scrolled='true'] .sticky-strip-pad {
+    padding-top: 0.25rem;
+    padding-bottom: 0.5rem;
+  }
+  .strip-to-hero-gap {
+    margin-top: 0.75rem;
+    transition: margin-top 300ms ease-out !important;
+  }
+  [data-scrolled='true'] .strip-to-hero-gap {
+    margin-top: 0.25rem;
   }
 
   .mode-card-total,
   .recommendation-reason {
     opacity: 1;
     overflow: hidden;
-    transition: opacity 1s ease-out, max-height 1s ease-out,
-                margin-top 1s ease-out;
+    transition: opacity 300ms ease-out , max-height 300ms ease-out ,
+                margin-top 300ms ease-out !important;
   }
   .mode-card-total {
     max-height: 28px;
@@ -566,10 +699,12 @@
   scroll-margin-top: 220px;
 }
 
-/* ── Reduced-motion preference (TEMPORARILY DISABLED FOR ANIMATION DEBUG) ─
- * Chart.js animations are JS-driven — TcoChart mirrors this media query in
- * code and passes `animation: false`. */
-/*
+/* ── Reduced-motion preference ───────────────────────────────────────────
+ * Decorative motion is suppressed when prefers-reduced-motion is set; our
+ * deliberate `[data-scrolled]` compaction transitions opt OUT of this via
+ * `!important` on their durations because they're functional state-change
+ * feedback, not decoration. Chart.js animations are JS-driven — TcoChart
+ * mirrors this media query in code and passes `animation: false`. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -580,4 +715,3 @@
     scroll-behavior: auto !important;
   }
 }
-*/
