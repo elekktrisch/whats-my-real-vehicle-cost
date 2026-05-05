@@ -3,10 +3,11 @@ import { ScenarioStore } from '../../scenario/scenario.store';
 import { Button } from '../../shared/atoms/button/button';
 import { Icon } from '../../shared/atoms/icon/icon';
 import { NumberInput } from '../../shared/atoms/number-input/number-input';
+import { PowertrainSelector } from '../../shared/molecules/powertrain-selector/powertrain-selector';
 
 @Component({
   selector: 'app-splash-page',
-  imports: [Button, Icon, NumberInput],
+  imports: [Button, Icon, NumberInput, PowertrainSelector],
   template: `
     <main class="min-h-[100dvh] flex items-center justify-center px-6 py-12 relative">
       <div
@@ -62,6 +63,13 @@ import { NumberInput } from '../../shared/atoms/number-input/number-input';
             ariaLabel="Negotiated price"
             size="lg"
           />
+        </div>
+
+        <div class="relative mt-5 flex flex-col items-center gap-2">
+          <span class="font-ui text-[0.85rem] font-medium text-tx-muted">
+            Powertrain
+          </span>
+          <app-powertrain-selector />
         </div>
 
         <div class="relative mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
