@@ -57,8 +57,8 @@ import { NumberInput } from '../../shared/atoms/number-input/number-input';
             [(value)]="store.purchasePrice"
             [min]="5000"
             [max]="150000"
-            [prefix]="currencyPrefix()"
-            [suffix]="currencySuffix()"
+            [prefix]="store.currencyPrefix()"
+            [suffix]="store.currencySuffix()"
             ariaLabel="Negotiated price"
             size="lg"
           />
@@ -80,12 +80,6 @@ export class SplashPage {
 
   protected readonly localeLabel = computed(() =>
     this.store.locale() === 'US' ? 'US defaults' : 'EU defaults',
-  );
-  protected readonly currencyPrefix = computed(() =>
-    this.store.localeConfig().currencyAfter ? '' : this.store.localeConfig().currencySymbol,
-  );
-  protected readonly currencySuffix = computed(() =>
-    this.store.localeConfig().currencyAfter ? ' ' + this.store.localeConfig().currencySymbol : '',
   );
 
   protected getStarted(): void {

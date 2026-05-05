@@ -93,6 +93,14 @@ export class ScenarioStore {
   readonly vehicleCategory = computed(() => categorize(this.msrp(), this.locale()));
   readonly categoryMultipliers = computed(() => categoryMultipliers(this.vehicleCategory()));
   readonly localeConfig = computed(() => LOCALE_CONFIG[this.locale()]);
+  readonly currencyPrefix = computed(() => {
+    const cfg = this.localeConfig();
+    return cfg.currencyAfter ? '' : cfg.currencySymbol;
+  });
+  readonly currencySuffix = computed(() => {
+    const cfg = this.localeConfig();
+    return cfg.currencyAfter ? ' ' + cfg.currencySymbol : '';
+  });
 
   /** What the car is expected to be worth at the end of the keep period. */
   private readonly residualValueDefault = computed(() => {

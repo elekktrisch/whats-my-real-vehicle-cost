@@ -4,9 +4,9 @@ How [PRODUCT.md](./PRODUCT.md) and [USE_CASES.md](./USE_CASES.md) get built. Ang
 
 ## Status
 
-The phase 1–6 history, the build-order plan, and the migration map (current → target) have been removed from this document. The redesign in flight has its own plan: see [REDESIGN_PLAN.md](./REDESIGN_PLAN.md). For shipped work, `git log` is authoritative.
+The phase 1–6 history, the build-order plan, and the migration map (current → target) have been removed from this document. For shipped work, `git log` is authoritative.
 
-This document remains the reference for **the architectural shape of the codebase as it exists today** — store layout, computed graph, hydration order, atom contracts, calc-engine layout. The redesign plan describes how those will evolve.
+This document remains the reference for **the architectural shape of the codebase as it exists today** — store layout, computed graph, hydration order, atom contracts, calc-engine layout.
 
 **Doc note:** USE_CASES.md UC2 narrates ~€25k back-derived MSRP for a 4-yr-old €15k Golf and €600/yr insurance; the canonical PRODUCT.md curve produces ~€30.5k MSRP, which lands in Mid category, and the insurance formula gives ~€260/yr. UC2 is annotated; the narrative was written against an older parameterization.
 

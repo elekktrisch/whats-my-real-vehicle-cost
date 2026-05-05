@@ -23,9 +23,9 @@ One-time setup on the repo: **Settings → Pages → Source: GitHub Actions** mu
 
 ## Status
 
-The phase 1–6 narrative has moved out of this file. See [REDESIGN_PLAN.md](./REDESIGN_PLAN.md) for the in-flight redesign and its phase plan (A–H), and `git log` for what already shipped.
+`git log` is authoritative for what shipped. In-flight polish work lives in [POLISHING.md](../POLISHING.md) at the workspace root.
 
-**Visible app today:** `/` splash → `/wizard` (7 questions + live cost-per-distance recommendation) → `/lease | /finance | /cash`. All three tabs fully working with shareable URLs; per-tab down payments; lessor-table-style early termination. The redesign collapses this into a single comparison-first page; see the plan.
+**Visible app today:** single `/` route — splash on cold start, comparison page once the user engages or arrives via a `?s=` / `?c=` URL. All three financing modes (lease, finance, cash) are visible at once via a sticky comparison strip; the focused mode's chart and sliders sit below.
 
 ## Architecture
 
@@ -34,26 +34,28 @@ Angular 20 standalone components, no NgModules. Layout under `src/app/`:
 ```
 scenario/                    domain types, store, locale config, pure calc functions (+ specs)
 shared/
-  slider-control/            existing atom — signal-based, inline editable readout
-  kpi-card/                  existing atom — signal-based
-  info-badge/                existing atom — signal-based
+  slider-control/            atom — labeled range slider + inline editable readout
+  kpi-card/                  atom — minimal display
+  info-badge/                atom — tooltip-on-hover/focus button
   atoms/                     button, toggle, number-input, icon, label, divider
-  molecules/                 tab-strip, header-bar, tab-hero, kpi-bar, vehicle-context-bar, running-costs-bar, lease-end-section, slider-group
+  molecules/                 comparison-strip, mode-card, hero-summary, locale-selector, powertrain-selector,
+                             global-controls, your-situation, lease-end-section, maintenance-display,
+                             disclosure, slider-group
 features/
-  lease-tab/                 lease-financing slider group + lease-end section
-  finance-tab/               loan-financing slider group (APR, loan term, opportunity-cost rate)
-  cash-tab/                  cash-purchase slider group (just opportunity-cost rate)
+  mode-detail-view/          shell: chart + active-mode fields + global-controls + your-situation
+                             plus per-mode field components (lease-fields, finance-fields, cash-fields)
   chart/
-    tco-chart-desktop/       stacked-area Chart.js renderer (responsive consolidation planned in REDESIGN_PLAN.md Phase F)
+    tco-chart/               stacked-area Chart.js renderer (responsive options across breakpoints,
+                             no separate mobile component)
 pages/
-  splash-page/               bold intro + "Get started" → /wizard, hasHydrated() skip seam
-  wizard-page/               7 numbered questions + live cost-per-distance recommendation card
-  tab-page/                  shell: header-bar + tab-hero + kpi-bar + tab-strip + chart + active-tab + vehicle-context-bar + running-costs-bar
+  splash-page/               cold-start intro card; "Get started" engages → comparison page
+  comparison-page/           sticky stack (page-header + comparison-strip + hero-summary) → mode-detail-view
+  app-shell/                 single `/` landing — splash vs comparison-page based on hasReturningState()
 app.ts                       <router-outlet/>
-app.routes.ts                lazy-loaded routes: '', wizard, lease, finance, cash, ** → ''
+app.routes.ts                single `/` route → AppShell, ** → ''
 ```
 
-`TabPage` lays out top-down as: hero (per-tab monthly numbers) → KPI bar (totals) → tab strip → chart → tab-specific sliders → global vehicle/running-cost sliders. Everything below the chart is "controls that adjust the results above."
+`ComparisonPage` lays out top-down as: sticky stack (top row + comparison strip + hero summary) → chart → mode-specific sliders → global vehicle / your-situation sliders. The strip is the tab control: clicking a card focuses that mode below.
 
 ### Scenario module — `src/app/scenario/`
 
@@ -62,8 +64,8 @@ Pure data + math + state, no Angular UI dependencies in the calc layer. Built to
 - `scenario.types.ts` — domain types (Locale, Powertrain, Tab, ScenarioSnapshot, CostBreakdown, …). `LeaseInputs.leaseEndChoice` is `LeaseEndChoice | null` — null means auto-derive. `LeaseInputs` and `FinanceInputs` each carry their own `downPayment` (per-tab, defaults differ). Cash uses `purchasePrice` directly.
 - `locale.config.ts` — US/EU defaults, units, formatters, `detectLocaleFromBrowser()`. Insurance baselines: 2% US / 1.5% EU.
 - `scenario.defaults.ts` — `defaultScenario()` factory (leaseEndChoice defaults to null so auto-derive fires; lease.downPayment $5k/€4k; finance.downPayment $0). `LEASE_END_DEFAULTS` for fee fallbacks.
-- `scenario.store.ts` — `ScenarioStore` (`providedIn: 'root'`). Holds writable signals for globals + per-tab inputs (`leaseDownPayment`, `financeDownPayment`); exposes `computed` derivations (msrp, vehicle category, insurance/maintenance defaults, three breakdowns, effective monthly, cost per distance, `recommendedTab` based on lowest cost-per-distance, `activeDownPayment` switching on `activeTab`). Uses the **two-signal override pattern** (`_xOverride: signal<T | null>` + `xDefault: computed<T>` + public `x: computed<T>` returning `override ?? default`) for sticky overrides that serialize cleanly. Two effects: (1) debounced autosave to localStorage + URL queryParams, (2) cross-field clamping (down payments and residual ≤ purchase price).
-- `scenario.serializer.ts` — `toQueryParams` / `fromQueryParams` (URL: short keys, skips null overrides, leaves activeTab to the route path), `toLocalStorage` / `fromLocalStorage` (full JSON), `tabFromPath`, `hasAnyParams`. Storage key is `whatsmycost.v1`. URL keys for per-tab down payments: `leaseDown`, `finDown`.
+- `scenario.store.ts` — `ScenarioStore` (`providedIn: 'root'`). Holds writable signals for globals + per-tab inputs (`leaseDownPayment`, `financeDownPayment`); exposes `computed` derivations (msrp, vehicle category, insurance/maintenance defaults, three breakdowns, effective monthly, cost per distance, `recommendedTab` based on lowest cost-per-distance, `activeDownPayment` switching on `activeTab`). Uses the **two-signal override pattern** (`_xOverride: signal<T | null>` + `xDefault: computed<T>` + public `x: computed<T>` returning `override ?? default`) for sticky overrides that serialize cleanly. Two effects: (1) URL autosave (`?s=<encoded-json>`), (2) cross-field clamping (down payments and residual ≤ purchase price).
+- `scenario.serializer.ts` — `encodeSnapshot` / `decodeSnapshot` for the autosaved `?s=<encoded-json>` form, plus a compressed share variant under `?c=` (used by the WhatsApp share button). URL is the only persistence channel; no localStorage.
 - `calculations/` — pure functions, one file per concern: `depreciation`, `msrp`, `category` (luxury × 1.3 insurance / × 1.8 maintenance), `financing` (lease + amortized loan), `opportunity`, `fuel`, `recommendation` (now: pick tab with lowest cost-per-distance, with locale-aware reason text), `tco` (the aggregator). Co-located `*.spec.ts` files.
 
 ### Lease TCO model
@@ -98,8 +100,8 @@ Atoms expose writable two-way slots via `model()`. The store exposes both writab
 />
 
 <app-slider-control
-  [value]="store.insurance('lease')()"
-  (valueChange)="store.setOverride('lease', 'insurance', $event)"
+  [value]="store.insurance()"
+  (valueChange)="store.setOverride('insurance', $event)"
 />
 ```
 

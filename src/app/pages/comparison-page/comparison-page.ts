@@ -71,8 +71,8 @@ const SHRINK_END = 600;
               [(value)]="store.purchasePrice"
               [min]="5000"
               [max]="150000"
-              [prefix]="currencyPrefix()"
-              [suffix]="currencySuffix()"
+              [prefix]="store.currencyPrefix()"
+              [suffix]="store.currencySuffix()"
               ariaLabel="Negotiated price"
               size="lg"
             />
@@ -205,12 +205,6 @@ export class ComparisonPage {
   }
 
   protected readonly distanceUnit = computed(() => this.store.localeConfig().distanceUnit);
-  protected readonly currencyPrefix = computed(() =>
-    this.store.localeConfig().currencyAfter ? '' : this.store.localeConfig().currencySymbol,
-  );
-  protected readonly currencySuffix = computed(() =>
-    this.store.localeConfig().currencyAfter ? ' ' + this.store.localeConfig().currencySymbol : '',
-  );
 
   protected readonly recommended = computed(() => this.store.recommendedTab().tab);
   protected readonly recommendationReason = computed(() => this.store.recommendedTab().reason);

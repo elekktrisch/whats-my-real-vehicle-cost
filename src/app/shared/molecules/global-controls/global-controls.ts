@@ -4,6 +4,7 @@ import { SliderControl } from '../../slider-control/slider-control';
 import { SliderGroup } from '../slider-group/slider-group';
 import { Disclosure } from '../disclosure/disclosure';
 import { MaintenanceDisplay } from '../maintenance-display/maintenance-display';
+import { MoneyPipe } from '../../pipes/money.pipe';
 
 /**
  * Vehicle context — truly global inputs (same value across all financing
@@ -17,7 +18,7 @@ import { MaintenanceDisplay } from '../maintenance-display/maintenance-display';
  */
 @Component({
   selector: 'app-global-controls',
-  imports: [SliderControl, SliderGroup, Disclosure, MaintenanceDisplay],
+  imports: [SliderControl, SliderGroup, Disclosure, MaintenanceDisplay, MoneyPipe],
   template: `
     <app-slider-group title="Vehicle" [caption]="contextCaption()">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
@@ -67,10 +68,10 @@ import { MaintenanceDisplay } from '../maintenance-display/maintenance-display';
             [min]="0"
             [max]="residualMax()"
             [step]="500"
-            [minLabel]="lo(0)"
-            [maxLabel]="lo(residualMax())"
-            [prefix]="currencyPrefix()"
-            [suffix]="currencySuffix()"
+            [minLabel]="0 | money:'compact'"
+            [maxLabel]="residualMax() | money:'compact'"
+            [prefix]="store.currencyPrefix()"
+            [suffix]="store.currencySuffix()"
             [value]="store.residualValue()"
             (valueChange)="store.setResidualValue($event)"
           />
@@ -80,10 +81,10 @@ import { MaintenanceDisplay } from '../maintenance-display/maintenance-display';
             [min]="0"
             [max]="6000"
             [step]="25"
-            minLabel="$0"
-            maxLabel="$6k"
-            [prefix]="currencyPrefix()"
-            [suffix]="currencySuffix()"
+            [minLabel]="0 | money:'compact'"
+            [maxLabel]="6000 | money:'compact'"
+            [prefix]="store.currencyPrefix()"
+            [suffix]="store.currencySuffix()"
             [value]="store.insurance()"
             (valueChange)="store.setOverride('insurance', $event)"
           />
@@ -107,8 +108,8 @@ import { MaintenanceDisplay } from '../maintenance-display/maintenance-display';
             [max]="fuelPriceMax()"
             [step]="0.01"
             [fractionDigits]="2"
-            minLabel="$0"
-            [maxLabel]="fuelPriceMaxLabel()"
+            [minLabel]="0 | money:2"
+            [maxLabel]="fuelPriceMax() | money:2"
             [prefix]="fuelPriceSymbol()"
             [suffix]="fuelPriceSuffix()"
             [value]="store.fuelPrice()"
@@ -123,12 +124,6 @@ import { MaintenanceDisplay } from '../maintenance-display/maintenance-display';
 export class GlobalControls {
   protected readonly store = inject(ScenarioStore);
 
-  protected readonly currencyPrefix = computed(() =>
-    this.store.localeConfig().currencyAfter ? '' : this.store.localeConfig().currencySymbol,
-  );
-  protected readonly currencySuffix = computed(() =>
-    this.store.localeConfig().currencyAfter ? ' ' + this.store.localeConfig().currencySymbol : '',
-  );
   protected readonly distanceSuffix = computed(
     () => ' ' + this.store.localeConfig().distanceUnit,
   );
@@ -138,9 +133,8 @@ export class GlobalControls {
   );
 
   protected readonly contextCaption = computed(() => {
-    const msrp = Math.round(this.store.msrp());
     const cfg = this.store.localeConfig();
-    const formatted = msrp.toLocaleString();
+    const formatted = Math.round(this.store.msrp()).toLocaleString();
     const moneyMsrp = cfg.currencyAfter
       ? `${formatted} ${cfg.currencySymbol}`
       : `${cfg.currencySymbol}${formatted}`;
@@ -177,17 +171,6 @@ export class GlobalControls {
     if (this.store.powertrain() === 'EV') return 1;
     return this.store.locale() === 'US' ? 8 : 3;
   });
-  protected readonly fuelPriceMaxLabel = computed(() => {
-    const cfg = this.store.localeConfig();
-    const v = this.fuelPriceMax().toFixed(2);
-    return cfg.currencyAfter ? `${v} ${cfg.currencySymbol}` : `${cfg.currencySymbol}${v}`;
-  });
-
-  protected lo(value: number): string {
-    const cfg = this.store.localeConfig();
-    const k = value >= 1000 ? `${value / 1000}k` : String(value);
-    return cfg.currencyAfter ? `${k} ${cfg.currencySymbol}` : `${cfg.currencySymbol}${k}`;
-  }
 
   protected distance(value: number): string {
     const k = value >= 1000 ? `${value / 1000}k` : String(value);

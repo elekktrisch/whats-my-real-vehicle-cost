@@ -3,6 +3,7 @@ import { ScenarioStore } from '../../../scenario/scenario.store';
 import { Toggle } from '../../atoms/toggle/toggle';
 import { SliderControl } from '../../slider-control/slider-control';
 import { Disclosure } from '../disclosure/disclosure';
+import { MoneyPipe } from '../../pipes/money.pipe';
 import type { LeaseEndChoice } from '../../../scenario/scenario.types';
 
 /**
@@ -10,9 +11,8 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
  * outer card of its own — the surrounding lease-fields slider-group owns
  * the card chrome).
  *
- * Per Phase plan §Q4=B:
- *   - HandBack vs BuyOut toggle is **always visible** (it's a strategic
- *     choice, not an override).
+ *   - HandBack vs BuyOut toggle is always visible (it's a strategic choice,
+ *     not an override).
  *   - Mode-specific copy + buyout-price display stay visible.
  *   - The five fee sliders (disposition, excess-wear, mileage-overage,
  *     buyout fee, early-termination) live behind a `<app-disclosure>`
@@ -20,7 +20,7 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
  */
 @Component({
   selector: 'app-lease-end-section',
-  imports: [Toggle, SliderControl, Disclosure],
+  imports: [Toggle, SliderControl, Disclosure, MoneyPipe],
   template: `
     <div class="flex flex-col gap-3 mt-2 pt-3 border-t border-border">
       <div class="flex items-center justify-between gap-3 flex-wrap">
@@ -44,7 +44,7 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
       } @else {
         <p class="font-ui text-[0.78rem] text-tx-muted leading-snug">
           You buy the car at lease-end. Buyout price ≈
-          <span class="font-mono text-tx">{{ buyoutPrice() }}</span> (residual
+          <span class="font-mono text-tx">{{ store.residualValue() | money }}</span> (residual
           value), paid in cash. Costs after the buyout are insurance,
           maintenance and fuel only.
         </p>
@@ -58,10 +58,10 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
             [min]="0"
             [max]="1000"
             [step]="25"
-            [minLabel]="money(0)"
-            [maxLabel]="money(1000)"
-            [prefix]="currencyPrefix()"
-            [suffix]="currencySuffix()"
+            [minLabel]="0 | money:'compact'"
+            [maxLabel]="1000 | money:'compact'"
+            [prefix]="store.currencyPrefix()"
+            [suffix]="store.currencySuffix()"
             [value]="store.dispositionFee()"
             (valueChange)="store.setDispositionFee($event)"
           />
@@ -71,10 +71,10 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
             [min]="0"
             [max]="3000"
             [step]="50"
-            [minLabel]="money(0)"
-            [maxLabel]="money(3000)"
-            [prefix]="currencyPrefix()"
-            [suffix]="currencySuffix()"
+            [minLabel]="0 | money:'compact'"
+            [maxLabel]="3000 | money:'compact'"
+            [prefix]="store.currencyPrefix()"
+            [suffix]="store.currencySuffix()"
             [value]="store.excessWearEstimate()"
             (valueChange)="store.setExcessWearEstimate($event)"
           />
@@ -85,9 +85,9 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
             [max]="1"
             [step]="0.01"
             [fractionDigits]="2"
-            [minLabel]="money(0)"
-            [maxLabel]="money(1)"
-            [prefix]="currencyPrefix()"
+            [minLabel]="0 | money:2"
+            [maxLabel]="1 | money:2"
+            [prefix]="store.currencyPrefix()"
             [suffix]="mileageOverageSuffix()"
             [value]="store.mileageOverageRate()"
             (valueChange)="store.setMileageOverageRate($event)"
@@ -99,10 +99,10 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
             [min]="0"
             [max]="1000"
             [step]="25"
-            [minLabel]="money(0)"
-            [maxLabel]="money(1000)"
-            [prefix]="currencyPrefix()"
-            [suffix]="currencySuffix()"
+            [minLabel]="0 | money:'compact'"
+            [maxLabel]="1000 | money:'compact'"
+            [prefix]="store.currencyPrefix()"
+            [suffix]="store.currencySuffix()"
             [value]="store.buyoutFee()"
             (valueChange)="store.setBuyoutFee($event)"
           />
@@ -117,10 +117,10 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
             [min]="0"
             [max]="store.earlyTerminationFeeMax()"
             [step]="50"
-            [minLabel]="money(0)"
-            [maxLabel]="money(store.earlyTerminationFeeMax())"
-            [prefix]="currencyPrefix()"
-            [suffix]="currencySuffix()"
+            [minLabel]="0 | money:'compact'"
+            [maxLabel]="store.earlyTerminationFeeMax() | money:'compact'"
+            [prefix]="store.currencyPrefix()"
+            [suffix]="store.currencySuffix()"
             [value]="store.earlyTerminationFee()"
             (valueChange)="store.setEarlyTerminationFee($event)"
           />
@@ -146,37 +146,16 @@ export class LeaseEndSection {
 
   protected readonly choice = this.store.leaseEndChoice;
 
-  protected readonly buyoutPrice = computed(() => {
-    const cfg = this.store.localeConfig();
-    const v = this.store.residualValue().toLocaleString();
-    return cfg.currencyAfter ? `${v} ${cfg.currencySymbol}` : `${cfg.currencySymbol}${v}`;
-  });
-
   protected readonly earlyTerminationApplies = computed(
     () => this.store.keepDuration() * 12 < this.store.leaseTerm(),
   );
 
-  protected readonly currencyPrefix = computed(() =>
-    this.store.localeConfig().currencyAfter ? '' : this.store.localeConfig().currencySymbol,
-  );
-  protected readonly currencySuffix = computed(() =>
-    this.store.localeConfig().currencyAfter ? ' ' + this.store.localeConfig().currencySymbol : '',
-  );
   protected readonly distanceUnit = computed(() => this.store.localeConfig().distanceUnit);
   protected readonly mileageOverageSuffix = computed(() => {
     const cfg = this.store.localeConfig();
     const unit = ` /${cfg.distanceUnit}`;
     return cfg.currencyAfter ? `${unit} ${cfg.currencySymbol}` : unit;
   });
-
-  protected money(value: number): string {
-    const cfg = this.store.localeConfig();
-    const k =
-      value >= 1000
-        ? `${Math.round(value / 100) / 10}k`
-        : String(Math.round(value * 100) / 100);
-    return cfg.currencyAfter ? `${k} ${cfg.currencySymbol}` : `${cfg.currencySymbol}${k}`;
-  }
 
   protected onChoice(v: string): void {
     this.store.setLeaseEndChoice(v as LeaseEndChoice);

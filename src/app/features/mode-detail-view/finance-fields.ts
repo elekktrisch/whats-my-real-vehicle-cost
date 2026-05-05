@@ -2,14 +2,11 @@ import { Component, computed, inject } from '@angular/core';
 import { ScenarioStore } from '../../scenario/scenario.store';
 import { SliderControl } from '../../shared/slider-control/slider-control';
 import { SliderGroup } from '../../shared/molecules/slider-group/slider-group';
+import { MoneyPipe } from '../../shared/pipes/money.pipe';
 
-/**
- * Loan-specific controls. Down-payment lives here (mode-specific) per Phase
- * plan §Q10a. Opportunity-cost rate is in the Your-situation section.
- */
 @Component({
   selector: 'app-finance-fields',
-  imports: [SliderControl, SliderGroup],
+  imports: [SliderControl, SliderGroup, MoneyPipe],
   template: `
     <div class="flex flex-col gap-[14px]" role="tabpanel" id="modepanel-finance" aria-labelledby="modetab-finance">
       <app-slider-group title="Loan financing">
@@ -44,10 +41,10 @@ import { SliderGroup } from '../../shared/molecules/slider-group/slider-group';
           [min]="0"
           [max]="downPaymentMax()"
           [step]="500"
-          [minLabel]="lo(0)"
-          [maxLabel]="lo(downPaymentMax())"
-          [prefix]="currencyPrefix()"
-          [suffix]="currencySuffix()"
+          [minLabel]="0 | money:'compact'"
+          [maxLabel]="downPaymentMax() | money:'compact'"
+          [prefix]="store.currencyPrefix()"
+          [suffix]="store.currencySuffix()"
           [value]="store.financeDownPayment()"
           (valueChange)="store.financeDownPayment.set($event)"
         />
@@ -61,15 +58,4 @@ export class FinanceFields {
   protected readonly downPaymentMax = computed(() =>
     Math.min(80000, this.store.purchasePrice()),
   );
-  protected readonly currencyPrefix = computed(() =>
-    this.store.localeConfig().currencyAfter ? '' : this.store.localeConfig().currencySymbol,
-  );
-  protected readonly currencySuffix = computed(() =>
-    this.store.localeConfig().currencyAfter ? ' ' + this.store.localeConfig().currencySymbol : '',
-  );
-  protected lo(value: number): string {
-    const cfg = this.store.localeConfig();
-    const k = value >= 1000 ? `${value / 1000}k` : String(value);
-    return cfg.currencyAfter ? `${k} ${cfg.currencySymbol}` : `${cfg.currencySymbol}${k}`;
-  }
 }

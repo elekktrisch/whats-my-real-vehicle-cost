@@ -3,15 +3,11 @@ import { ScenarioStore } from '../../scenario/scenario.store';
 import { SliderControl } from '../../shared/slider-control/slider-control';
 import { SliderGroup } from '../../shared/molecules/slider-group/slider-group';
 import { LeaseEndSection } from '../../shared/molecules/lease-end-section/lease-end-section';
+import { MoneyPipe } from '../../shared/pipes/money.pipe';
 
-/**
- * Lease-specific controls — the Mode block when active mode is 'lease'.
- * Includes APR + term + down payment, then HandBack/BuyOut + lease-end
- * fees disclosure (per Phase plan §Q4=B).
- */
 @Component({
   selector: 'app-lease-fields',
-  imports: [SliderControl, SliderGroup, LeaseEndSection],
+  imports: [SliderControl, SliderGroup, LeaseEndSection, MoneyPipe],
   template: `
     <div role="tabpanel" id="modepanel-lease" aria-labelledby="modetab-lease">
       <app-slider-group title="Lease financing">
@@ -46,10 +42,10 @@ import { LeaseEndSection } from '../../shared/molecules/lease-end-section/lease-
           [min]="0"
           [max]="downPaymentMax()"
           [step]="500"
-          [minLabel]="lo(0)"
-          [maxLabel]="lo(downPaymentMax())"
-          [prefix]="currencyPrefix()"
-          [suffix]="currencySuffix()"
+          [minLabel]="0 | money:'compact'"
+          [maxLabel]="downPaymentMax() | money:'compact'"
+          [prefix]="store.currencyPrefix()"
+          [suffix]="store.currencySuffix()"
           [value]="store.leaseDownPayment()"
           (valueChange)="store.leaseDownPayment.set($event)"
         />
@@ -65,15 +61,4 @@ export class LeaseFields {
   protected readonly downPaymentMax = computed(() =>
     Math.min(80000, this.store.purchasePrice()),
   );
-  protected readonly currencyPrefix = computed(() =>
-    this.store.localeConfig().currencyAfter ? '' : this.store.localeConfig().currencySymbol,
-  );
-  protected readonly currencySuffix = computed(() =>
-    this.store.localeConfig().currencyAfter ? ' ' + this.store.localeConfig().currencySymbol : '',
-  );
-  protected lo(value: number): string {
-    const cfg = this.store.localeConfig();
-    const k = value >= 1000 ? `${value / 1000}k` : String(value);
-    return cfg.currencyAfter ? `${k} ${cfg.currencySymbol}` : `${cfg.currencySymbol}${k}`;
-  }
 }
