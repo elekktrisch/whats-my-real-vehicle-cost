@@ -22,20 +22,27 @@ import type { CostBreakdown, Tab } from '../../scenario/scenario.types';
 
 const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Loan', cash: 'Cash' };
 
-const SHRINK_START = 100;
-const SHRINK_END = 600;
+// Hysteresis bands for the binary [data-scrolled] flip — a single threshold
+// would oscillate at the boundary because the sticky region's own
+// collapse-induced layout shift can push scroll position back across it.
+// Wider gap on mobile to absorb iOS address-bar resize during scroll.
+const HYSTERESIS = {
+  desktop: { down: 300, up: 150 },
+  mobile: { down: 300, up: 100 },
+};
+const MOBILE_BP = 600;
 
 @Component({
   selector: 'app-comparison-page',
   imports: [Icon, PageHeader, ComparisonStrip, HeroSummary, ModeDetailView],
   template: `
-    <div class="max-w-[1200px] mx-auto px-4 sm:px-7 pb-[72px] relative z-[1] overflow-x-clip">
+    <div
+      class="max-w-[1200px] mx-auto px-4 sm:px-7 pb-[72px] relative z-[1] overflow-x-clip"
+      [attr.data-scrolled]="scrolled()"
+    >
       <app-page-header />
 
-      <div
-        class="comparison-strip-bg sticky top-0 z-20 pt-2 pb-[18px] sm:pt-3 sm:pb-[28px]"
-        [style.--compact-progress]="progress()"
-      >
+      <div class="comparison-strip-bg sticky top-0 z-20 pt-2 pb-[18px] sm:pt-3 sm:pb-[28px]">
         <app-comparison-strip
           [cards]="cards()"
           [active]="store.activeTab()"
@@ -43,9 +50,8 @@ const SHRINK_END = 600;
           [recommended]="recommended()"
           [distanceUnit]="distanceUnit()"
           [recommendationReason]="recommendationReason()"
-          [compact]="compact()"
         />
-        <div class="mt-3" [class.hero-fully-compact]="fullyCompact()">
+        <div class="mt-3">
           <app-hero-summary />
         </div>
       </div>
@@ -81,20 +87,10 @@ export class ComparisonPage {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
 
-  private readonly scrollY = signal(0);
-  protected readonly progress = computed(() => {
-    if (!this.isBrowser) return 0;
-    const y = this.scrollY();
-    if (y <= SHRINK_START) return 0;
-    if (y >= SHRINK_END) return 1;
-    return (y - SHRINK_START) / (SHRINK_END - SHRINK_START);
-  });
-  protected readonly compact = computed(() => this.progress() > 0.5);
-  protected readonly fullyCompact = computed(() => this.progress() >= 0.9);
+  protected readonly scrolled = signal(false);
 
-  // Coalesce scroll events to one update per animation frame: high-refresh
-  // desktops fire scroll faster than the paint pipeline, and without
-  // throttling the compositor falls behind into visible flicker.
+  // Coalesce scroll events to one update per animation frame; high-refresh
+  // desktops fire scroll faster than the paint pipeline.
   private rafScheduled = false;
   @HostListener('window:scroll')
   protected onScroll(): void {
@@ -103,7 +99,11 @@ export class ComparisonPage {
     this.rafScheduled = true;
     requestAnimationFrame(() => {
       this.rafScheduled = false;
-      this.scrollY.set(window.scrollY);
+      const y = window.scrollY;
+      const t = window.innerWidth < MOBILE_BP ? HYSTERESIS.mobile : HYSTERESIS.desktop;
+      const cur = this.scrolled();
+      if (!cur && y > t.down) this.scrolled.set(true);
+      else if (cur && y < t.up) this.scrolled.set(false);
     });
   }
 

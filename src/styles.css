@@ -183,138 +183,115 @@
     }
   }
 
-  /* ── Hero summary, scroll-driven smooth shrink ──────────────────────────
-   * `--compact-progress` is set on the sticky region by `comparison-page`
-   * (clamped 0…1 across SHRINK_START → SHRINK_END). Every property below
-   * interpolates linearly via calc(). No state-toggle, no DOM swap, no
-   * scroll-feedback bounce — just a continuous compression as the user
-   * scrolls. */
+  /* ── Sticky region compaction ────────────────────────────────────────────
+   * Driven by [data-scrolled] on the comparison-page root, flipped via
+   * hysteresis-gated scroll handler. Compaction collapses height-claiming
+   * scaffolding (eyebrows, captions, fineprint, the strip's Total row, the
+   * recommendation reason) to keep only the headline numbers + arrow +
+   * monthly line + per-distance line in view while scrolled past the fold.
+   * Only `opacity` and `max-height` animate — layout-property animation
+   * (padding/font-size/gap) caused the mobile flicker we replaced. */
   .hero-card {
-    --p: var(--compact-progress, 0);
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: 12px;
-    padding: calc(1.25rem - 1rem * var(--p));
-    /* No CSS transition here — `--p` is already a continuous function of
-     * scroll position, so a duration on top would queue a transition for
-     * every scroll-tick and feel like flicker. Calc tracks scroll
-     * directly and paints once per frame. */
+    padding: 1.25rem;
   }
   @media (max-width: 599px) {
     .hero-card {
-      padding: calc(1rem - 0.75rem * var(--p));
+      padding: 1rem;
     }
   }
   .hero-card .hero-grid {
     display: grid;
     grid-template-columns: 1fr;
     align-items: center;
-    gap: calc(0.75rem - 0.5rem * var(--p));
+    gap: 0.75rem;
   }
   @media (min-width: 600px) {
     .hero-card .hero-grid {
-      /* `auto auto auto` + justify-content: center clusters the columns
-       * around the arrow rather than stretching them to the card edges,
-       * so the values read closer together — especially noticeable when
-       * the captions/eyebrows collapse on compact and the columns shrink
-       * to just the headline numbers. */
       grid-template-columns: auto auto auto;
       justify-content: center;
-      gap: calc(1.5rem - 0.5rem * var(--p));
+      gap: 1.5rem;
     }
   }
-  /* The hero numbers themselves shrink, but never below ~1rem so they stay
-   * the dominant glyph in the compact strip. */
   .hero-card .hero-num {
-    font-size: calc(1.4rem - 0.4rem * var(--p));
+    font-size: 1.4rem;
   }
   @media (max-width: 599px) {
     .hero-card .hero-num {
-      font-size: calc(1.25rem - 0.3rem * var(--p));
+      font-size: 1.25rem;
     }
   }
   .hero-card .hero-num-sub {
-    font-size: calc(1.05rem - 0.27rem * var(--p));
+    font-size: 1.05rem;
   }
-  /* Eyebrows + captions + the second monthly line collapse cleanly to 0.
-   * `max-width` is also interpolated so they don't keep claiming horizontal
-   * column width once invisible — the auto-cols grid relies on the column
-   * shrinking to just the headline number when compact. `display: block`
-   * makes max-width take effect on the spans. */
+  /* Explicit `max-height` on the default state so the transition has a
+   * numeric starting point — `max-height: none` ↔ `0` doesn't interpolate.
+   * Values are tight to real content so the visual collapse fills the
+   * 200 ms window rather than staying static then snapping at the end. */
   .hero-card .hero-eyebrow,
   .hero-card .hero-caption,
-  .hero-card .hero-monthly {
-    display: block;
-    opacity: calc(1 - var(--p));
-    max-height: calc(40px * (1 - var(--p)));
-    max-width: calc(500px * (1 - var(--p)));
+  .hero-card .hero-fineprint {
+    opacity: 1;
     overflow: hidden;
+    transition: opacity 200ms ease-out, max-height 200ms ease-out,
+                margin-top 200ms ease-out, padding-top 200ms ease-out;
   }
-  /* Inline monthly that fades in next to the down value as compact climbs.
-   * Mirror image of the elements above: starts at width 0 / opacity 0, ends
-   * at full width / opacity 1. White-space:nowrap keeps it on one line. */
-  .hero-card .hero-monthly-inline {
-    display: inline-block;
-    opacity: var(--p);
-    max-width: calc(220px * var(--p));
-    overflow: hidden;
-    white-space: nowrap;
-    vertical-align: baseline;
+  .hero-card .hero-eyebrow {
+    max-height: 24px;
+  }
+  .hero-card .hero-caption {
+    max-height: 48px;
   }
   .hero-card .hero-fineprint {
-    opacity: calc(1 - var(--p));
-    max-height: calc(80px * (1 - var(--p)));
-    margin-top: calc(1rem * (1 - var(--p)));
-    padding-top: calc(0.75rem * (1 - var(--p)));
+    max-height: 80px;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
     border-top: 1px solid var(--color-border);
-    overflow: hidden;
   }
-  .hero-card .hero-arrow svg {
-    width: calc(44px - 22px * var(--p));
-    height: calc(44px - 22px * var(--p));
+  [data-scrolled='true'] .hero-card .hero-eyebrow,
+  [data-scrolled='true'] .hero-card .hero-caption {
+    opacity: 0;
+    max-height: 0;
   }
-  /* On mobile the columns stack, so the arrow rotates to point downward.
-   * Skip the rotation on sm+ where the columns are side-by-side. */
+  [data-scrolled='true'] .hero-card .hero-fineprint {
+    opacity: 0;
+    max-height: 0;
+    margin-top: 0;
+    padding-top: 0;
+  }
+  /* Mobile single-column grid: arrow points downward to follow the visual
+   * flow. Transitioned only for the rotation, not tied to scroll. */
   @media (max-width: 599px) {
     .hero-card .hero-arrow svg {
       transform: rotate(45deg);
       transition: transform 180ms ease-out;
     }
   }
-  /* Mobile-only inline layout once compaction is essentially done. The
-   * `hero-fully-compact` class is bound on the parent wrapper by
-   * comparison-page.ts when progress() ≥ 0.9. Switches the grid from a
-   * single stacked column to a centred 3-column row, hides the labels
-   * that have already faded to near-zero, and un-rotates the arrow back
-   * to its right-pointing orientation. The transform transition above
-   * smooths the rotation reset; the rest of the topology change is
-   * absorbed by the fact that everything else is already invisible. */
-  @media (max-width: 599px) {
-    .hero-fully-compact .hero-card .hero-grid {
-      grid-template-columns: auto auto auto;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-    .hero-fully-compact .hero-card .hero-arrow svg {
-      transform: none;
-    }
-    .hero-fully-compact .hero-card .hero-eyebrow,
-    .hero-fully-compact .hero-card .hero-caption,
-    .hero-fully-compact .hero-card .hero-monthly,
-    .hero-fully-compact .hero-card .hero-fineprint {
-      display: none;
-    }
-  }
 
-  /* Mode-card Total row — collapses with the same scroll-driven progress
-   * variable as the hero summary, so the strip and hero shrink in lockstep
-   * and there's no binary DOM-swap jolt mid-scroll. */
-  .mode-card-total {
-    --p: var(--compact-progress, 0);
-    opacity: calc(1 - var(--p));
-    max-height: calc(28px * (1 - var(--p)));
-    margin-top: calc(10px * (1 - var(--p)));
+  .mode-card-total,
+  .recommendation-reason {
+    opacity: 1;
     overflow: hidden;
+    transition: opacity 200ms ease-out, max-height 200ms ease-out,
+                margin-top 200ms ease-out;
+  }
+  .mode-card-total {
+    max-height: 28px;
+  }
+  .recommendation-reason {
+    max-height: 80px;
+  }
+  [data-scrolled='true'] .mode-card-total {
+    opacity: 0;
+    max-height: 0;
+    margin-top: 0;
+  }
+  [data-scrolled='true'] .recommendation-reason {
+    opacity: 0;
+    max-height: 0;
+    margin-top: 0;
   }
 
   /* ── Mode-card shine ────────────────────────────────────────────────────

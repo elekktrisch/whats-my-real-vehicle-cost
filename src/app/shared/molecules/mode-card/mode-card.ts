@@ -69,7 +69,6 @@ export class ModeCard {
   readonly perDistance = input.required<string>();
   readonly distanceUnit = input.required<string>();
   readonly delta = input<string | null>(null);
-  readonly compact = input(false);
   readonly tabId = input.required<string>();
   readonly panelId = input.required<string>();
 

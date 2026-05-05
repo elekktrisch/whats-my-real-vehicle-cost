@@ -27,7 +27,7 @@ const MODES: readonly Tab[] = ['lease', 'finance', 'cash'];
   selector: 'app-comparison-strip',
   imports: [ModeCard],
   template: `
-    <div #stripEl [attr.data-compact]="compact()">
+    <div #stripEl>
       <div
         role="tablist"
         aria-label="Financing modes"
@@ -45,7 +45,6 @@ const MODES: readonly Tab[] = ['lease', 'finance', 'cash'];
             [perDistance]="card.perDistance"
             [distanceUnit]="distanceUnit()"
             [delta]="card.delta"
-            [compact]="compact()"
             [tabId]="tabId(card.mode)"
             [panelId]="panelId(card.mode)"
             (select)="onSelect($event)"
@@ -55,7 +54,7 @@ const MODES: readonly Tab[] = ['lease', 'finance', 'cash'];
 
       @if (recommendationReason()) {
         <p
-          class="font-ui text-[0.78rem] text-tx-muted leading-[1.55] mt-3 text-center px-2"
+          class="recommendation-reason font-ui text-[0.78rem] text-tx-muted leading-[1.55] mt-3 text-center px-2"
           role="status"
           aria-live="polite"
         >
@@ -71,7 +70,6 @@ export class ComparisonStrip {
   readonly recommended = input<Tab | null>(null);
   readonly distanceUnit = input.required<string>();
   readonly recommendationReason = input<string>('');
-  readonly compact = input(false);
 
   @ViewChild('stripEl', { static: true }) stripEl?: ElementRef<HTMLElement>;
 
