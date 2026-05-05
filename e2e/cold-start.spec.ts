@@ -19,9 +19,12 @@ test.describe('cold start', () => {
     // Chart canvas is rendered (chart.js draws into a <canvas>).
     await expect(page.locator('canvas[role="img"]')).toBeVisible();
 
-    // Hero "Out of pocket" → "Asset value" narrative anchors the page.
-    await expect(page.getByText('Out of pocket')).toBeVisible();
-    await expect(page.getByText(/Asset value/i)).toBeVisible();
+    // Hero card with money → asset narrative — use structural locators
+    // since the eyebrow text now also appears in the chart legend ("Cash
+    // out of pocket") and the sr-only data table.
+    await expect(page.locator('.hero-card')).toBeVisible();
+    await expect(page.locator('.hero-card img[src="money.png"]')).toBeVisible();
+    await expect(page.locator('.hero-card img[src="car.png"]')).toBeVisible();
   });
 
   test('exactly one card has the "Best" badge', async ({ page }) => {
