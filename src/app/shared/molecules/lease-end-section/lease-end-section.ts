@@ -51,6 +51,19 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
       }
 
       <app-disclosure label="+ Advanced">
+        <app-slider-control
+          label="Residual at lease end"
+          tip="Contractual residual value at the end of the lease term. Drives the monthly lease payment formula (depreciates from cap cost down to this number over the term). Auto-derived from the depreciation curve at vehicleAge + leaseTerm; override with the figure from your contract."
+          [min]="0"
+          [max]="leaseEndResidualMax()"
+          [step]="500"
+          [minLabel]="0 | money:'compact'"
+          [maxLabel]="leaseEndResidualMax() | money:'compact'"
+          [prefix]="store.currencyPrefix()"
+          [suffix]="store.currencySuffix()"
+          [value]="store.leaseEndResidual()"
+          (valueChange)="store.leaseEndResidualOverride.set($event)"
+        />
         @if (choice() === 'handBack') {
           <app-slider-control
             label="Disposition fee"
@@ -93,19 +106,6 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
             (valueChange)="store.mileageOverageRateOverride.set($event)"
           />
         } @else {
-          <app-slider-control
-            label="Residual at lease end"
-            tip="Buyout price at the end of the lease term. Auto-derived from the depreciation curve at vehicleAge + leaseTerm; override with the residual percentage from your contract."
-            [min]="0"
-            [max]="leaseEndResidualMax()"
-            [step]="500"
-            [minLabel]="0 | money:'compact'"
-            [maxLabel]="leaseEndResidualMax() | money:'compact'"
-            [prefix]="store.currencyPrefix()"
-            [suffix]="store.currencySuffix()"
-            [value]="store.leaseEndResidual()"
-            (valueChange)="store.leaseEndResidualOverride.set($event)"
-          />
           <app-slider-control
             label="Buyout fee"
             tip="One-time administrative fee charged on top of the residual value when you exercise the lease buyout. Typical 300–500."

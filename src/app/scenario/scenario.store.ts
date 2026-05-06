@@ -191,11 +191,16 @@ export class ScenarioStore {
     () => this.leaseEndResidualOverride() ?? this.leaseEndResidualDefault(),
   );
 
+  // Lease payment uses the LEASE-END residual (contractual figure at end of
+  // lease term), not the end-of-keep residual. Critical when keep > term:
+  // with a 4-yr lease and a 10-yr keep, end-of-keep residual is ~$11k while
+  // the contract's residual at year 4 is ~$22k — the contract amortizes
+  // (capCost − leaseEndResidual), not (capCost − whatever-the-car-is-worth-when-you-eventually-stop-keeping-it).
   readonly leasePaymentDetails = computed(() =>
     leasePayment({
       capCost: this.purchasePrice(),
       downPayment: this.leaseDownPayment(),
-      residualValue: this.residualValue(),
+      residualValue: this.leaseEndResidual(),
       apr: this.leaseApr(),
       termMonths: this.leaseTerm(),
       locale: this.locale(),
