@@ -31,7 +31,7 @@ const SCROLL_KEYS = new Set([
         />
         <app-hero-column
           side="left"
-          eyebrow="Out of pocket"
+          eyebrow="Cash"
           [value]="data().outOfPocket"
           [caption]="data().outOfPocketCaption"
           [captionMobile]="data().outOfPocketCaptionMobile"
@@ -53,8 +53,8 @@ const SCROLL_KEYS = new Set([
 
         <app-hero-column
           side="right"
-          eyebrow="Owned Asset value"
-          eyebrowMobile="Asset value"
+          eyebrow="Ownership"
+          eyebrowMobile="Ownership"
           [value]="data().asset"
           [caption]="data().assetCaption"
           [captionMobile]="data().assetCaptionMobile"
@@ -70,9 +70,9 @@ const SCROLL_KEYS = new Set([
         />
       </div>
 
-      <p class="hero-footnote font-ui text-[0.72rem] text-tx-dim leading-relaxed">
-        Plus ≈ {{ opportunityCostFootnote() }} in opportunity cost — included
-        in the chart's true-cost view above, not in the cash-out total.
+      <p class="hero-footnote font-ui text-[0.72rem] text-tx-dim leading-relaxed text-center">
+        Plus ≈ {{ opportunityCostFootnote() }} in opportunity cost. (included
+        in the true-cost view, not in the cash-out total)
       </p>
 
       <div class="hero-details">

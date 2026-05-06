@@ -65,7 +65,7 @@ const TABLET_BP = 900;
 // stacked-area total visualizes the financial cost on top of cash out
 // (opportunity cost + depreciation framing).
 const CASH_OUT_COLOR = '#dde3f0';
-const CASH_OUT_LABEL = 'Cash out of pocket';
+const CASH_OUT_LABEL = 'Cash';
 
 @Component({
   selector: 'app-tco-chart',
