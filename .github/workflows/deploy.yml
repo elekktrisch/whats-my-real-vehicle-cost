@@ -16,6 +16,14 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+# Opt every JavaScript-based action into Node 24 ahead of the June 2026
+# default flip. Node 20 is being deprecated on the runners; newer action
+# versions (checkout@v5, setup-node@v5, etc.) ship Node 24 binaries, but
+# this env var also forces older v4 actions onto Node 24 if a tagged v5
+# isn't available yet.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   # ─── Job 1: type-check + Karma unit tests ────────────────────────────────
   unit-tests:
