@@ -25,6 +25,7 @@ const usLeaseShared = {
   excessWearEstimate: 800,
   buyoutFee: 300,
   earlyTerminationFee: 400,
+  leaseEndResidual: 18000,
   opportunityCostRate: 0,
 };
 

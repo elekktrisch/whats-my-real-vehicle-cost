@@ -63,7 +63,8 @@ export function financeTco(input: FinanceTcoInputs): CostBreakdown {
     series[m].maintenance = prev.maintenance + inc.maintenance[i];
     series[m].depreciationOrLease =
       prev.depreciationOrLease + principalPart + (m === 1 ? input.downPayment : 0);
-    series[m].financing = prev.financing + interestPart + monthlyOppCost;
+    series[m].interestAndFees = prev.interestAndFees + interestPart;
+    series[m].opportunityCost = prev.opportunityCost + monthlyOppCost;
     // Cash flow: down at month 1, full loan payment (principal + interest)
     // every month while the loan is active, plus running costs.
     const downThisMonth = m === 1 ? input.downPayment : 0;

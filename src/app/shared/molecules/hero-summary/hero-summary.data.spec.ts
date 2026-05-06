@@ -25,8 +25,8 @@ describe('leaseHeroData', () => {
     expect(labels).toContain('Insurance');
     expect(labels).toContain('Maintenance');
     expect(labels).toContain('Fuel / electricity');
-    expect(data.outOfPocketCaption).toBe('over 3 years');
-    expect(data.outOfPocketCaptionMobile).toBe('over 3 yr');
+    expect(data.outOfPocketCaption).toBe('years 1-3');
+    expect(data.outOfPocketCaptionMobile).toBe('yrs 1-3');
   });
 
   it('renew lease (multi-cycle): pluralizes labels and shows cycle count in detail', () => {
@@ -76,6 +76,25 @@ describe('leaseHeroData', () => {
     store.leaseEndChoiceOverride.set('buyOut');
     expect(leaseHeroData(store).retainsAsset).toBe(true);
   });
+
+  it('caption: lease-renew uses keep duration', () => {
+    const store = makeStore();
+    store.leaseEndChoiceOverride.set('handBack');
+    store.keepDuration.set(6);
+    const data = leaseHeroData(store);
+    expect(data.outOfPocketCaption).toBe('years 1-6');
+    expect(data.outOfPocketCaptionMobile).toBe('yrs 1-6');
+  });
+
+  it('caption: lease-buyout uses lease term in years', () => {
+    const store = makeStore();
+    store.leaseEndChoiceOverride.set('buyOut');
+    store.leaseTerm.set(36);
+    store.keepDuration.set(5);
+    const data = leaseHeroData(store);
+    expect(data.outOfPocketCaption).toBe('years 1-3');
+    expect(data.outOfPocketCaptionMobile).toBe('yrs 1-3');
+  });
 });
 
 describe('financeHeroData', () => {
@@ -101,6 +120,23 @@ describe('financeHeroData', () => {
     expect(data.breakdown.find((b) => b.label === 'Down payment')).toBeUndefined();
     expect(data.breakdown.find((b) => b.label === 'Loan payments')).toBeTruthy();
   });
+
+  it('caption: non-zero down payment → year 1', () => {
+    const store = makeStore();
+    store.financeDownPayment.set(5_000);
+    const data = financeHeroData(store);
+    expect(data.outOfPocketCaption).toBe('year 1');
+    expect(data.outOfPocketCaptionMobile).toBe('yr 1');
+  });
+
+  it('caption: zero down payment → years 1-{loanYears}', () => {
+    const store = makeStore();
+    store.financeDownPayment.set(0);
+    store.loanTerm.set(60);
+    const data = financeHeroData(store);
+    expect(data.outOfPocketCaption).toBe('years 1-5');
+    expect(data.outOfPocketCaptionMobile).toBe('yrs 1-5');
+  });
 });
 
 describe('cashHeroData', () => {
@@ -113,6 +149,13 @@ describe('cashHeroData', () => {
     const labels = data.breakdown.map((b) => b.label);
     expect(labels[0]).toBe('Purchase price');
     expect(labels).toContain('Insurance');
-    expect(data.outOfPocketCaption).toBe('over 7 years');
+  });
+
+  it('caption: cash → year 1 regardless of keep', () => {
+    const store = makeStore();
+    store.keepDuration.set(7);
+    const data = cashHeroData(store);
+    expect(data.outOfPocketCaption).toBe('year 1');
+    expect(data.outOfPocketCaptionMobile).toBe('yr 1');
   });
 });

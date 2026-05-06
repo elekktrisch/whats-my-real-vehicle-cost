@@ -33,6 +33,7 @@ export function defaultScenario(localeOverride?: Locale): ScenarioSnapshot {
       excessWearEstimate: null,
       buyoutFee: null,
       earlyTerminationFee: null,
+      leaseEndResidual: null,
     },
     finance: {
       apr: 9.0,

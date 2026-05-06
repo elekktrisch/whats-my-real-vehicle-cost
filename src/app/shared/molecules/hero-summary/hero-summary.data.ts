@@ -75,8 +75,14 @@ function runningCostItems(rc: RunningCosts, fmt: (v: number) => string): Breakdo
   ];
 }
 
-function captionForKeep(keep: number): { full: string; mobile: string } {
-  return { full: `over ${keep} years`, mobile: `over ${keep} yr` };
+// Short year-range captions explain when the cash actually flows out, not
+// just the keep duration. Format: "year N" / "yrs 1-N" so the caption fits
+// in the hero column on mobile.
+function captionYear1(): { full: string; mobile: string } {
+  return { full: 'year 1', mobile: 'yr 1' };
+}
+function captionYearRange(through: number): { full: string; mobile: string } {
+  return { full: `years 1-${through}`, mobile: `yrs 1-${through}` };
 }
 
 export function leaseHeroData(store: ScenarioStore): HeroData {
@@ -100,7 +106,11 @@ export function leaseHeroData(store: ScenarioStore): HeroData {
     const leasePeriod = Math.min(term, keepMonths);
     const monthlySum = monthlyLease * leasePeriod;
     const earlyExit = keepMonths < term ? store.earlyTerminationFee() : 0;
-    const buyout = store.residualValue() + store.buyoutFee() + earlyExit;
+    // Buyout uses the lease-END residual (price at month=term), NOT the
+    // end-of-keep residual (which drives the asset display + owned-tail
+    // depreciation).
+    const leaseEndResidual = store.leaseEndResidual();
+    const buyout = leaseEndResidual + store.buyoutFee() + earlyExit;
 
     items.push({ label: 'Down payment', amount: fmt(initialDp) });
     items.push({
@@ -108,7 +118,7 @@ export function leaseHeroData(store: ScenarioStore): HeroData {
       amount: fmt(monthlySum),
       detail: `${fmt(monthlyLease)} × ${leasePeriod} mo`,
     });
-    const buyoutDetailParts = [`${fmt(store.residualValue())} residual`];
+    const buyoutDetailParts = [`${fmt(leaseEndResidual)} residual`];
     if (store.buyoutFee()) buyoutDetailParts.push(`${fmt(store.buyoutFee())} fee`);
     if (earlyExit > 0) buyoutDetailParts.push(`${fmt(earlyExit)} early-exit`);
     items.push({
@@ -146,7 +156,10 @@ export function leaseHeroData(store: ScenarioStore): HeroData {
   items.push(...runningCostItems(rc, fmt));
   total += rc.total;
 
-  const cap = captionForKeep(keep);
+  // Lease pays through the lease term (buyout) or the entire keep (renew —
+  // monthly + cycle spikes throughout).
+  const through = choice === 'buyOut' ? termYears : keep;
+  const cap = captionYearRange(through);
   const asset = choice === 'buyOut' ? fmt(store.residualValue()) : fmt(0);
   const assetCaption =
     choice === 'buyOut'
@@ -194,7 +207,12 @@ export function financeHeroData(store: ScenarioStore): HeroData {
   items.push(...runningCostItems(rc, fmt));
 
   const total = downSum + monthlySum + rc.total;
-  const cap = captionForKeep(keep);
+  // With a non-zero down payment, year 1 = down + 12 monthlies, materially
+  // larger than years 2..N. Pure-loan (no down) is a flat stretch.
+  const cap =
+    downSum > 0
+      ? captionYear1()
+      : captionYearRange(Math.max(Math.round(loanMonths / 12), 1));
 
   return {
     outOfPocket: fmt(total),
@@ -222,7 +240,9 @@ export function cashHeroData(store: ScenarioStore): HeroData {
   ];
 
   const total = purchase + rc.total;
-  const cap = captionForKeep(keep);
+  // Cash spends nearly everything in year 1 — running costs spread out
+  // but the purchase price spike dominates the cash-out timing.
+  const cap = captionYear1();
 
   return {
     outOfPocket: fmt(total),

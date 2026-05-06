@@ -35,6 +35,10 @@ export interface LeaseInputs {
   excessWearEstimate: number | null;
   buyoutFee: number | null;
   earlyTerminationFee: number | null;
+  /** null = auto-derive at vehicleAge + leaseTerm/12. Distinct from
+   * `Globals.residualValue` (end-of-keep), which drives asset display
+   * and finance/cash depreciation. */
+  leaseEndResidual: number | null;
 }
 
 export interface FinanceInputs {
@@ -63,7 +67,8 @@ export interface ScenarioSnapshot {
 
 export type CostCategory =
   | 'depreciationOrLease'
-  | 'financing'
+  | 'interestAndFees'
+  | 'opportunityCost'
   | 'fuel'
   | 'insurance'
   | 'maintenance'
@@ -72,7 +77,14 @@ export type CostCategory =
 export interface MonthlyTcoPoint {
   month: number;
   depreciationOrLease: number;
-  financing: number;
+  // Real cash outflows for borrowing — loan interest portion of each payment,
+  // lease finance fee. Year-1 spike for the down payment lives in
+  // `depreciationOrLease`, not here.
+  interestAndFees: number;
+  // Foregone return on capital tied up — the down payment (or full purchase
+  // for cash) earning nothing during the keep duration. Real cost, but
+  // never appears as a check the user writes; lives only in the chart.
+  opportunityCost: number;
   fuel: number;
   insurance: number;
   maintenance: number;

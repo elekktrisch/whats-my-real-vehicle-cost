@@ -94,6 +94,19 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
           />
         } @else {
           <app-slider-control
+            label="Residual at lease end"
+            tip="Buyout price at the end of the lease term. Auto-derived from the depreciation curve at vehicleAge + leaseTerm; override with the residual percentage from your contract."
+            [min]="0"
+            [max]="leaseEndResidualMax()"
+            [step]="500"
+            [minLabel]="0 | money:'compact'"
+            [maxLabel]="leaseEndResidualMax() | money:'compact'"
+            [prefix]="store.currencyPrefix()"
+            [suffix]="store.currencySuffix()"
+            [value]="store.leaseEndResidual()"
+            (valueChange)="store.leaseEndResidualOverride.set($event)"
+          />
+          <app-slider-control
             label="Buyout fee"
             tip="One-time administrative fee charged on top of the residual value when you exercise the lease buyout. Typical 300–500."
             [min]="0"
@@ -148,6 +161,10 @@ export class LeaseEndSection {
 
   protected readonly earlyTerminationApplies = computed(
     () => this.store.keepDuration() * 12 < this.store.leaseTerm(),
+  );
+
+  protected readonly leaseEndResidualMax = computed(() =>
+    Math.min(100000, this.store.purchasePrice()),
   );
 
   protected readonly distanceUnit = computed(() => this.store.localeConfig().distanceUnit);

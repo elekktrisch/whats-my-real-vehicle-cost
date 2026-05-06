@@ -52,6 +52,10 @@ export class ScenarioStore {
   readonly earlyTerminationFeeOverride = signal<number | null>(
     this.initial.lease.earlyTerminationFee,
   );
+  // Residual at end of LEASE TERM (used as buyout price when the user buys
+  // out). Distinct from `residualValue` (end-of-keep) which drives asset
+  // display and finance/cash depreciation.
+  readonly leaseEndResidualOverride = signal<number | null>(this.initial.lease.leaseEndResidual);
 
   readonly financeApr = signal(this.initial.finance.apr);
   readonly loanTerm = signal(this.initial.finance.loanTerm);
@@ -177,6 +181,16 @@ export class ScenarioStore {
     return Math.min(value, this.earlyTerminationFeeMax());
   });
 
+  // Auto-derived residual at end of LEASE TERM (not end of keep).
+  // Used as buyout price.
+  private readonly leaseEndResidualDefault = computed(() => {
+    const endAge = this.vehicleAge() + this.leaseTerm() / 12;
+    return Math.round(this.msrp() * depreciationFactor(endAge));
+  });
+  readonly leaseEndResidual = computed(
+    () => this.leaseEndResidualOverride() ?? this.leaseEndResidualDefault(),
+  );
+
   readonly leasePaymentDetails = computed(() =>
     leasePayment({
       capCost: this.purchasePrice(),
@@ -214,6 +228,7 @@ export class ScenarioStore {
       excessWearEstimate: this.excessWearEstimate(),
       buyoutFee: this.buyoutFee(),
       earlyTerminationFee: this.earlyTerminationFee(),
+      leaseEndResidual: this.leaseEndResidual(),
       opportunityCostRate: this.opportunityCostRate(),
     }),
   );
@@ -339,6 +354,7 @@ export class ScenarioStore {
       this.excessWearOverride.set(merged.lease.excessWearEstimate);
       this.buyoutFeeOverride.set(merged.lease.buyoutFee);
       this.earlyTerminationFeeOverride.set(merged.lease.earlyTerminationFee);
+      this.leaseEndResidualOverride.set(merged.lease.leaseEndResidual);
 
       this.financeApr.set(merged.finance.apr);
       this.loanTerm.set(merged.finance.loanTerm);
@@ -379,6 +395,7 @@ export class ScenarioStore {
         excessWearEstimate: this.excessWearOverride(),
         buyoutFee: this.buyoutFeeOverride(),
         earlyTerminationFee: this.earlyTerminationFeeOverride(),
+        leaseEndResidual: this.leaseEndResidualOverride(),
       },
       finance: {
         apr: this.financeApr(),

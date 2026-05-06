@@ -26,13 +26,14 @@ const usLeaseShared = {
   excessWearEstimate: 800,
   buyoutFee: 300,
   earlyTerminationFee: 400,
+  leaseEndResidual: 18000,
   opportunityCostRate: 0,
 };
 
 describe('leaseTco', () => {
-  it('lease total includes financing', () => {
+  it('lease total includes interest & fees', () => {
     const r = tcoBreakdown(usLeaseShared);
-    expect(r.totals.financing).toBeGreaterThan(0);
+    expect(r.totals.interestAndFees).toBeGreaterThan(0);
   });
 
   it('UC4 buy-out adds a leaseEnd step at the lease term', () => {
@@ -58,7 +59,7 @@ describe('leaseTco', () => {
     // Lease/financing keep accruing past the first term — we sign another lease.
     const lateLease = r.series[60].depreciationOrLease - r.series[36].depreciationOrLease;
     expect(lateLease).toBeGreaterThan(0);
-    const lateFinance = r.series[60].financing - r.series[36].financing;
+    const lateFinance = r.series[60].interestAndFees - r.series[36].interestAndFees;
     expect(lateFinance).toBeGreaterThan(0);
     // A handback fee fires at every cycle boundary — months 36 and 72 here.
     expect(r.series[36].leaseEnd).toBeGreaterThan(r.series[35].leaseEnd);
@@ -139,8 +140,8 @@ describe('leaseTco', () => {
       leaseEndChoice: 'handBack',
       opportunityCostRate: 0.06,
     });
-    const cycle1Slope = (r.series[36].financing - r.series[0].financing) / 36;
-    const cycle2Slope = (r.series[72].financing - r.series[36].financing) / 36;
+    const cycle1Slope = (r.series[36].opportunityCost - r.series[0].opportunityCost) / 36;
+    const cycle2Slope = (r.series[72].opportunityCost - r.series[36].opportunityCost) / 36;
     const expectedDelta = (usLeaseShared.downPayment * 0.06) / 12;
     expect(cycle2Slope - cycle1Slope).toBeCloseTo(expectedDelta, 4);
   });
@@ -166,9 +167,28 @@ describe('leaseTco', () => {
   it('opportunity-cost on down payment grows with the rate', () => {
     const lo = tcoBreakdown({ ...usLeaseShared, opportunityCostRate: 0 });
     const hi = tcoBreakdown({ ...usLeaseShared, opportunityCostRate: 0.08 });
-    expect(hi.totals.financing).toBeGreaterThan(lo.totals.financing);
+    expect(hi.totals.opportunityCost).toBeGreaterThan(lo.totals.opportunityCost);
     const expectedExtra = usLeaseShared.downPayment * 0.08 * usLeaseShared.keepDurationYears;
-    expect(hi.totals.financing - lo.totals.financing).toBeCloseTo(expectedExtra, 4);
+    expect(hi.totals.opportunityCost - lo.totals.opportunityCost).toBeCloseTo(expectedExtra, 4);
+    // Real lease finance fees unaffected by opp-cost rate.
+    expect(hi.totals.interestAndFees).toBeCloseTo(lo.totals.interestAndFees, 4);
+  });
+
+  it('buyout uses leaseEndResidual for the buyout cost, not residualValue', () => {
+    const baseInputs = {
+      ...usLeaseShared,
+      keepDurationYears: 5,
+      leaseTermMonths: 36,
+      leaseEndChoice: 'buyOut' as const,
+      buyoutFee: 0,
+      earlyTerminationFee: 0,
+      residualValue: 14_000, // end-of-keep
+    };
+    const lowResidual = tcoBreakdown({ ...baseInputs, leaseEndResidual: 16_000 });
+    const highResidual = tcoBreakdown({ ...baseInputs, leaseEndResidual: 22_000 });
+    // Different leaseEndResidual values → different buyout cost in the
+    // leaseEnd category. The delta is 6,000 (= 22,000 - 16,000).
+    expect(highResidual.totals.leaseEnd - lowResidual.totals.leaseEnd).toBeCloseTo(6_000, 0);
   });
 });
 

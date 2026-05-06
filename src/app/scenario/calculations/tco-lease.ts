@@ -20,6 +20,10 @@ export interface LeaseTcoInputs extends TcoBaseInputs {
   buyoutFee: number;
   earlyTerminationFee: number;
   opportunityCostRate: number;
+  /** Residual at end of LEASE TERM (used as buyout price). Distinct from
+   * `residualValue` (end-of-keep) which still drives asset display + the
+   * owned-tail depreciation when keep > term. */
+  leaseEndResidual: number;
 }
 
 export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
@@ -82,11 +86,12 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
       const prev = series[m - 1];
       series[m].depreciationOrLease =
         prev.depreciationOrLease + lease.depreciationFee + input.downPayment / leasePeriod;
-      series[m].financing = prev.financing + lease.financeFee + monthlyOppCostBase;
+      series[m].interestAndFees = prev.interestAndFees + lease.financeFee;
+      series[m].opportunityCost = prev.opportunityCost + monthlyOppCostBase;
     }
 
     const earlyExitPenalty = totalMonths < term ? input.earlyTerminationFee : 0;
-    const buyoutTotal = input.residualValue + input.buyoutFee + earlyExitPenalty;
+    const buyoutTotal = input.leaseEndResidual + input.buyoutFee + earlyExitPenalty;
     if (leasePeriod <= totalMonths) {
       for (let m = leasePeriod; m <= totalMonths; m++) {
         series[m].leaseEnd = buyoutTotal;
@@ -94,12 +99,18 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
     }
 
     if (ownedMonths > 0) {
-      const ownedDepreciation = Math.max(input.residualValue - input.residualValue * 0.6, 0);
+      // Owned-tail depreciation: from leaseEndResidual (the price paid at
+      // buyout) down to residualValue (the end-of-keep value). Replaces the
+      // old magic 60%-retention rule with a model-driven figure.
+      const ownedDepreciation = Math.max(input.leaseEndResidual - input.residualValue, 0);
       const perMonth = ownedDepreciation / ownedMonths;
       for (let m = leasePeriod + 1; m <= totalMonths; m++) {
         const prev = series[m - 1];
         series[m].depreciationOrLease = prev.depreciationOrLease + perMonth;
-        series[m].financing = prev.financing + monthlyOppCostBase;
+        // Owned tail: no real interest/fees, just opportunity cost on the
+        // down payment that's still tied up.
+        series[m].interestAndFees = prev.interestAndFees;
+        series[m].opportunityCost = prev.opportunityCost + monthlyOppCostBase;
       }
     }
 
@@ -153,7 +164,8 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
       series[m].maintenance = prev.maintenance + inc.maintenance[i];
       series[m].depreciationOrLease =
         prev.depreciationOrLease + lease.depreciationFee + downContrib;
-      series[m].financing = prev.financing + lease.financeFee + monthlyOpp;
+      series[m].interestAndFees = prev.interestAndFees + lease.financeFee;
+      series[m].opportunityCost = prev.opportunityCost + monthlyOpp;
 
       const onCycleBoundary = m === cycleEnd && cycleLen === term;
       const finalPartial = m === totalMonths && totalMonths % term !== 0;

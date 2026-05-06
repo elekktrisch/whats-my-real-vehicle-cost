@@ -1,8 +1,19 @@
 import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { ScenarioStore } from '../../../scenario/scenario.store';
+import { formatCurrency } from '../../../scenario/locale.config';
 import { HeroColumn } from '../../atoms/hero-column/hero-column';
 import { Disclosure } from '../disclosure/disclosure';
 import { cashHeroData, financeHeroData, leaseHeroData, type HeroData } from './hero-summary.data';
+
+const SCROLL_KEYS = new Set([
+  'PageUp',
+  'PageDown',
+  'Home',
+  'End',
+  'ArrowUp',
+  'ArrowDown',
+  ' ', // Space — KeyboardEvent.key value
+]);
 
 @Component({
   selector: 'app-hero-summary',
@@ -59,6 +70,11 @@ import { cashHeroData, financeHeroData, leaseHeroData, type HeroData } from './h
         />
       </div>
 
+      <p class="hero-footnote font-ui text-[0.72rem] text-tx-dim leading-relaxed">
+        Plus ≈ {{ opportunityCostFootnote() }} in opportunity cost — included
+        in the chart's true-cost view above, not in the cash-out total.
+      </p>
+
       <div class="hero-details">
         <app-disclosure label="+ Details" [(open)]="detailsOpen">
           <dl class="hero-breakdown">
@@ -86,14 +102,27 @@ import { cashHeroData, financeHeroData, leaseHeroData, type HeroData } from './h
 export class HeroSummary {
   private readonly store = inject(ScenarioStore);
 
-  // Closing on every scroll event (not just when [data-scrolled] flips) so
-  // the .hero-details wrapper is always shrinking from a known-small height
-  // (just the disclosure button) when the compact-state transition fires.
+  // Close details on direct user-input events that correlate with scroll
+  // intent — wheel, touchmove, keyboard scroll keys. NOT on the `scroll`
+  // event itself, which also fires for synthetic scrolls (browser scroll-
+  // anchoring after the sticky stack collapses, hydration / restored
+  // position, programmatic `scrollIntoView`).
   protected readonly detailsOpen = signal(false);
 
-  @HostListener('window:scroll')
-  protected onScroll(): void {
+  @HostListener('window:wheel')
+  @HostListener('window:touchmove')
+  protected onUserScrollInput(): void {
     if (this.detailsOpen()) this.detailsOpen.set(false);
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  protected onKeydown(e: KeyboardEvent): void {
+    if (!this.detailsOpen()) return;
+    // Skip when the user is typing in an input — Space etc. are character
+    // keys there, not scroll commands.
+    const t = e.target as HTMLElement | null;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    if (SCROLL_KEYS.has(e.key)) this.detailsOpen.set(false);
   }
 
   protected readonly data = computed<HeroData>(() => {
@@ -101,5 +130,20 @@ export class HeroSummary {
     if (tab === 'lease') return leaseHeroData(this.store);
     if (tab === 'finance') return financeHeroData(this.store);
     return cashHeroData(this.store);
+  });
+
+  // Mode-specific opportunity cost over keep — pulled from the active
+  // breakdown so the figure matches the chart's opportunity-cost layer.
+  // Cash ties up the full purchase price → high; finance/lease tie up
+  // only the down payment → much lower; finance with $0 down → zero.
+  protected readonly opportunityCostFootnote = computed(() => {
+    const tab = this.store.activeTab();
+    const breakdown =
+      tab === 'lease'
+        ? this.store.leaseBreakdown()
+        : tab === 'finance'
+          ? this.store.financeBreakdown()
+          : this.store.cashBreakdown();
+    return formatCurrency(breakdown.totals.opportunityCost, this.store.locale(), 0);
   });
 }

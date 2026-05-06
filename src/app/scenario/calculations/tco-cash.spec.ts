@@ -24,7 +24,13 @@ describe('cashTco', () => {
   it('opportunity-cost grows with the rate', () => {
     const lo = tcoBreakdown({ ...usCashShared, opportunityCostRate: 0 });
     const hi = tcoBreakdown({ ...usCashShared, opportunityCostRate: 0.08 });
-    expect(hi.totals.financing).toBeGreaterThan(lo.totals.financing);
+    expect(hi.totals.opportunityCost).toBeGreaterThan(lo.totals.opportunityCost);
+  });
+
+  it('cash has no real interest or fees', () => {
+    const r = tcoBreakdown({ ...usCashShared, opportunityCostRate: 0.05 });
+    expect(r.totals.interestAndFees).toBe(0);
+    expect(r.totals.opportunityCost).toBeGreaterThan(0);
   });
 });
 

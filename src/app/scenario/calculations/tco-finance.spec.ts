@@ -27,7 +27,9 @@ describe('financeTco', () => {
     const noOpp = tcoBreakdown({ ...usFinanceShared, opportunityCostRate: 0 });
     const withOpp = tcoBreakdown({ ...usFinanceShared, opportunityCostRate: 0.08 });
     const expectedExtra = usFinanceShared.downPayment * 0.08 * usFinanceShared.keepDurationYears;
-    expect(withOpp.totals.financing - noOpp.totals.financing).toBeCloseTo(expectedExtra, 4);
+    expect(withOpp.totals.opportunityCost - noOpp.totals.opportunityCost).toBeCloseTo(expectedExtra, 4);
+    // Real interest is unchanged across the two opportunity-cost rates.
+    expect(withOpp.totals.interestAndFees).toBeCloseTo(noOpp.totals.interestAndFees, 4);
   });
 
   it('100% down ≈ cash for the same scenario (same capital tied up)', () => {

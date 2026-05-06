@@ -36,7 +36,8 @@ export interface TcoBaseInputs {
 
 export const COST_KEYS: CostCategory[] = [
   'depreciationOrLease',
-  'financing',
+  'interestAndFees',
+  'opportunityCost',
   'fuel',
   'insurance',
   'maintenance',
@@ -47,7 +48,8 @@ export function emptyPoint(month: number): MonthlyTcoPoint {
   return {
     month,
     depreciationOrLease: 0,
-    financing: 0,
+    interestAndFees: 0,
+    opportunityCost: 0,
     fuel: 0,
     insurance: 0,
     maintenance: 0,
@@ -59,7 +61,8 @@ export function emptyPoint(month: number): MonthlyTcoPoint {
 export function emptyTotals(): Record<CostCategory, number> {
   return {
     depreciationOrLease: 0,
-    financing: 0,
+    interestAndFees: 0,
+    opportunityCost: 0,
     fuel: 0,
     insurance: 0,
     maintenance: 0,

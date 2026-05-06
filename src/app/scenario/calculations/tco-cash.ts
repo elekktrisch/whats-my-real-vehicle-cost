@@ -49,7 +49,9 @@ export function cashTco(input: CashTcoInputs): CostBreakdown {
     series[m].insurance = prev.insurance + inc.insurance[i];
     series[m].maintenance = prev.maintenance + inc.maintenance[i];
     series[m].depreciationOrLease = prev.depreciationOrLease + perMonthDepreciation;
-    series[m].financing = opportunity[m];
+    // Cash mode has no real interest or fees — pure opportunity cost.
+    series[m].interestAndFees = 0;
+    series[m].opportunityCost = opportunity[m];
     // Cash flow: full purchase at month 1, then running costs each month.
     const purchaseThisMonth = m === 1 ? input.purchasePrice : 0;
     series[m].cashOut =

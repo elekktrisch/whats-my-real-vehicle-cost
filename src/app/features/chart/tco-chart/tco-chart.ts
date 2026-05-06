@@ -49,7 +49,8 @@ interface LayerSpec {
 
 const LAYERS: readonly LayerSpec[] = [
   { key: 'depreciationOrLease',  label: 'Depreciation / lease', color: '#4f8ef7', fill: 'rgba(79, 142, 247, 0.30)' },
-  { key: 'financing',            label: 'Financing',            color: '#7c5cff', fill: 'rgba(124, 92, 255, 0.30)' },
+  { key: 'interestAndFees',      label: 'Interest & fees',      color: '#7c5cff', fill: 'rgba(124, 92, 255, 0.30)' },
+  { key: 'opportunityCost',      label: 'Opportunity cost',     color: '#22d3ee', fill: 'rgba(34, 211, 238, 0.28)' },
   { key: 'fuel',                 label: 'Fuel / electricity',   color: '#34d399', fill: 'rgba(52, 211, 153, 0.30)' },
   { key: 'insurance',            label: 'Insurance',            color: '#f4845f', fill: 'rgba(244, 132, 95, 0.30)' },
   { key: 'maintenance',          label: 'Maintenance',          color: '#facc15', fill: 'rgba(250, 204, 21, 0.28)' },

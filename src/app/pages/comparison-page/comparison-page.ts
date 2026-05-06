@@ -27,8 +27,8 @@ const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Loan', cash: 'Cas
 // collapse-induced layout shift can push scroll position back across it.
 // Wider gap on mobile to absorb iOS address-bar resize during scroll.
 const HYSTERESIS = {
-  desktop: { down: 250, up: 20 },
-  mobile: { down: 250, up: 20 },
+  desktop: { down: 500, up: 10 },
+  mobile: { down: 500, up: 10 },
 };
 const MOBILE_BP = 600;
 

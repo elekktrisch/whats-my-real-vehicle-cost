@@ -429,6 +429,22 @@
     max-height: 0;
     margin-top: 0;
   }
+  /* Opportunity-cost footnote bridges the hero (cash-out only) and the
+   * chart (which includes opportunity cost as a layer). Collapses with
+   * the rest of the hero ornament in compact state. */
+  .hero-footnote {
+    opacity: 1;
+    max-height: 80px;
+    margin-top: 0.75rem;
+    overflow: hidden;
+    transition: opacity 300ms ease-out , max-height 300ms ease-out ,
+                margin-top 300ms ease-out !important;
+  }
+  [data-scrolled='true'] .hero-footnote {
+    opacity: 0;
+    max-height: 0;
+    margin-top: 0;
+  }
 
   /* Top row joins the sticky stack. Background fully opaque (content can't
    * show through). Padding owned by CSS (not Tailwind utilities) because the

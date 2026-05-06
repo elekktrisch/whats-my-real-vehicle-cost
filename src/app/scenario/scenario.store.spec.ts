@@ -52,6 +52,24 @@ describe('ScenarioStore — override pattern', () => {
     const store = makeStore();
     expect(store.residualValueOverride()).toBe(defaultScenario().globals.residualValue);
   });
+
+  it('leaseEndResidualOverride.set(v) overrides; null reverts to auto-derived at lease term', () => {
+    const store = makeStore();
+    const auto = store.leaseEndResidual();
+    store.leaseEndResidualOverride.set(22_500);
+    expect(store.leaseEndResidual()).toBe(22_500);
+    store.leaseEndResidualOverride.set(null);
+    expect(store.leaseEndResidual()).toBe(auto);
+  });
+
+  it('leaseEndResidual is independent of end-of-keep residualValue', () => {
+    const store = makeStore();
+    store.leaseTerm.set(36);
+    store.keepDuration.set(6);
+    // Both auto-derived; they should differ because leaseTerm/12 = 3yr ≠ keep = 6yr.
+    expect(store.leaseEndResidual()).not.toBe(store.residualValue());
+    expect(store.leaseEndResidual()).toBeGreaterThan(store.residualValue());
+  });
 });
 
 describe('ScenarioStore — leaseEndChoice', () => {
