@@ -67,6 +67,14 @@ function runningCostsOverKeep(store: ScenarioStore): RunningCosts {
   return { insurance, maintenance, fuel, total: insurance + maintenance + fuel };
 }
 
+// One-time home-charger install (EV + buying). The chart buckets this under
+// maintenance at month 0; in the hero we surface it as its own line so the
+// user can see exactly where the charger cost lands.
+function homeChargerInstall(store: ScenarioStore): number {
+  if (store.powertrain() !== 'EV' || store.chargerStatus() !== 'buying') return 0;
+  return store.localeConfig().defaultHomeChargerInstall;
+}
+
 function runningCostItems(rc: RunningCosts, fmt: (v: number) => string): BreakdownItem[] {
   return [
     { label: 'Insurance', amount: fmt(rc.insurance) },
@@ -155,6 +163,11 @@ export function leaseHeroData(store: ScenarioStore): HeroData {
 
   items.push(...runningCostItems(rc, fmt));
   total += rc.total;
+  const charger = homeChargerInstall(store);
+  if (charger > 0) {
+    items.push({ label: 'Home charger install', amount: fmt(charger) });
+    total += charger;
+  }
 
   // Lease pays through the lease term (buyout) or the entire keep (renew —
   // monthly + cycle spikes throughout).
@@ -205,8 +218,12 @@ export function financeHeroData(store: ScenarioStore): HeroData {
     detail: `${fmt(monthly)} × ${loanMonths} mo`,
   });
   items.push(...runningCostItems(rc, fmt));
+  const charger = homeChargerInstall(store);
+  if (charger > 0) {
+    items.push({ label: 'Home charger install', amount: fmt(charger) });
+  }
 
-  const total = downSum + monthlySum + rc.total;
+  const total = downSum + monthlySum + rc.total + charger;
   // With a non-zero down payment, year 1 = down + 12 monthlies, materially
   // larger than years 2..N. Pure-loan (no down) is a flat stretch.
   const cap =
@@ -238,8 +255,12 @@ export function cashHeroData(store: ScenarioStore): HeroData {
     { label: 'Purchase price', amount: fmt(purchase) },
     ...runningCostItems(rc, fmt),
   ];
+  const charger = homeChargerInstall(store);
+  if (charger > 0) {
+    items.push({ label: 'Home charger install', amount: fmt(charger) });
+  }
 
-  const total = purchase + rc.total;
+  const total = purchase + rc.total + charger;
   // Cash spends nearly everything in year 1 — running costs spread out
   // but the purchase price spike dominates the cash-out timing.
   const cap = captionYear1();
