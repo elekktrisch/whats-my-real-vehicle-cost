@@ -132,12 +132,55 @@
   }
   /* On touch devices, let vertical pans pass through to the page so the
    * slider can't capture a scroll gesture that started on its track.
-   * Horizontal pans still adjust the value (the only direction sliders care
-   * about). Layer 2 — explicit edit-mode toggle — comes only if accidental
-   * scroll-grabs still happen in practice. */
+   * Horizontal pans still adjust the value. Layer 1 of the accidental-edit
+   * defense; Layer 2 is the per-section edit-mode pill below. */
   @media (pointer: coarse) {
     .slider {
       touch-action: pan-y;
+    }
+  }
+
+  /* Per-section edit-mode pill (Layer 2 — touch devices only). The slider
+   * group is locked by default; tap the pill to enable editing for ~5s of
+   * inactivity. Each interaction extends the timer; tapping the pill again
+   * relocks immediately. Desktop never shows the pill (display: none
+   * outside coarse-pointer queries) and the body is never dimmed/locked. */
+  .slider-group-edit-pill {
+    display: none;
+    background: transparent;
+    border: 1px solid var(--color-border-strong);
+    color: var(--color-tx-muted);
+    font-family: var(--font-ui);
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 200ms ease-out, color 200ms ease-out,
+                border-color 200ms ease-out;
+  }
+  .slider-group-edit-pill:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(79, 142, 247, 0.5);
+  }
+  .slider-group-edit-pill-active {
+    background: var(--color-accent-soft);
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+  @media (pointer: coarse) {
+    .slider-group-edit-pill {
+      display: inline-flex;
+    }
+    .slider-group-body {
+      transition: opacity 200ms ease-out, filter 200ms ease-out;
+    }
+    .slider-group-body[data-locked='true'] {
+      pointer-events: none;
+      opacity: 0.5;
+      filter: saturate(0.6);
     }
   }
 
