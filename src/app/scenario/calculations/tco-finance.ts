@@ -1,5 +1,6 @@
 import type { CostBreakdown } from '../scenario.types';
 import { financePayment } from './financing';
+import { opportunityCostStream } from './opportunity';
 import {
   TcoBaseInputs,
   allocateSeries,
@@ -26,9 +27,38 @@ export function financeTco(input: FinanceTcoInputs): CostBreakdown {
     termMonths: input.loanTermMonths,
   });
   const monthlyInterestRate = input.apr / 100 / 12;
-  // Opportunity cost on the down payment — without this, "100% down on a loan"
-  // would look cheaper than cash, which it isn't (same capital tied up).
-  const monthlyOppCost = (input.downPayment * input.opportunityCostRate) / 12;
+
+  // First pass: amortize the loan to find the per-month principal and interest
+  // splits. Each loan payment is also a cash outflow that stops earning the
+  // user's opportunity rate from that month forward.
+  const principalPart = new Array(totalMonths + 1).fill(0);
+  const interestPart = new Array(totalMonths + 1).fill(0);
+  {
+    let balance = principal;
+    for (let m = 1; m <= loanMonths && balance > 0; m++) {
+      const interest = balance * monthlyInterestRate;
+      const prin = Math.min(monthly - interest, balance);
+      balance -= prin;
+      interestPart[m] = interest;
+      principalPart[m] = prin;
+    }
+  }
+
+  // Opportunity cost: every cash outflow into the financing decision (down +
+  // each loan payment) stops earning returns from outflow time onward. The
+  // down compounds for the full keep horizon; each monthly payment compounds
+  // from its payment month to end-of-keep.
+  const oppInjections: { month: number; amount: number }[] = [];
+  if (input.downPayment > 0) oppInjections.push({ month: 0, amount: input.downPayment });
+  for (let m = 1; m <= loanMonths; m++) {
+    const payment = principalPart[m] + interestPart[m];
+    if (payment > 0) oppInjections.push({ month: m, amount: payment });
+  }
+  const opportunity = opportunityCostStream(
+    oppInjections,
+    input.opportunityCostRate,
+    totalMonths,
+  );
 
   const fuelTotal = fuelTotalForMonths(input, totalMonths);
   const monthlyFuel = totalMonths > 0 ? fuelTotal / totalMonths : 0;
@@ -47,28 +77,20 @@ export function financeTco(input: FinanceTcoInputs): CostBreakdown {
   series[0].maintenance = chargerInstall;
   series[0].cashOut = chargerInstall;
 
-  let balance = principal;
   for (let m = 1; m <= totalMonths; m++) {
     const i = m - 1;
     const prev = series[m - 1];
-    let principalPart = 0;
-    let interestPart = 0;
-    if (m <= loanMonths && balance > 0) {
-      interestPart = balance * monthlyInterestRate;
-      principalPart = Math.min(monthly - interestPart, balance);
-      balance -= principalPart;
-    }
     series[m].fuel = prev.fuel + inc.fuel[i];
     series[m].insurance = prev.insurance + inc.insurance[i];
     series[m].maintenance = prev.maintenance + inc.maintenance[i];
     series[m].depreciationOrLease =
-      prev.depreciationOrLease + principalPart + (m === 1 ? input.downPayment : 0);
-    series[m].interestAndFees = prev.interestAndFees + interestPart;
-    series[m].opportunityCost = prev.opportunityCost + monthlyOppCost;
+      prev.depreciationOrLease + principalPart[m] + (m === 1 ? input.downPayment : 0);
+    series[m].interestAndFees = prev.interestAndFees + interestPart[m];
+    series[m].opportunityCost = opportunity[m];
     // Cash flow: down at month 1, full loan payment (principal + interest)
     // every month while the loan is active, plus running costs.
     const downThisMonth = m === 1 ? input.downPayment : 0;
-    const loanPaymentThisMonth = m <= loanMonths && balance >= 0 ? principalPart + interestPart : 0;
+    const loanPaymentThisMonth = principalPart[m] + interestPart[m];
     series[m].cashOut =
       prev.cashOut +
       downThisMonth +

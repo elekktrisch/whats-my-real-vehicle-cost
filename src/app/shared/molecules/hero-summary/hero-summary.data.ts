@@ -87,10 +87,10 @@ function runningCostItems(rc: RunningCosts, fmt: (v: number) => string): Breakdo
 // just the keep duration. Format: "year N" / "yrs 1-N" so the caption fits
 // in the hero column on mobile.
 function captionYear1(): { full: string; mobile: string } {
-  return { full: 'year 1', mobile: 'yr 1' };
+  return { full: 'mainly year 1', mobile: 'yr 1' };
 }
 function captionYearRange(through: number): { full: string; mobile: string } {
-  return { full: `years 1-${through}`, mobile: `yrs 1-${through}` };
+  return { full: `mainly years 1-${through}`, mobile: `yrs 1-${through}` };
 }
 
 export function leaseHeroData(store: ScenarioStore): HeroData {

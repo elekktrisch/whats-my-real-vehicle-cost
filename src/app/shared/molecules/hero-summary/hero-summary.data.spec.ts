@@ -25,7 +25,7 @@ describe('leaseHeroData', () => {
     expect(labels).toContain('Insurance');
     expect(labels).toContain('Maintenance');
     expect(labels).toContain('Fuel / electricity');
-    expect(data.outOfPocketCaption).toBe('years 1-3');
+    expect(data.outOfPocketCaption).toBe('mainly years 1-3');
     expect(data.outOfPocketCaptionMobile).toBe('yrs 1-3');
   });
 
@@ -82,7 +82,7 @@ describe('leaseHeroData', () => {
     store.leaseEndChoiceOverride.set('handBack');
     store.keepDuration.set(6);
     const data = leaseHeroData(store);
-    expect(data.outOfPocketCaption).toBe('years 1-6');
+    expect(data.outOfPocketCaption).toBe('mainly years 1-6');
     expect(data.outOfPocketCaptionMobile).toBe('yrs 1-6');
   });
 
@@ -92,7 +92,7 @@ describe('leaseHeroData', () => {
     store.leaseTerm.set(36);
     store.keepDuration.set(5);
     const data = leaseHeroData(store);
-    expect(data.outOfPocketCaption).toBe('years 1-3');
+    expect(data.outOfPocketCaption).toBe('mainly years 1-3');
     expect(data.outOfPocketCaptionMobile).toBe('yrs 1-3');
   });
 });
@@ -125,7 +125,7 @@ describe('financeHeroData', () => {
     const store = makeStore();
     store.financeDownPayment.set(5_000);
     const data = financeHeroData(store);
-    expect(data.outOfPocketCaption).toBe('year 1');
+    expect(data.outOfPocketCaption).toBe('mainly year 1');
     expect(data.outOfPocketCaptionMobile).toBe('yr 1');
   });
 
@@ -134,7 +134,7 @@ describe('financeHeroData', () => {
     store.financeDownPayment.set(0);
     store.loanTerm.set(60);
     const data = financeHeroData(store);
-    expect(data.outOfPocketCaption).toBe('years 1-5');
+    expect(data.outOfPocketCaption).toBe('mainly years 1-5');
     expect(data.outOfPocketCaptionMobile).toBe('yrs 1-5');
   });
 });
@@ -155,7 +155,7 @@ describe('cashHeroData', () => {
     const store = makeStore();
     store.keepDuration.set(7);
     const data = cashHeroData(store);
-    expect(data.outOfPocketCaption).toBe('year 1');
+    expect(data.outOfPocketCaption).toBe('mainly year 1');
     expect(data.outOfPocketCaptionMobile).toBe('yr 1');
   });
 });

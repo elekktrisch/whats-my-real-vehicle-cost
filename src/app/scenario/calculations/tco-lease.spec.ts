@@ -132,7 +132,10 @@ describe('leaseTco', () => {
     expect(cycle2Slope).toBeCloseTo(cycle1Slope, 4);
   });
 
-  it('renew lease grows opportunity cost step-wise at each cycle boundary', () => {
+  it('renew lease grows opportunity cost faster after each cycle boundary', () => {
+    // Each cycle adds a fresh down payment that compounds independently from
+    // its cycle start. Cycle 2 onward has more compounding principal in play,
+    // so the slope is strictly greater than cycle 1's.
     const r = tcoBreakdown({
       ...usLeaseShared,
       keepDurationYears: 6,
@@ -142,8 +145,7 @@ describe('leaseTco', () => {
     });
     const cycle1Slope = (r.series[36].opportunityCost - r.series[0].opportunityCost) / 36;
     const cycle2Slope = (r.series[72].opportunityCost - r.series[36].opportunityCost) / 36;
-    const expectedDelta = (usLeaseShared.downPayment * 0.06) / 12;
-    expect(cycle2Slope - cycle1Slope).toBeCloseTo(expectedDelta, 4);
+    expect(cycle2Slope).toBeGreaterThan(cycle1Slope);
   });
 
   it('hand back + keep > term has roughly 2× the cost of a single-term lease', () => {
@@ -164,17 +166,20 @@ describe('leaseTco', () => {
     expect(ratio).toBeLessThan(2.3);
   });
 
-  it('opportunity-cost on down payment grows with the rate', () => {
+  it('opportunity-cost compounds with the rate (covers down + monthly fees + handback)', () => {
     const lo = tcoBreakdown({ ...usLeaseShared, opportunityCostRate: 0 });
     const hi = tcoBreakdown({ ...usLeaseShared, opportunityCostRate: 0.08 });
     expect(hi.totals.opportunityCost).toBeGreaterThan(lo.totals.opportunityCost);
-    const expectedExtra = usLeaseShared.downPayment * 0.08 * usLeaseShared.keepDurationYears;
-    expect(hi.totals.opportunityCost - lo.totals.opportunityCost).toBeCloseTo(expectedExtra, 4);
+    // Strict lower bound: opp on the down alone compounded for the keep.
+    // Full opp also includes monthly lease fees and the cycle-end handback.
+    const oppOnDownAlone =
+      usLeaseShared.downPayment * (Math.pow(1.08, usLeaseShared.keepDurationYears) - 1);
+    expect(hi.totals.opportunityCost - lo.totals.opportunityCost).toBeGreaterThan(oppOnDownAlone);
     // Real lease finance fees unaffected by opp-cost rate.
     expect(hi.totals.interestAndFees).toBeCloseTo(lo.totals.interestAndFees, 4);
   });
 
-  it('buyout uses leaseEndResidual for the buyout cost, not residualValue', () => {
+  it('buyout uses leaseEndResidual for the cash payment (cashOut differs by leaseEndResidual delta)', () => {
     const baseInputs = {
       ...usLeaseShared,
       keepDurationYears: 5,
@@ -186,9 +191,12 @@ describe('leaseTco', () => {
     };
     const lowResidual = tcoBreakdown({ ...baseInputs, leaseEndResidual: 16_000 });
     const highResidual = tcoBreakdown({ ...baseInputs, leaseEndResidual: 22_000 });
-    // Different leaseEndResidual values → different buyout cost in the
-    // leaseEnd category. The delta is 6,000 (= 22,000 - 16,000).
-    expect(highResidual.totals.leaseEnd - lowResidual.totals.leaseEnd).toBeCloseTo(6_000, 0);
+    // The cash flow at buyout differs by exactly the leaseEndResidual delta.
+    // (The chart's leaseEnd line now only shows buyoutFee + earlyExit; the
+    // residual portion flows into depreciation since the user keeps the asset.)
+    const lowAtBuyout = lowResidual.series[36].cashOut;
+    const highAtBuyout = highResidual.series[36].cashOut;
+    expect(highAtBuyout - lowAtBuyout).toBeCloseTo(6_000, 0);
   });
 });
 
@@ -208,7 +216,7 @@ describe('leaseTco — maintenance age curve', () => {
     expect(cycle2Maint).toBeCloseTo(cycle1Maint, 2);
   });
 
-  it('buyout: maintenance is flat through the lease term, then climbs on the owned tail', () => {
+  it('buyout: maintenance grows slowly during lease, then climbs faster on the owned tail', () => {
     const r = tcoBreakdown({
       ...usLeaseShared,
       keepDurationYears: 6,
@@ -217,11 +225,15 @@ describe('leaseTco — maintenance age curve', () => {
       maintenanceBase: 525,
       maintenanceK: maintenanceK('mid', 'ICE'),
     });
-    const mid1 = r.series[18].maintenance - r.series[6].maintenance;
-    const mid2 = r.series[30].maintenance - r.series[18].maintenance;
-    expect(mid1).toBeCloseTo(mid2, 1); // flat slope during lease
+    // Lease portion: half-aging (warranty handles powertrain, consumables age).
+    // Owned tail: full aging.
+    const leasedYr1 = r.series[12].maintenance - r.series[0].maintenance;
+    const leasedYr3 = r.series[36].maintenance - r.series[24].maintenance;
+    expect(leasedYr3).toBeGreaterThan(leasedYr1); // grows during lease (half-K)
     const ownedYr1 = r.series[48].maintenance - r.series[36].maintenance;
     const ownedYr3 = r.series[72].maintenance - r.series[60].maintenance;
-    expect(ownedYr3).toBeGreaterThan(ownedYr1);
+    expect(ownedYr3).toBeGreaterThan(ownedYr1); // and grows faster once owned
+    // Owned-tail growth slope > lease-portion growth slope (full vs half K).
+    expect(ownedYr3 - ownedYr1).toBeGreaterThan(leasedYr3 - leasedYr1);
   });
 });

@@ -1,5 +1,6 @@
 import type { CostBreakdown, LeaseEndChoice } from '../scenario.types';
 import { leasePayment } from './financing';
+import { opportunityCostStream } from './opportunity';
 import {
   TcoBaseInputs,
   allocateSeries,
@@ -29,7 +30,6 @@ export interface LeaseTcoInputs extends TcoBaseInputs {
 export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
   const totalMonths = Math.max(Math.round(input.keepDurationYears * 12), 1);
   const term = Math.max(input.leaseTermMonths, 1);
-  const monthlyOppCostBase = (input.downPayment * input.opportunityCostRate) / 12;
   const lease = leasePayment({
     capCost: input.purchasePrice,
     downPayment: input.downPayment,
@@ -53,15 +53,46 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
   if (buyOut) {
     const leasePeriod = Math.min(term, totalMonths);
     const ownedMonths = totalMonths - leasePeriod;
+    const earlyExitPenalty = totalMonths < term ? input.earlyTerminationFee : 0;
+    // The user pays this amount in cash at buyout (real outflow).
+    const buyoutCashOut = input.leaseEndResidual + input.buyoutFee + earlyExitPenalty;
+    // The chart's leaseEnd line shows only the *net* cost above asset value
+    // received: buyoutFee + earlyExit. The leaseEndResidual portion is paid
+    // for the asset itself, which the user keeps — owned-tail depreciation
+    // (separately tracked in `depreciationOrLease`) covers any subsequent
+    // value loss. This mirrors how cash mode nets `price - residual` into
+    // depreciation rather than charging the residual portion twice.
+    const chartLeaseEnd = input.buyoutFee + earlyExitPenalty;
 
-    // Lease portion: flat maintenance (k=0); owned tail starts age clock at 0.
+    // Opportunity cost: every cash outflow that's part of the lease decision
+    // (down + each monthly lease payment + buyout payment at end of term)
+    // stops earning returns from outflow time onward. Each injection
+    // compounds independently from its own time to end-of-keep.
+    const oppInjections: { month: number; amount: number }[] = [];
+    if (input.downPayment > 0) oppInjections.push({ month: 0, amount: input.downPayment });
+    for (let m = 1; m <= leasePeriod; m++) {
+      oppInjections.push({ month: m, amount: monthlyLeaseFee });
+    }
+    if (buyoutCashOut > 0 && leasePeriod >= 1) {
+      oppInjections.push({ month: leasePeriod, amount: buyoutCashOut });
+    }
+    const opportunity = opportunityCostStream(
+      oppInjections,
+      input.opportunityCostRate,
+      totalMonths,
+    );
+
+    // Lease portion: half the aging penalty. Lessor handles powertrain repairs
+    // under warranty, but consumables (tires, brakes, fluids, alignment) still
+    // age with the car — so maintenance grows over time, just slower than for
+    // an owner who's responsible for everything.
     const leaseInc = buildOwnedMonthsSeries({
       startAgeYears: 0,
       durationMonths: leasePeriod,
       monthlyFuel,
       monthlyInsurance,
       maintenanceBase: input.maintenanceBase,
-      maintenanceK: 0,
+      maintenanceK: input.maintenanceK * 0.5,
     });
     const ownedInc = buildOwnedMonthsSeries({
       startAgeYears: 0,
@@ -87,14 +118,12 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
       series[m].depreciationOrLease =
         prev.depreciationOrLease + lease.depreciationFee + input.downPayment / leasePeriod;
       series[m].interestAndFees = prev.interestAndFees + lease.financeFee;
-      series[m].opportunityCost = prev.opportunityCost + monthlyOppCostBase;
+      series[m].opportunityCost = opportunity[m];
     }
 
-    const earlyExitPenalty = totalMonths < term ? input.earlyTerminationFee : 0;
-    const buyoutTotal = input.leaseEndResidual + input.buyoutFee + earlyExitPenalty;
     if (leasePeriod <= totalMonths) {
       for (let m = leasePeriod; m <= totalMonths; m++) {
-        series[m].leaseEnd = buyoutTotal;
+        series[m].leaseEnd = chartLeaseEnd;
       }
     }
 
@@ -110,7 +139,7 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
         // Owned tail: no real interest/fees, just opportunity cost on the
         // down payment that's still tied up.
         series[m].interestAndFees = prev.interestAndFees;
-        series[m].opportunityCost = prev.opportunityCost + monthlyOppCostBase;
+        series[m].opportunityCost = opportunity[m];
       }
     }
 
@@ -122,7 +151,7 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
       const j = inLease ? m - 1 : m - 1 - leasePeriod;
       const downThisMonth = m === 1 ? input.downPayment : 0;
       const monthlyThisMonth = inLease ? monthlyLeaseFee : 0;
-      const buyoutThisMonth = m === leasePeriod ? buyoutTotal : 0;
+      const buyoutThisMonth = m === leasePeriod ? buyoutCashOut : 0;
       series[m].cashOut =
         prev.cashOut +
         downThisMonth +
@@ -137,8 +166,33 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
 
   // Renew lease: rolling cycles, each a new car (age resets to 0).
   const handbackFee = input.dispositionFee + input.excessWearEstimate;
-  let cumulativeDownPaid = 0;
   let cumLeaseEnd = 0;
+
+  // Opportunity cost (Framing B): every outflow loses returns from outflow
+  // time onward — down at each cycle start, every monthly lease fee, and
+  // cycle-end fees (handback / early exit). Each compounds independently.
+  const oppInjections: { month: number; amount: number }[] = [];
+  for (let cs = 1; cs <= totalMonths; cs += term) {
+    const ce = Math.min(cs + term - 1, totalMonths);
+    const cl = ce - cs + 1;
+    if (input.downPayment > 0) oppInjections.push({ month: cs - 1, amount: input.downPayment });
+    for (let i = 0; i < cl; i++) {
+      oppInjections.push({ month: cs + i, amount: monthlyLeaseFee });
+    }
+    const onCycleBoundary = cl === term;
+    const finalPartial = ce === totalMonths && totalMonths % term !== 0;
+    if (onCycleBoundary || finalPartial) {
+      oppInjections.push({ month: ce, amount: handbackFee });
+    }
+    if (finalPartial && totalMonths < term) {
+      oppInjections.push({ month: ce, amount: input.earlyTerminationFee });
+    }
+  }
+  const opportunity = opportunityCostStream(
+    oppInjections,
+    input.opportunityCostRate,
+    totalMonths,
+  );
 
   let cycleStart = 1;
   while (cycleStart <= totalMonths) {
@@ -152,8 +206,6 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
       maintenanceBase: input.maintenanceBase,
       maintenanceK: input.maintenanceK,
     });
-    cumulativeDownPaid += input.downPayment;
-    const monthlyOpp = (cumulativeDownPaid * input.opportunityCostRate) / 12;
     const downContrib = input.downPayment / cycleLen;
 
     for (let i = 0; i < cycleLen; i++) {
@@ -165,7 +217,7 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
       series[m].depreciationOrLease =
         prev.depreciationOrLease + lease.depreciationFee + downContrib;
       series[m].interestAndFees = prev.interestAndFees + lease.financeFee;
-      series[m].opportunityCost = prev.opportunityCost + monthlyOpp;
+      series[m].opportunityCost = opportunity[m];
 
       const onCycleBoundary = m === cycleEnd && cycleLen === term;
       const finalPartial = m === totalMonths && totalMonths % term !== 0;

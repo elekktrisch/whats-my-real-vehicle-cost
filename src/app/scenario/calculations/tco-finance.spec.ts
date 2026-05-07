@@ -23,11 +23,16 @@ const usFinanceShared = {
 };
 
 describe('financeTco', () => {
-  it('applies opportunity cost on the down payment', () => {
+  it('applies compounded opportunity cost on every cash outflow (down + loan payments)', () => {
     const noOpp = tcoBreakdown({ ...usFinanceShared, opportunityCostRate: 0 });
     const withOpp = tcoBreakdown({ ...usFinanceShared, opportunityCostRate: 0.08 });
-    const expectedExtra = usFinanceShared.downPayment * 0.08 * usFinanceShared.keepDurationYears;
-    expect(withOpp.totals.opportunityCost - noOpp.totals.opportunityCost).toBeCloseTo(expectedExtra, 4);
+    // Opp on the down alone is a strict lower bound; full opp also includes
+    // each monthly loan payment (each $X paid stops earning returns).
+    const oppOnDownAlone =
+      usFinanceShared.downPayment * (Math.pow(1.08, usFinanceShared.keepDurationYears) - 1);
+    expect(withOpp.totals.opportunityCost - noOpp.totals.opportunityCost).toBeGreaterThan(
+      oppOnDownAlone,
+    );
     // Real interest is unchanged across the two opportunity-cost rates.
     expect(withOpp.totals.interestAndFees).toBeCloseTo(noOpp.totals.interestAndFees, 4);
   });

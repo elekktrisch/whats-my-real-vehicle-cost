@@ -291,16 +291,20 @@ describe('TCO invariants — finance mode arithmetic', () => {
     expect(r.totals.interestAndFees).toBeGreaterThan(0);
   });
 
-  it('zero down → zero opportunity cost', () => {
-    const r = tcoBreakdown(financeInputs({ downPayment: 0 }));
-    expect(r.totals.opportunityCost).toBe(0);
+  it('zero down → opp cost is purely from monthly loan payments (still > 0)', () => {
+    // Under Framing B, every loan payment is also a cash outflow that loses
+    // returns from payment time onward — so $0 down does not zero out opp.
+    const withRate = tcoBreakdown(financeInputs({ downPayment: 0, opportunityCostRate: 0.06 }));
+    const noRate = tcoBreakdown(financeInputs({ downPayment: 0, opportunityCostRate: 0 }));
+    expect(noRate.totals.opportunityCost).toBe(0);
+    expect(withRate.totals.opportunityCost).toBeGreaterThan(0);
   });
 
-  it('opportunity cost ≈ down × rate × years (simple, accrued monthly on the down)', () => {
+  it('opportunity cost > down × ((1+r)^t − 1): includes opp on monthly loan payments too', () => {
     const inputs = financeInputs({ downPayment: 8_000, opportunityCostRate: 0.06, keepDurationYears: 4 });
     const r = tcoBreakdown(inputs);
-    const expected = 8_000 * 0.06 * 4;
-    expect(r.totals.opportunityCost).toBeCloseTo(expected, 0);
+    const oppOnDownAlone = 8_000 * (Math.pow(1.06, 4) - 1);
+    expect(r.totals.opportunityCost).toBeGreaterThan(oppOnDownAlone);
   });
 
   it('100% down ≈ cash mode (within 15%)', () => {
@@ -326,7 +330,7 @@ describe('TCO invariants — lease mode arithmetic', () => {
     expect(r.totals.leaseEnd).toBeCloseTo(2 * handbackFee, 0);
   });
 
-  it('buyout total includes leaseEndResidual + buyoutFee', () => {
+  it('buyout chart leaseEnd = buyoutFee + earlyExit (residual netted into depreciation)', () => {
     const r = tcoBreakdown(
       leaseInputs({
         keepDurationYears: 5,
@@ -337,7 +341,15 @@ describe('TCO invariants — lease mode arithmetic', () => {
         buyoutFee: 300,
       }),
     );
-    expect(r.totals.leaseEnd).toBeCloseTo(22_000 + 300, 0);
+    // The chart's leaseEnd line shows only the *net* cost: buyoutFee + early
+    // exit. The leaseEndResidual portion is the asset value the user keeps —
+    // it flows into depreciation (mirroring how cash mode nets price-residual
+    // rather than charging the residual as a separate cost).
+    expect(r.totals.leaseEnd).toBeCloseTo(300, 0);
+    // The actual cash outflow at buyout still includes the full residual.
+    const beforeBuyout = r.series[35].cashOut;
+    const afterBuyout = r.series[36].cashOut;
+    expect(afterBuyout - beforeBuyout).toBeGreaterThan(22_000);
   });
 
   it('apr=0 → zero finance fees in lease payment', () => {
@@ -345,9 +357,69 @@ describe('TCO invariants — lease mode arithmetic', () => {
     expect(r.totals.interestAndFees).toBeCloseTo(0, 4);
   });
 
-  it('down=0 → zero opportunity cost', () => {
-    const r = tcoBreakdown(leaseInputs({ downPayment: 0 }));
-    expect(r.totals.opportunityCost).toBe(0);
+  it('down=0 → opp cost is purely from monthly lease payments + handback (still > 0)', () => {
+    const withRate = tcoBreakdown(
+      leaseInputs({ downPayment: 0, opportunityCostRate: 0.06 }),
+    );
+    const noRate = tcoBreakdown(leaseInputs({ downPayment: 0, opportunityCostRate: 0 }));
+    expect(noRate.totals.opportunityCost).toBe(0);
+    expect(withRate.totals.opportunityCost).toBeGreaterThan(0);
+  });
+
+  it('lease buyout opp > down-alone compounded: includes monthly fees + buyout outflow', () => {
+    const r = tcoBreakdown(
+      leaseInputs({
+        leaseEndChoice: 'buyOut',
+        downPayment: 5_000,
+        opportunityCostRate: 0.05,
+        keepDurationYears: 5,
+      }),
+    );
+    const oppOnDownAlone = 5_000 * (Math.pow(1.05, 5) - 1);
+    expect(r.totals.opportunityCost).toBeGreaterThan(oppOnDownAlone);
+  });
+
+  it('lease maintenance grows over keep duration (warranty does not zero out aging)', () => {
+    // The lessor handles powertrain repairs but consumables (tires, brakes,
+    // fluids) still age. So lease maintenance should be lower than ownership
+    // but not perfectly flat over a multi-year keep.
+    const cash = tcoBreakdown(cashInputs({ keepDurationYears: 5, maintenanceK: 0.08 }));
+    const lease = tcoBreakdown(
+      leaseInputs({
+        keepDurationYears: 3,
+        leaseTermMonths: 36,
+        leaseEndChoice: 'buyOut',
+        maintenanceK: 0.08,
+      }),
+    );
+    // Cash maintenance over 5yr should clearly exceed lease maintenance over 3yr
+    // (more years AND more aging penalty).
+    expect(cash.totals.maintenance).toBeGreaterThan(lease.totals.maintenance);
+    // But lease shouldn't be perfectly flat: maintenance at month 36 should
+    // strictly exceed maintenance at month 12 by more than just the linear
+    // base extrapolation (i.e., aging contributes).
+    const m12 = lease.series[12].maintenance;
+    const m36 = lease.series[36].maintenance;
+    const linearBaseExtrapolated = (m12 / 12) * 36;
+    expect(m36).toBeGreaterThan(linearBaseExtrapolated);
+  });
+
+  it('lease renew opp > Σ down-only compounded: monthly fees + handback also lose returns', () => {
+    const down = 5_000;
+    const rate = 0.05;
+    const r = tcoBreakdown(
+      leaseInputs({
+        leaseEndChoice: 'handBack',
+        downPayment: down,
+        opportunityCostRate: rate,
+        keepDurationYears: 6,
+        leaseTermMonths: 36,
+      }),
+    );
+    const monthlyRate = Math.pow(1 + rate, 1 / 12) - 1;
+    const oppOnDownsAlone =
+      down * (Math.pow(1 + monthlyRate, 72) - 1) + down * (Math.pow(1 + monthlyRate, 36) - 1);
+    expect(r.totals.opportunityCost).toBeGreaterThan(oppOnDownsAlone);
   });
 
   it('renew lease cumulative down ≈ cycles × down', () => {
@@ -387,10 +459,81 @@ describe('TCO invariants — lease mode arithmetic', () => {
 // ── Cross-mode invariants ──────────────────────────────────────────────────
 
 describe('TCO invariants — cross-mode comparisons', () => {
-  it('cash opp > finance opp with same down (cash ties up the full price)', () => {
+  it('cash opp > finance opp with same down (cash ties up the full price upfront)', () => {
     const cash = tcoBreakdown(cashInputs({ opportunityCostRate: 0.05 }));
     const fin = tcoBreakdown(financeInputs({ downPayment: 5_000, opportunityCostRate: 0.05 }));
     expect(cash.totals.opportunityCost).toBeGreaterThan(fin.totals.opportunityCost);
+  });
+
+  // ── APR vs opp-rate sign determines whether financing is cheaper than cash.
+  //    The financial-leverage rule: if loan APR < expected investment return,
+  //    financing is rational (cheap money beats foregone returns). If APR >
+  //    expected return, you're paying more for borrowed money than you'd earn
+  //    investing — finance becomes more expensive than cash.
+  describe('financing leverage rule (Framing B opp on all outflows)', () => {
+    const sharedKeep = { keepDurationYears: 5, opportunityCostRate: 0.06 };
+
+    it('APR > opp rate → finance total > cash total', () => {
+      // 9% loan vs 6% expected return: the user pays more in interest than
+      // they'd earn investing the freed-up cash. Financing should lose.
+      const cash = tcoBreakdown(cashInputs(sharedKeep));
+      const fin = tcoBreakdown(
+        financeInputs({ ...sharedKeep, apr: 9, downPayment: 5_000, loanTermMonths: 60 }),
+      );
+      expect(fin.total).toBeGreaterThan(cash.total);
+    });
+
+    it('APR < opp rate → finance total < cash total', () => {
+      // 3% loan vs 6% return: cheap money. Financing wins.
+      const cash = tcoBreakdown(cashInputs(sharedKeep));
+      const fin = tcoBreakdown(
+        financeInputs({ ...sharedKeep, apr: 3, downPayment: 5_000, loanTermMonths: 60 }),
+      );
+      expect(fin.total).toBeLessThan(cash.total);
+    });
+
+    it('APR ≈ opp rate → finance total ≈ cash total (within 5%)', () => {
+      // Identical rates: borrowing should be approximately neutral. Slight
+      // gap from APR-as-simple-monthly vs opp-as-compound-monthly conventions.
+      const cash = tcoBreakdown(cashInputs(sharedKeep));
+      const fin = tcoBreakdown(
+        financeInputs({ ...sharedKeep, apr: 6, downPayment: 5_000, loanTermMonths: 60 }),
+      );
+      const ratio = fin.total / cash.total;
+      expect(ratio).toBeGreaterThan(0.95);
+      expect(ratio).toBeLessThan(1.05);
+    });
+
+    it('lease money-factor > opp rate → lease buyout total > cash total', () => {
+      // 15% APR (money factor 0.00625) is a punitive lease. Even buyout —
+      // which leaves you owning the car — costs more than cash when the
+      // money factor exceeds investment returns.
+      const cash = tcoBreakdown(cashInputs(sharedKeep));
+      const lease = tcoBreakdown(
+        leaseInputs({
+          ...sharedKeep,
+          apr: 15,
+          downPayment: 5_000,
+          leaseTermMonths: 36,
+          leaseEndChoice: 'buyOut',
+        }),
+      );
+      expect(lease.total).toBeGreaterThan(cash.total);
+    });
+
+    it('lease money-factor < opp rate → lease buyout total < cash total', () => {
+      const cash = tcoBreakdown(cashInputs(sharedKeep));
+      const lease = tcoBreakdown(
+        leaseInputs({
+          ...sharedKeep,
+          apr: 1.5,
+          downPayment: 5_000,
+          leaseTermMonths: 36,
+          leaseEndChoice: 'buyOut',
+        }),
+      );
+      expect(lease.total).toBeLessThan(cash.total);
+    });
   });
 
   // ── Pure cash flow comparison (opp cost excluded): financing should cost
