@@ -105,9 +105,22 @@ export class YourSituation {
   );
   protected readonly solarValue = computed(() => (this.store.solar() ? 'on' : 'off'));
 
+  // Round-trip stash — preserves a custom rate (e.g. 5% loaded from URL)
+  // when the user toggles to the other side and back. Without this, toggling
+  // 'savings' → 'investing' on a 5% URL would snap to the 6% preset, losing
+  // the 5% on the way back.
+  private readonly oppCostStash: Record<'savings' | 'investing', number> = {
+    savings: OPP_COST_RATE['savings'],
+    investing: OPP_COST_RATE['investing'],
+  };
+
   protected onOppCostChange(value: string): void {
-    const rate = OPP_COST_RATE[value];
-    if (rate !== undefined) this.store.opportunityCostRate.set(rate);
+    if (value !== 'savings' && value !== 'investing') return;
+    const currentRate = this.store.opportunityCostRate();
+    const currentSide = currentRate < 0.03 ? 'savings' : 'investing';
+    if (value === currentSide) return;
+    this.oppCostStash[currentSide] = currentRate;
+    this.store.opportunityCostRate.set(this.oppCostStash[value]);
   }
 
   protected onChargerChange(value: string): void {

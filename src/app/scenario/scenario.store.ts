@@ -299,24 +299,45 @@ export class ScenarioStore {
     return this.cashBreakdown;
   }
 
-  // Drop running-cost overrides on locale/powertrain change — the previous
-  // values (e.g. $2000 US insurance, 28 mpg) are meaningless under the new combo.
-  clearRunningCostOverrides(): void {
-    this.insuranceOverride.set(null);
-    this.fuelEfficiencyOverride.set(null);
-    this.fuelPriceOverride.set(null);
+  // Round-trip stashes for running-cost overrides. Without these, toggling
+  // ICE→EV→ICE (or US→EU→US) would discard the user's custom values because
+  // unit-mismatched overrides have to be dropped during the toggle. The
+  // stash holds the previous value so toggling back restores it.
+  // Insurance keys on locale only (units only differ by locale). Fuel-related
+  // overrides key on (locale, powertrain) since both axes change units.
+  private readonly insuranceStash = new Map<Locale, number | null>();
+  private readonly fuelEffStash = new Map<string, number | null>();
+  private readonly fuelPriceStash = new Map<string, number | null>();
+  private fuelComboKey(locale: Locale, pt: Powertrain): string {
+    return `${locale}|${pt}`;
   }
 
   setLocale(v: Locale): void {
     if (this.locale() === v) return;
+    const oldLocale = this.locale();
+    const pt = this.powertrain();
+    // Stash the currently-active overrides under the OLD combo so they
+    // can be restored on the way back.
+    this.insuranceStash.set(oldLocale, this.insuranceOverride());
+    this.fuelEffStash.set(this.fuelComboKey(oldLocale, pt), this.fuelEfficiencyOverride());
+    this.fuelPriceStash.set(this.fuelComboKey(oldLocale, pt), this.fuelPriceOverride());
     this.locale.set(v);
-    this.clearRunningCostOverrides();
+    // Restore from stash for the new combo (or null = use default if no stash).
+    this.insuranceOverride.set(this.insuranceStash.get(v) ?? null);
+    this.fuelEfficiencyOverride.set(this.fuelEffStash.get(this.fuelComboKey(v, pt)) ?? null);
+    this.fuelPriceOverride.set(this.fuelPriceStash.get(this.fuelComboKey(v, pt)) ?? null);
   }
 
   setPowertrain(v: Powertrain): void {
     if (this.powertrain() === v) return;
+    const loc = this.locale();
+    const oldPt = this.powertrain();
+    // Insurance is locale-dependent only; powertrain toggle leaves it alone.
+    this.fuelEffStash.set(this.fuelComboKey(loc, oldPt), this.fuelEfficiencyOverride());
+    this.fuelPriceStash.set(this.fuelComboKey(loc, oldPt), this.fuelPriceOverride());
     this.powertrain.set(v);
-    this.clearRunningCostOverrides();
+    this.fuelEfficiencyOverride.set(this.fuelEffStash.get(this.fuelComboKey(loc, v)) ?? null);
+    this.fuelPriceOverride.set(this.fuelPriceStash.get(this.fuelComboKey(loc, v)) ?? null);
   }
 
   // 'none' also disables solar — solar without a home charger has no effect.
