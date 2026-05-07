@@ -95,7 +95,9 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
       maintenanceK: input.maintenanceK * 0.5,
     });
     const ownedInc = buildOwnedMonthsSeries({
-      startAgeYears: 0,
+      // The car aged through the lease term — owned tail starts at that age,
+      // not zero. A 3-year-old buyout car has more wear than a brand-new one.
+      startAgeYears: input.vehicleAge + leasePeriod / 12,
       durationMonths: ownedMonths,
       monthlyFuel,
       monthlyInsurance,

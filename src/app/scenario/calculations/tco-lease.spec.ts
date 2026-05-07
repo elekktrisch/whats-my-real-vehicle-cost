@@ -216,6 +216,36 @@ describe('leaseTco — maintenance age curve', () => {
     expect(cycle2Maint).toBeCloseTo(cycle1Maint, 2);
   });
 
+  it('buyout: owned-tail maintenance reflects car age at buyout (not age 0)', () => {
+    // After a 36-month lease, the car is 3 years old. Once buyout flips the
+    // car into owned status, maintenance should immediately reflect age 3,
+    // not restart at age 0. The first owned-tail month's maintenance
+    // increment must exceed what month 1 of a brand-new ownership would be.
+    const r = tcoBreakdown({
+      ...usLeaseShared,
+      keepDurationYears: 5,
+      leaseTermMonths: 36,
+      leaseEndChoice: 'buyOut',
+      maintenanceBase: 525,
+      maintenanceK: maintenanceK('mid', 'ICE'),
+    });
+    // First-month-of-owned-tail increment (car aged 3yr, full K).
+    const firstTailMonth = r.series[37].maintenance - r.series[36].maintenance;
+    // Compare to a fresh-car cash purchase: month 1 increment (car aged 0).
+    const cash = tcoBreakdown({
+      ...usLeaseShared,
+      tab: 'cash' as const,
+      vehicleAge: 0,
+      keepDurationYears: 1,
+      maintenanceBase: 525,
+      maintenanceK: maintenanceK('mid', 'ICE'),
+    });
+    const freshMonth1 = cash.series[1].maintenance - cash.series[0].maintenance;
+    // A 3-year-old car's monthly maintenance must be strictly greater than
+    // a brand-new car's. With K~0.07 for mid ICE, ratio should be ~(1+0.07×3) = 1.21×.
+    expect(firstTailMonth).toBeGreaterThan(freshMonth1 * 1.15);
+  });
+
   it('buyout: maintenance grows slowly during lease, then climbs faster on the owned tail', () => {
     const r = tcoBreakdown({
       ...usLeaseShared,
