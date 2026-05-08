@@ -66,7 +66,7 @@ src/app/
     calculations/               tco-{lease,finance,cash,shared}.ts + tco.ts dispatcher
     scenario.store.ts           central signal store
     scenario.persistence.ts     URL autosave + cross-field clamping effects
-    scenario.snapshot.ts        … (planned)
+    scenario.serializer.ts      ?s=<json> autosave + ?c=<compressed> share encoding
   shared/
     atoms/                      button, toggle, number-input, icon, label, divider, hero-column
     molecules/                  comparison-strip, mode-card, hero-summary, page-header,
