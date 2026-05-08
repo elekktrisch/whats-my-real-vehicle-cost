@@ -44,7 +44,7 @@ Five concrete user journeys that together exercise the meaningful branches of th
    - Residual value: **€8,000**
    - Down payment: **€3,000**
    - Vehicle age: **4 yr**
-3. App back-derives **MSRP ≈ €25,000** from age-4 depreciation curve. Categorizes as **Economy** (multipliers 1.0 / 1.0). *(Note: written against an older parameterization. The current PRODUCT.md curve actually produces ~€30.5k MSRP, which lands in Mid; the recalibrated insurance formula gives ~€260/yr instead of €600. See ARCHITECTURE.md → Progress for the canonical numbers.)*
+3. App back-derives **MSRP ≈ €25,000** from age-4 depreciation curve. Categorizes as **Economy** (multipliers 1.0 / 1.0). *(Note: written against an older parameterization. The current PRODUCT.md curve actually produces ~€30.5k MSRP, which lands in Mid; the recalibrated insurance formula gives ~€260/yr instead of €600. Tests follow the canonical math.)*
 4. Tab recommendation: **Finance** ("Picked Finance because you plan to keep the car 5 years").
 5. Insurance default = €15,000 × 4% = **€600/yr**. Maintenance default = €25,000 × 1.5% × age-factor (1 + 4×0.1 = 1.4) = **€525/yr**.
 6. Lease tab labels read **"Leasingfaktor"** instead of "Money factor." EU finance fee charges interest on the financed amount only (`adjCap × MF`); US charges on the average balance (`(adjCap + residual) × MF`).

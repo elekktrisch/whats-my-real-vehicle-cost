@@ -23,7 +23,7 @@ One-time setup on the repo: **Settings → Pages → Source: GitHub Actions** mu
 
 ## Status
 
-`git log` is authoritative for what shipped. In-flight polish work lives in [POLISHING.md](../POLISHING.md) at the workspace root.
+`git log` is authoritative for what shipped.
 
 **Visible app today:** single `/` route — splash on cold start, comparison page once the user engages or arrives via a `?s=` / `?c=` URL. All three financing modes (lease, finance, cash) are visible at once via a sticky comparison strip; the focused mode's chart and sliders sit below.
 
@@ -109,13 +109,7 @@ This avoids accidentally exposing raw store internals to the template, and works
 
 ### Routing
 
-Five lazy-loaded routes in `app.routes.ts`:
-
-- `/` → `SplashPage` (intro card)
-- `/wizard` → `WizardPage` (six questions + live recommendation)
-- `/lease | /finance | /cash` → `TabPage` with `data: { tab }`
-
-`TabPage` reads `route.data` via `toSignal` and pushes the tab to `store.activeTab` in an `effect`. Tab clicks call `router.navigate(['/', tab])`, which re-fires the data subscription. Single source of truth = the route.
+Single `/` route → `AppShell`, which renders `SplashPage` on cold start and `ComparisonPage` once the user engages or `hasReturningState()` is true (URL has `?s=` / `?c=` state). `**` redirects to `/`. No tab routes — mode switching is store-driven (`store.activeTab`) and reflected in the comparison strip, not the URL.
 
 ## Conventions
 
@@ -125,7 +119,3 @@ Five lazy-loaded routes in `app.routes.ts`:
 - **Tailwind utility classes inline**, using existing color/font tokens (`bg-surface`, `text-tx`, `font-mono`, etc.) defined in `src/styles.css`.
 - **Prettier**: 100-char lines, single quotes. `npx prettier --write .` to format.
 - Find files? **Always exclude `node_modules`** — the directory is large enough to freeze searches.
-
-## Open inconsistencies
-
-- USE_CASES.md UC2 narrates ~€25k back-derived MSRP and €600/yr insurance for a 4-yr-old €15k Golf, but the current PRODUCT.md curve + insurance formula produce ~€30.5k MSRP (Mid category, not Economy) and ~€260/yr insurance. The narrative is annotated; tests follow the canonical math.
