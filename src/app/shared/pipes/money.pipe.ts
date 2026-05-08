@@ -1,6 +1,6 @@
 import { Pipe, PipeTransform, inject } from '@angular/core';
 import { ScenarioStore } from '../../scenario/scenario.store';
-import { formatCurrency } from '../../scenario/locale.config';
+import { formatCompactCurrency, formatCurrency } from '../../scenario/locale.config';
 
 // {{ 32000 | money }}            → "$32,000"
 // {{ 0.42 | money:2 }}           → "$0.42"
@@ -13,18 +13,8 @@ export class MoneyPipe implements PipeTransform {
 
   transform(value: number | null | undefined, mode: number | 'compact' = 0): string {
     if (value == null || !Number.isFinite(value)) return '';
-    if (mode === 'compact') {
-      const cfg = this.store.localeConfig();
-      const abs = Math.abs(value);
-      const k =
-        abs >= 1000
-          ? `${Math.round(abs / 100) / 10}k`
-          : String(Math.round(abs * 100) / 100);
-      const sign = value < 0 ? '-' : '';
-      return cfg.currencyAfter
-        ? `${sign}${k} ${cfg.currencySymbol}`
-        : `${sign}${cfg.currencySymbol}${k}`;
-    }
-    return formatCurrency(value, this.store.locale(), mode);
+    const locale = this.store.locale();
+    if (mode === 'compact') return formatCompactCurrency(value, locale, 2);
+    return formatCurrency(value, locale, mode);
   }
 }

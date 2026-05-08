@@ -14,6 +14,16 @@ export interface CashTcoInputs extends TcoBaseInputs {
   opportunityCostRate: number;
 }
 
+/**
+ * Cash-purchase TCO accumulator.
+ *
+ * The user pays `purchasePrice` upfront in month 1, no loan. Depreciation
+ * is straight-line from `purchasePrice` to `residualValue` over the keep
+ * horizon. There's no interest-and-fees layer (it's structurally zero), but
+ * `opportunityCost` is the headline insight: the full purchase price stops
+ * earning `opportunityCostRate` from month 1, compounding monthly. That
+ * line is what makes the chart for "cash buyer testing opportunity cost".
+ */
 export function cashTco(input: CashTcoInputs): CostBreakdown {
   const totalMonths = Math.max(Math.round(input.keepDurationYears * 12), 1);
   const totalDepreciation = Math.max(input.purchasePrice - input.residualValue, 0);

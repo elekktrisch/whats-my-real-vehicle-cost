@@ -207,24 +207,32 @@ export class ScenarioStore {
     }),
   );
 
+  // Shared TCO inputs across all three modes (vehicle context + running-cost
+  // knobs + opp-cost rate). Per-mode breakdowns spread this and add their
+  // financing-specific fields (down payment, APR, term, lease-end choice…).
+  private readonly commonBreakdownArgs = computed(() => ({
+    locale: this.locale(),
+    powertrain: this.powertrain(),
+    purchasePrice: this.purchasePrice(),
+    residualValue: this.residualValue(),
+    vehicleAge: this.vehicleAge(),
+    annualMileage: this.annualMileage(),
+    keepDurationYears: this.keepDuration(),
+    insuranceAnnual: this.insurance(),
+    maintenanceBase: this.maintenance(),
+    maintenanceK: this.maintenanceK(),
+    fuelEfficiency: this.fuelEfficiency(),
+    fuelPrice: this.fuelPrice(),
+    chargerStatus: this.chargerStatus(),
+    solar: this.solar(),
+    opportunityCostRate: this.opportunityCostRate(),
+  }));
+
   readonly leaseBreakdown = computed<CostBreakdown>(() =>
     tcoBreakdown({
       tab: 'lease',
-      locale: this.locale(),
-      powertrain: this.powertrain(),
-      purchasePrice: this.purchasePrice(),
-      residualValue: this.residualValue(),
-      vehicleAge: this.vehicleAge(),
-      annualMileage: this.annualMileage(),
-      keepDurationYears: this.keepDuration(),
+      ...this.commonBreakdownArgs(),
       downPayment: this.leaseDownPayment(),
-      insuranceAnnual: this.insurance(),
-      maintenanceBase: this.maintenance(),
-      maintenanceK: this.maintenanceK(),
-      fuelEfficiency: this.fuelEfficiency(),
-      fuelPrice: this.fuelPrice(),
-      chargerStatus: this.chargerStatus(),
-      solar: this.solar(),
       apr: this.leaseApr(),
       leaseTermMonths: this.leaseTerm(),
       leaseEndChoice: this.leaseEndChoice(),
@@ -234,55 +242,26 @@ export class ScenarioStore {
       buyoutFee: this.buyoutFee(),
       earlyTerminationFee: this.earlyTerminationFee(),
       leaseEndResidual: this.leaseEndResidual(),
-      opportunityCostRate: this.opportunityCostRate(),
     }),
   );
 
   readonly financeBreakdown = computed<CostBreakdown>(() =>
     tcoBreakdown({
       tab: 'finance',
-      locale: this.locale(),
-      powertrain: this.powertrain(),
-      purchasePrice: this.purchasePrice(),
-      residualValue: this.residualValue(),
-      vehicleAge: this.vehicleAge(),
-      annualMileage: this.annualMileage(),
-      keepDurationYears: this.keepDuration(),
+      ...this.commonBreakdownArgs(),
       downPayment: this.financeDownPayment(),
-      insuranceAnnual: this.insurance(),
-      maintenanceBase: this.maintenance(),
-      maintenanceK: this.maintenanceK(),
-      fuelEfficiency: this.fuelEfficiency(),
-      fuelPrice: this.fuelPrice(),
-      chargerStatus: this.chargerStatus(),
-      solar: this.solar(),
       apr: this.financeApr(),
       loanTermMonths: this.loanTerm(),
-      opportunityCostRate: this.opportunityCostRate(),
     }),
   );
 
   readonly cashBreakdown = computed<CostBreakdown>(() =>
     tcoBreakdown({
       tab: 'cash',
-      locale: this.locale(),
-      powertrain: this.powertrain(),
-      purchasePrice: this.purchasePrice(),
-      residualValue: this.residualValue(),
-      vehicleAge: this.vehicleAge(),
-      annualMileage: this.annualMileage(),
-      keepDurationYears: this.keepDuration(),
+      ...this.commonBreakdownArgs(),
       // Cash purchase ties up the FULL price, not a "down payment" — pass 0 so
       // any downstream code that adds it doesn't double-count.
       downPayment: 0,
-      insuranceAnnual: this.insurance(),
-      maintenanceBase: this.maintenance(),
-      maintenanceK: this.maintenanceK(),
-      fuelEfficiency: this.fuelEfficiency(),
-      fuelPrice: this.fuelPrice(),
-      chargerStatus: this.chargerStatus(),
-      solar: this.solar(),
-      opportunityCostRate: this.opportunityCostRate(),
     }),
   );
 

@@ -27,6 +27,25 @@ export interface LeaseTcoInputs extends TcoBaseInputs {
   leaseEndResidual: number;
 }
 
+/**
+ * Lease TCO accumulator. Two branches selected by `leaseEndChoice`:
+ *
+ * - `'buyOut'`: lease for `leaseTermMonths`, then pay `leaseEndResidual +
+ *   buyoutFee` and own the car for the remainder of `keepDurationYears`.
+ *   The owned tail accrues depreciation from `leaseEndResidual` down to
+ *   `residualValue`.
+ * - `'handBack'`: rolling lease — at every term boundary, sign a fresh
+ *   comparable lease (same payment, fresh down + handback fee). Each cycle
+ *   restarts the car's age at zero.
+ *
+ * The `earlyTerminationFee` fires only when `keep < term` (a single partial
+ * cycle = the user signed a longer lease than they're keeping). Multi-cycle
+ * final partial cycles model "shorter last lease" and don't trigger it.
+ *
+ * Returns the standard `CostBreakdown` with cumulative monthly series across
+ * all categories plus a `cashOut` line tracking real outflows (distinct from
+ * `opportunityCost`, which is return foregone on capital tied up).
+ */
 export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
   const totalMonths = Math.max(Math.round(input.keepDurationYears * 12), 1);
   const term = Math.max(input.leaseTermMonths, 1);
@@ -64,10 +83,11 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
     // depreciation rather than charging the residual portion twice.
     const chartLeaseEnd = input.buyoutFee + earlyExitPenalty;
 
-    // Opportunity cost: every cash outflow that's part of the lease decision
-    // (down + each monthly lease payment + buyout payment at end of term)
-    // stops earning returns from outflow time onward. Each injection
-    // compounds independently from its own time to end-of-keep.
+    // 1. Opportunity-cost injections.
+    // Every cash outflow that's part of the lease decision (down + each
+    // monthly lease payment + buyout payment at end of term) stops earning
+    // returns from outflow time onward. Each injection compounds
+    // independently from its own time to end-of-keep.
     const oppInjections: { month: number; amount: number }[] = [];
     if (input.downPayment > 0) oppInjections.push({ month: 0, amount: input.downPayment });
     for (let m = 1; m <= leasePeriod; m++) {
@@ -82,6 +102,7 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
       totalMonths,
     );
 
+    // 2. Build the running-cost increment streams (lease + owned-tail).
     // Lease portion: half the aging penalty. Lessor handles powertrain repairs
     // under warranty, but consumables (tires, brakes, fluids, alignment) still
     // age with the car — so maintenance grows over time, just slower than for
@@ -145,7 +166,8 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
       }
     }
 
-    // Cash flow pass — single forward sweep over all months.
+    // 3. Cash-out forward sweep — real outflows only (down + monthlies +
+    // buyout + running costs). Distinct from opportunity cost above.
     for (let m = 1; m <= totalMonths; m++) {
       const prev = series[m - 1];
       const inLease = m <= leasePeriod;
@@ -170,9 +192,10 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
   const handbackFee = input.dispositionFee + input.excessWearEstimate;
   let cumLeaseEnd = 0;
 
-  // Opportunity cost (Framing B): every outflow loses returns from outflow
-  // time onward — down at each cycle start, every monthly lease fee, and
-  // cycle-end fees (handback / early exit). Each compounds independently.
+  // 1. Opportunity-cost injections.
+  // Every outflow loses returns from outflow time onward — down at each
+  // cycle start, every monthly lease fee, and cycle-end fees (handback /
+  // early exit). Each compounds independently.
   const oppInjections: { month: number; amount: number }[] = [];
   for (let cs = 1; cs <= totalMonths; cs += term) {
     const ce = Math.min(cs + term - 1, totalMonths);
@@ -196,6 +219,7 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
     totalMonths,
   );
 
+  // 2. Cycle sweep — accumulate breakdown layers + cash-out per cycle.
   let cycleStart = 1;
   while (cycleStart <= totalMonths) {
     const cycleEnd = Math.min(cycleStart + term - 1, totalMonths);
@@ -223,7 +247,8 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
 
       const onCycleBoundary = m === cycleEnd && cycleLen === term;
       const finalPartial = m === totalMonths && totalMonths % term !== 0;
-      if (onCycleBoundary || finalPartial) cumLeaseEnd += handbackFee;
+      const isHandbackTrigger = onCycleBoundary || finalPartial;
+      if (isHandbackTrigger) cumLeaseEnd += handbackFee;
       // Early termination fires only for a single partial cycle (keep < term).
       // Partial FINAL cycles when keep > term model "shorter last lease" — no penalty.
       if (finalPartial && totalMonths < term) {
@@ -231,12 +256,12 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
       }
       series[m].leaseEnd = cumLeaseEnd;
 
-      // Cash flow: down at cycle start, monthly lease fee every month, handback
-      // at cycle end (full or final-partial), early-exit on the keep < term
-      // partial. Running costs accrue per month.
+      // 3. Cash flow this month: down at cycle start, monthly lease fee every
+      // month, handback at cycle end (full or final-partial), early-exit on
+      // the keep < term partial. Running costs accrue per month.
       const downThisMonth = i === 0 ? input.downPayment : 0;
       let endFeeThisMonth = 0;
-      if (onCycleBoundary || finalPartial) endFeeThisMonth += handbackFee;
+      if (isHandbackTrigger) endFeeThisMonth += handbackFee;
       if (finalPartial && totalMonths < term) endFeeThisMonth += input.earlyTerminationFee;
       series[m].cashOut =
         prev.cashOut +

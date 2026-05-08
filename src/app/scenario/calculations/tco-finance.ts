@@ -17,6 +17,24 @@ export interface FinanceTcoInputs extends TcoBaseInputs {
   opportunityCostRate: number;
 }
 
+/**
+ * Finance (loan) TCO accumulator.
+ *
+ * Amortizes a fixed-rate loan over `loanTermMonths` to split each payment
+ * into principal vs. interest. Principal accrues into `depreciationOrLease`
+ * (since paying down principal is buying equity in the asset); interest
+ * lands in `interestAndFees`. After the loan ends, the user owns the car
+ * outright and only running costs accrue.
+ *
+ * `depreciationOrLease` is rescaled at the end so the cumulative total
+ * equals `purchasePrice - residualValue` over the keep horizon — the loan's
+ * principal schedule shapes the *curve*, but the residual constraint sets
+ * the magnitude.
+ *
+ * Opportunity cost: the down payment plus every loan payment is a real
+ * cash outflow that stops earning the user's `opportunityCostRate` from
+ * outflow time onward. Each compounds independently to end-of-keep.
+ */
 export function financeTco(input: FinanceTcoInputs): CostBreakdown {
   const totalMonths = Math.max(Math.round(input.keepDurationYears * 12), 1);
   const principal = Math.max(input.purchasePrice - input.downPayment, 0);
