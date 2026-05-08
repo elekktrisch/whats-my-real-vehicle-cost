@@ -381,8 +381,3 @@ Locale-specific *values* (currency symbol, units, formatters, defaults) live in 
 
 Use-case tests are the primary regression net. They walk a real user through the splash → wizard → tab journey and assert on KPI values.
 
-## Open architectural questions
-
-1. **APP_INITIALIZER vs. root-component constructor for hydration.** APP_INITIALIZER blocks the bootstrap, which delays first paint slightly but guarantees state is ready before any component renders. Root-constructor is faster but risks a flash of default state. Lean toward APP_INITIALIZER given hydration is synchronous and fast.
-2. **Chart.js plugin for stacked-area legend interactivity.** v1 has no layer toggling, so default Chart.js plugins are enough. If we add toggles in v1.1, consider switching to Chart.js's built-in legend with custom click handlers.
-3. **`@angular/localize` vs. plain string constants for i18n.** Defended above (strings constants for v1). Revisit when German UI is on the table.
