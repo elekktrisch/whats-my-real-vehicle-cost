@@ -53,15 +53,11 @@ export class ScenarioStore {
   readonly activeTab = signal<Tab>(this.initial.globals.activeTab);
   readonly chargerStatus = signal<ChargerStatus>(this.initial.globals.chargerStatus);
   readonly solar = signal(this.initial.globals.solar);
-  // null = use the per-powertrain default; toggling powertrain leaves an
-  // explicit override in place (per Q4 — single override, no per-powertrain
-  // stash). The curve is a domain object so callers don't index magic
-  // anchor positions.
+  // Curve overrides: null ⇒ use the per-powertrain default. Toggling
+  // powertrain leaves an explicit override in place (single global slot).
   readonly depreciationCurveOverride = signal<DepreciationCurve | null>(
     this.initial.globals.depreciationCurve,
   );
-  // null = use the per-powertrain default; toggling powertrain leaves an
-  // explicit override in place (single global slot, no per-powertrain stash).
   readonly maintenanceCurveOverride = signal<MaintenanceCurve | null>(
     this.initial.globals.maintenanceCurve,
   );
@@ -217,21 +213,13 @@ export class ScenarioStore {
     this.insuranceBindings.apply();
   }
 
-  // Fuel efficiency tolerance is unit-dependent: EV ranges are far wider
-  // than ICE ranges, and EU/US use different units (mpg vs L/100km, mi/kWh
-  // vs kWh/100km). Capturing the signals inside the comparator makes the
-  // resulting `computed` track them, so changing locale/powertrain
-  // re-evaluates the conflict with the right epsilon.
+  // Tolerance is unit-dependent (mpg vs L/100km, mi/kWh vs kWh/100km), so
+  // the comparator must read powertrain/locale reactively — that's why we
+  // close over `this` rather than passing a static epsilon.
   private readonly fuelEfficiencyBindings = this.bindConflict(
     this.fuelEfficiencyOverride,
     () => this.fuelEfficiencyDefaultSignal(),
-    (a, b) => {
-      const ev = this.powertrain() === 'EV';
-      const us = this.locale() === 'US';
-      // EV: ~1.5 mi/kWh (US) or ~6 kWh/100km (EU). ICE: ~2 mpg (US) or ~1 L/100km (EU).
-      const eps = ev ? (us ? 1.5 : 6) : us ? 2 : 1;
-      return Math.abs(a - b) <= eps;
-    },
+    numEqDynamic(() => fuelEfficiencyTolerance(this.powertrain(), this.locale())),
   );
   readonly fuelEfficiencyConflict = this.fuelEfficiencyBindings.conflict;
   readonly fuelEfficiencyPillVisible = this.fuelEfficiencyBindings.pillVisible;
@@ -242,19 +230,10 @@ export class ScenarioStore {
     this.fuelEfficiencyBindings.apply();
   }
 
-  // Fuel price tolerance scales similarly: electricity prices vary widely
-  // ($0.15–0.35/kWh for EU, $0.10–0.20/kWh for US), and gasoline prices
-  // span a tighter percent range but use different units per locale.
   private readonly fuelPriceBindings = this.bindConflict(
     this.fuelPriceOverride,
     () => this.fuelPriceDefaultSignal(),
-    (a, b) => {
-      const ev = this.powertrain() === 'EV';
-      const us = this.locale() === 'US';
-      // EV: ~$0.05/kWh (US) or ~€0.10/kWh (EU). ICE: ~$0.30/gal (US) or ~€0.15/L (EU).
-      const eps = ev ? (us ? 0.05 : 0.1) : us ? 0.3 : 0.15;
-      return Math.abs(a - b) <= eps;
-    },
+    numEqDynamic(() => fuelPriceTolerance(this.powertrain(), this.locale())),
   );
   readonly fuelPriceConflict = this.fuelPriceBindings.conflict;
   readonly fuelPricePillVisible = this.fuelPriceBindings.pillVisible;
@@ -450,12 +429,11 @@ export class ScenarioStore {
     return this.cashBreakdown;
   }
 
-  // Round-trip stashes for running-cost overrides. Without these, toggling
-  // ICE→EV→ICE (or US→EU→US) would discard the user's custom values because
-  // unit-mismatched overrides have to be dropped during the toggle. The
-  // stash holds the previous value so toggling back restores it.
-  // Insurance keys on locale only (units only differ by locale). Fuel-related
-  // overrides key on (locale, powertrain) since both axes change units.
+  // Round-trip stashes for running-cost overrides. Toggling ICE↔EV or US↔EU
+  // would otherwise discard the user's custom values, since unit-mismatched
+  // overrides have to be dropped during the toggle. The stash holds each
+  // previous value, keyed by the combo it belongs to, so toggling back
+  // restores it. Insurance keys on locale only; fuel keys on (locale, pt).
   private readonly insuranceStash = new Map<Locale, number | null>();
   private readonly fuelEffStash = new Map<string, number | null>();
   private readonly fuelPriceStash = new Map<string, number | null>();
@@ -467,28 +445,38 @@ export class ScenarioStore {
     if (this.locale() === v) return;
     const oldLocale = this.locale();
     const pt = this.powertrain();
-    // Stash the currently-active overrides under the OLD combo so they
-    // can be restored on the way back.
-    this.insuranceStash.set(oldLocale, this.insuranceOverride());
-    this.fuelEffStash.set(this.fuelComboKey(oldLocale, pt), this.fuelEfficiencyOverride());
-    this.fuelPriceStash.set(this.fuelComboKey(oldLocale, pt), this.fuelPriceOverride());
+    this.stashInsuranceOverride(oldLocale);
+    this.stashFuelOverrides(oldLocale, pt);
     this.locale.set(v);
-    // Restore from stash for the new combo (or null = use default if no stash).
-    this.insuranceOverride.set(this.insuranceStash.get(v) ?? null);
-    this.fuelEfficiencyOverride.set(this.fuelEffStash.get(this.fuelComboKey(v, pt)) ?? null);
-    this.fuelPriceOverride.set(this.fuelPriceStash.get(this.fuelComboKey(v, pt)) ?? null);
+    this.restoreInsuranceOverride(v);
+    this.restoreFuelOverrides(v, pt);
   }
 
   setPowertrain(v: Powertrain): void {
     if (this.powertrain() === v) return;
     const loc = this.locale();
     const oldPt = this.powertrain();
-    // Insurance is locale-dependent only; powertrain toggle leaves it alone.
-    this.fuelEffStash.set(this.fuelComboKey(loc, oldPt), this.fuelEfficiencyOverride());
-    this.fuelPriceStash.set(this.fuelComboKey(loc, oldPt), this.fuelPriceOverride());
+    // Insurance keys on locale only — powertrain toggle leaves it alone.
+    this.stashFuelOverrides(loc, oldPt);
     this.powertrain.set(v);
-    this.fuelEfficiencyOverride.set(this.fuelEffStash.get(this.fuelComboKey(loc, v)) ?? null);
-    this.fuelPriceOverride.set(this.fuelPriceStash.get(this.fuelComboKey(loc, v)) ?? null);
+    this.restoreFuelOverrides(loc, v);
+  }
+
+  private stashInsuranceOverride(locale: Locale): void {
+    this.insuranceStash.set(locale, this.insuranceOverride());
+  }
+  private restoreInsuranceOverride(locale: Locale): void {
+    this.insuranceOverride.set(this.insuranceStash.get(locale) ?? null);
+  }
+  private stashFuelOverrides(locale: Locale, pt: Powertrain): void {
+    const key = this.fuelComboKey(locale, pt);
+    this.fuelEffStash.set(key, this.fuelEfficiencyOverride());
+    this.fuelPriceStash.set(key, this.fuelPriceOverride());
+  }
+  private restoreFuelOverrides(locale: Locale, pt: Powertrain): void {
+    const key = this.fuelComboKey(locale, pt);
+    this.fuelEfficiencyOverride.set(this.fuelEffStash.get(key) ?? null);
+    this.fuelPriceOverride.set(this.fuelPriceStash.get(key) ?? null);
   }
 
   // 'none' also disables solar — solar without a home charger has no effect.
@@ -850,4 +838,27 @@ export class ScenarioStore {
 // for conflict purposes, so sub-step drift doesn't fire a pill.
 function numEq(step: number): (a: number, b: number) => boolean {
   return (a, b) => Math.abs(a - b) <= step;
+}
+
+// Variant of numEq where the tolerance itself depends on reactive state
+// (powertrain, locale). Read at comparison time so the bound `computed`
+// re-evaluates when the underlying signals change.
+function numEqDynamic(toleranceFn: () => number): (a: number, b: number) => boolean {
+  return (a, b) => Math.abs(a - b) <= toleranceFn();
+}
+
+// EV ranges are far wider than ICE; locales use different units.
+//   EV  US: 1.5 mi/kWh,  EU: 6 kWh/100km
+//   ICE US: 2 mpg,       EU: 1 L/100km
+function fuelEfficiencyTolerance(powertrain: Powertrain, locale: Locale): number {
+  if (powertrain === 'EV') return locale === 'US' ? 1.5 : 6;
+  return locale === 'US' ? 2 : 1;
+}
+
+// Electricity and pump prices use different units per locale.
+//   EV  US: $0.05/kWh,  EU: €0.10/kWh
+//   ICE US: $0.30/gal,  EU: €0.15/L
+function fuelPriceTolerance(powertrain: Powertrain, locale: Locale): number {
+  if (powertrain === 'EV') return locale === 'US' ? 0.05 : 0.1;
+  return locale === 'US' ? 0.3 : 0.15;
 }

@@ -37,6 +37,6 @@ export async function shorten(longUrl: string): Promise<ShortenResult> {
 }
 
 // Test-only escape hatch — Karma specs need to reset between cases.
-export function _resetShortenerCache(): void {
+export function resetShortenerCache(): void {
   cache.clear();
 }

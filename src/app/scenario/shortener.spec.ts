@@ -1,4 +1,4 @@
-import { _resetShortenerCache, shorten } from './shortener';
+import { resetShortenerCache, shorten } from './shortener';
 
 // All tests stub globalThis.fetch — no live network calls hit is.gd.
 describe('shortener', () => {
@@ -6,7 +6,7 @@ describe('shortener', () => {
 
   beforeEach(() => {
     originalFetch = globalThis.fetch;
-    _resetShortenerCache();
+    resetShortenerCache();
   });
 
   afterEach(() => {
