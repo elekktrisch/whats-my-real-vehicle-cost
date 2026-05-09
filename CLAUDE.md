@@ -84,6 +84,27 @@ The store wires this through three places: `msrp` (back-derived for used cars vi
 
 **Display-only normalization.** Internally the curve is MSRP-normalized (Y0 stored = 1.0). The editor *displays* every factor relative to `factor(vehicleAge)`, so the locked reference reads "100% at today's price" and MSRP appears as a value > 1.0 for used cars. On commit, displayed values are multiplied back by `factor(vehicleAge)` to land in stored space — `commitFactor` is the single conversion path used by both keyboard input and drag. The chart shows a dashed cross at `(vehicleAge, 1.0)` as a visual anchor.
 
+### Maintenance curve
+
+`calculations/maintenance.ts` is the single source of truth for vehicle maintenance modeling. Same 5-anchor PCHIP machinery as the depreciation curve, with two key differences:
+
+- `MAINTENANCE_ANCHOR_AGES = [0, 3, 6, 10, 15]` — back-loaded (vs. depreciation's front-loaded `[0, 2, 4, 7, 12]`) because maintenance climbs in late life rather than early.
+- `DEFAULT_MAINTENANCE_CURVES.{ICE, EV}` — per-powertrain defaults seeded from the legacy linear `(1 + k_mid·age) × baseRate` formula at the anchors, so day-1 output for default scenarios matches the prior model. ICE: `[1.50%, 1.86%, 2.22%, 2.70%, 3.30%]` of MSRP/yr; EV: `[0.70%, 0.80%, 0.90%, 1.04%, 1.20%]`.
+- `MaintenanceCurve` storage is **% of MSRP per year** — Y0 is *not* locked (no natural anchor like MSRP=1.0; user may know their year-0 cost).
+- `maintenanceFactor(age, curve)` returns the unitless factor. PCHIP between anchors; past year 15, **linear extrapolation** at `TAIL_SLOPE_MULTIPLIER × lastSegmentSlope` (default 3×) — so the tail bends visibly upward without exploding.
+- `MAX_FACTOR = 0.10` — hard cap on the last anchor (10% of MSRP/yr), enforced by `clampMaintenanceFactorAt`.
+- `clampMaintenanceFactorAt` is direction-flipped from depreciation: monotonic-*increasing*, with first-anchor lower bound of 0 (no negative maintenance) and last-anchor upper bound of `MAX_FACTOR`.
+- `maintenanceAt(ctx, age, agingScale=1)` is the formula: `msrp × curve(age) × catMult × mileageFactor`. The optional `agingScale` (default 1) scales **only the growth above year-0**. The lease-warranty branch in `tco-lease` passes `0.5` — consumables (tires, brakes, fluids) age at half rate while the lessor handles powertrain repairs under warranty.
+
+`shared/molecules/maintenance-curve-editor/` mirrors the depreciation editor: modal with a Chart.js preview (drag 5 anchors via `chartjs-plugin-dragdata`), 5 numeric inputs (% values for keyboard a11y), chain display showing live year-1 / year-N currency, and a reset button. The trigger lives next to `MaintenanceDisplay` in `global-controls.ts`; an accent dot flags an active override. **Toggling powertrain leaves any override in place** — single global slot, no per-powertrain stash.
+
+**Display-only normalization** (different from depreciation's). Storage is % of MSRP; the chart Y-axis labels in **currency** (multiply by `msrp × catMult × mileageFactor`); numeric inputs show **percent** (`factor × 100`). On drag commit, divide the chart's currency value back by the same product to land in stored % space — `commitFactor` is the single conversion path.
+
+**Behavior changes vs. the prior linear model** (deliberate, documented for future-Claude not to mistake for bugs):
+
+1. **Year-0 maintenance now scales with `mileageFactor`.** The legacy formula `(1 + k × mileageFactor × age) × base` left year-0 mileage-independent; the new formula `msrp × curve(age) × catMult × mileageFactor` doesn't. Heavy drivers do incur day-1 wear (tires, brakes, fluids), so this is arguably more correct. Magnitude is small (~$50/yr at 25k mi/yr).
+2. **Loss of luxury-ages-faster compounding.** The legacy model had category-specific `k` values (luxury 0.12 vs. economy 0.05), so luxury-vs-economy maintenance ratio compounded from 1.8× (year 0) to ~4.3× (year 10). Under the curve model, `categoryMult` only scales the *level* (1.8× flat across ages). Defensible for the 5–10 year keeps this app targets; user can override the curve to recreate the steeper luxury slope if needed.
+
 ### Lease TCO model
 
 Two modes, auto-derived from keep-duration vs. lease term, user-overrideable:

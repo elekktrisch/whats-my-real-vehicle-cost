@@ -27,7 +27,7 @@ type ShareState = 'idle' | 'loading' | 'success' | 'error';
       #dlg
       (close)="onDialogClose()"
       (click)="onBackdropClick($event)"
-      class="m-auto p-0 rounded-[18px] bg-surface text-tx border border-border max-w-[420px] w-[calc(100%-2rem)] [&::backdrop]:bg-black/60 [&::backdrop]:backdrop-blur-sm"
+      class="m-auto p-0 rounded-[18px] bg-surface text-tx border border-border max-w-[420px] w-[calc(100%-2rem)] max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain [&::backdrop]:bg-black/60 [&::backdrop]:backdrop-blur-sm"
     >
       <div class="p-6 sm:p-7 flex flex-col gap-5">
         <header class="flex items-center justify-between">

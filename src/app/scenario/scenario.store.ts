@@ -9,6 +9,7 @@ import type {
   DepreciationCurve,
   LeaseEndChoice,
   Locale,
+  MaintenanceCurve,
   Powertrain,
   ScenarioSnapshot,
   Tab,
@@ -17,7 +18,10 @@ import { backDeriveMsrp } from './calculations/msrp';
 import { defaultCurveForPowertrain, depreciationFactor } from './calculations/depreciation';
 import { categorize, categoryMultipliers } from './calculations/category';
 import { leasePayment } from './calculations/financing';
-import { maintenanceK } from './calculations/maintenance';
+import {
+  MaintenanceContext,
+  defaultMaintenanceCurveForPowertrain,
+} from './calculations/maintenance';
 import { recommendTab } from './calculations/recommendation';
 import { costPerDistance, effectiveMonthly, tcoBreakdown } from './calculations/tco';
 import { setupAutosave } from './scenario.persistence';
@@ -55,6 +59,11 @@ export class ScenarioStore {
   // anchor positions.
   readonly depreciationCurveOverride = signal<DepreciationCurve | null>(
     this.initial.globals.depreciationCurve,
+  );
+  // null = use the per-powertrain default; toggling powertrain leaves an
+  // explicit override in place (single global slot, no per-powertrain stash).
+  readonly maintenanceCurveOverride = signal<MaintenanceCurve | null>(
+    this.initial.globals.maintenanceCurve,
   );
 
   readonly leaseAprOverride = signal<number | null>(this.initial.lease.apr);
@@ -162,23 +171,25 @@ export class ScenarioStore {
     const cfg = this.localeConfig();
     return this.purchasePrice() * cfg.insuranceRate * this.categoryMultipliers().insurance;
   });
-  // Year-0 base; the age curve is applied per-month in the calc layer via
-  // `maintenanceAt` and `maintenanceK`. Maintenance has no override slot —
-  // it's a fully-derived display.
-  readonly maintenance = computed(() => {
-    const baseRate = this.powertrain() === 'EV' ? 0.007 : 0.015;
-    return this.msrp() * baseRate * this.categoryMultipliers().maintenance;
-  });
-  // Heavy drivers wear cars out faster — scale the age-curve coefficient by
-  // annualMileage / nominal so the maintenance band steepens. Year-0 base
-  // stays MSRP-driven (calendar items still apply at low mileage).
+  // Heavy drivers wear cars out faster — scale every term of the maintenance
+  // curve by annualMileage / nominal so the band steepens.
   private readonly mileageFactor = computed(() => {
     const nominal = this.locale() === 'US' ? 12000 : 15000;
     return Math.max(this.annualMileage() / nominal, 0);
   });
-  readonly maintenanceK = computed(
-    () => maintenanceK(this.vehicleCategory(), this.powertrain()) * this.mileageFactor(),
+  readonly maintenanceCurve = computed(
+    () =>
+      this.maintenanceCurveOverride() ?? defaultMaintenanceCurveForPowertrain(this.powertrain()),
   );
+  // Bundle threaded through TCO calculations: msrp × curve(age) × catMult ×
+  // mileageFactor is the standard per-year maintenance formula. Lease-warranty
+  // branch in tco-lease scales only the growth above year-0 by 0.5.
+  readonly maintenanceContext = computed<MaintenanceContext>(() => ({
+    msrp: this.msrp(),
+    curve: this.maintenanceCurve(),
+    categoryMult: this.categoryMultipliers().maintenance,
+    mileageFactor: this.mileageFactor(),
+  }));
   private fuelEfficiencyDefaultSignal = computed(() =>
     fuelEfficiencyDefault(this.locale(), this.powertrain()),
   );
@@ -381,8 +392,7 @@ export class ScenarioStore {
     annualMileage: this.annualMileage(),
     keepDurationYears: this.keepDuration(),
     insuranceAnnual: this.insurance(),
-    maintenanceBase: this.maintenance(),
-    maintenanceK: this.maintenanceK(),
+    maintenance: this.maintenanceContext(),
     fuelEfficiency: this.fuelEfficiency(),
     fuelPrice: this.fuelPrice(),
     chargerStatus: this.chargerStatus(),
@@ -512,6 +522,7 @@ export class ScenarioStore {
       this.chargerStatus.set(merged.globals.chargerStatus);
       this.solar.set(merged.globals.solar);
       this.depreciationCurveOverride.set(merged.globals.depreciationCurve);
+      this.maintenanceCurveOverride.set(merged.globals.maintenanceCurve);
 
       this.leaseAprOverride.set(merged.lease.apr);
       this.leaseTerm.set(merged.lease.leaseTerm);
@@ -553,6 +564,7 @@ export class ScenarioStore {
         chargerStatus: this.chargerStatus(),
         solar: this.solar(),
         depreciationCurve: this.depreciationCurveOverride(),
+        maintenanceCurve: this.maintenanceCurveOverride(),
       },
       lease: {
         apr: this.leaseAprOverride(),

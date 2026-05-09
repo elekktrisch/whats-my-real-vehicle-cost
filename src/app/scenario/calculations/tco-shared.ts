@@ -9,7 +9,7 @@ import type {
 } from '../scenario.types';
 import { LOCALE_CONFIG } from '../locale.config';
 import { fuelCostOverYears } from './fuel';
-import { maintenanceAt } from './maintenance';
+import { MaintenanceContext, maintenanceAt } from './maintenance';
 
 export interface TcoBaseInputs {
   tab: Tab;
@@ -22,12 +22,11 @@ export interface TcoBaseInputs {
   keepDurationYears: number;
   downPayment: number;
   insuranceAnnual: number;
-  // Year-0 annual maintenance, before the age curve. The curve uses
-  // `maintenanceK` with a mode-specific age clock — lease-renew resets each
-  // cycle; lease-buyout is flat through the lease then climbs from owned-year-1;
-  // finance/cash starts at `vehicleAge`.
-  maintenanceBase: number;
-  maintenanceK: number;
+  // Maintenance is now curve-driven — ctx bundles msrp + curve + categoryMult
+  // + mileageFactor. Mode-specific age clocks live in the per-mode TCO
+  // builders (lease-renew resets each cycle; lease-buyout passes 0.5
+  // agingScale through the lease portion; finance/cash starts at vehicleAge).
+  maintenance: MaintenanceContext;
   fuelEfficiency: number;
   fuelPrice: number;
   chargerStatus: ChargerStatus;
@@ -75,8 +74,10 @@ export interface OwnedWindowInputs {
   durationMonths: number;
   monthlyInsurance: number;
   monthlyFuel: number;
-  maintenanceBase: number;
-  maintenanceK: number;
+  maintenance: MaintenanceContext;
+  /** Scales only the growth above year-0. Default 1 (full aging); lease
+   * passes 0.5 for the warranty portion (consumables age slower). */
+  maintenanceAgingScale?: number;
 }
 
 export interface OwnedWindowIncrements {
@@ -86,20 +87,20 @@ export interface OwnedWindowIncrements {
 }
 
 // Per-month fuel + insurance + maintenance over an owned-months window.
-// Maintenance follows `base × (1 + k × age)`; the others are flat per-month.
-// Lease-renew calls this once per cycle with startAge=0 (sawtooth);
-// lease-buyout calls twice (lease portion k=0, owned tail k from category);
-// finance/cash calls once with startAge=vehicleAge.
+// Maintenance follows the curve evaluated at mid-month age; the others are
+// flat per-month. Lease-renew calls this once per cycle with startAge=0
+// (sawtooth); lease-buyout calls twice (lease portion agingScale=0.5, owned
+// tail agingScale=1); finance/cash calls once with startAge=vehicleAge.
 export function buildOwnedMonthsSeries(input: OwnedWindowInputs): OwnedWindowIncrements {
   const months = Math.max(input.durationMonths, 0);
   const fuel = new Array<number>(months).fill(input.monthlyFuel);
   const insurance = new Array<number>(months).fill(input.monthlyInsurance);
   const maintenance = new Array<number>(months);
+  const agingScale = input.maintenanceAgingScale ?? 1;
   for (let i = 0; i < months; i++) {
-    // Mid-month sample integrates the linear curve over the month.
+    // Mid-month sample integrates the curve over the month.
     const ageMidMonth = input.startAgeYears + (i + 0.5) / 12;
-    maintenance[i] =
-      maintenanceAt(input.maintenanceBase, input.maintenanceK, ageMidMonth) / 12;
+    maintenance[i] = maintenanceAt(input.maintenance, ageMidMonth, agingScale) / 12;
   }
   return { fuel, insurance, maintenance };
 }

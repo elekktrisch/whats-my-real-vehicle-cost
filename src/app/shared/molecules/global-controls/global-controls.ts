@@ -4,6 +4,7 @@ import { SliderControl } from '../../slider-control/slider-control';
 import { SliderGroup } from '../slider-group/slider-group';
 import { Disclosure } from '../disclosure/disclosure';
 import { MaintenanceDisplay } from '../maintenance-display/maintenance-display';
+import { MaintenanceCurveEditor } from '../maintenance-curve-editor/maintenance-curve-editor';
 import { ConflictPill } from '../conflict-pill/conflict-pill';
 import { DepreciationCurveEditor } from '../depreciation-curve-editor/depreciation-curve-editor';
 import { MoneyPipe } from '../../pipes/money.pipe';
@@ -25,6 +26,7 @@ import { MoneyPipe } from '../../pipes/money.pipe';
     SliderGroup,
     Disclosure,
     MaintenanceDisplay,
+    MaintenanceCurveEditor,
     ConflictPill,
     DepreciationCurveEditor,
     MoneyPipe,
@@ -187,6 +189,9 @@ import { MoneyPipe } from '../../pipes/money.pipe';
                 (keep)="c.keep()"
               />
             }
+          </div>
+          <div class="flex justify-end mb-1">
+            <app-maintenance-curve-editor />
           </div>
           <app-maintenance-display />
         </div>
