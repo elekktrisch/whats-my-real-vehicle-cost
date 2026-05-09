@@ -8,7 +8,6 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { ScenarioStore } from '../../scenario/scenario.store';
-import { SHARE_PARAM, encodeShareSnapshot } from '../../scenario/scenario.serializer';
 import { Icon } from '../../shared/atoms/icon/icon';
 import { PageHeader } from '../../shared/molecules/page-header/page-header';
 import {
@@ -16,7 +15,9 @@ import {
   ModeCardData,
 } from '../../shared/molecules/comparison-strip/comparison-strip';
 import { WarningsList } from '../../shared/molecules/warnings-list/warnings-list';
+import { ShareDialog } from '../../shared/molecules/share-dialog/share-dialog';
 import { ModeDetailView } from '../../features/mode-detail-view/mode-detail-view';
+import { URL_PARAM, encodeSnapshot } from '../../scenario/scenario.serializer';
 import { formatCompactCurrency, formatCurrency } from '../../scenario/locale.config';
 import type { CostBreakdown, Tab } from '../../scenario/scenario.types';
 
@@ -34,7 +35,7 @@ const MOBILE_BP = 600;
 
 @Component({
   selector: 'app-comparison-page',
-  imports: [Icon, PageHeader, ComparisonStrip, WarningsList, ModeDetailView],
+  imports: [Icon, PageHeader, ComparisonStrip, WarningsList, ModeDetailView, ShareDialog],
   template: `
     <div
       class="max-w-[1200px] mx-auto px-4 sm:px-7 pb-[72px] relative z-[1] overflow-x-clip"
@@ -63,9 +64,9 @@ const MOBILE_BP = 600;
           <app-icon name="reset" [size]="14" />
           Reset
         </button>
-        <button type="button" (click)="shareWhatsApp()" [class]="actionBtnClass">
+        <button type="button" (click)="openShare()" [class]="actionBtnClass">
           <app-icon name="share" [size]="14" />
-          Share via WhatsApp
+          Share
         </button>
         <a
           [href]="repoUrl"
@@ -77,6 +78,12 @@ const MOBILE_BP = 600;
           View on GitHub
         </a>
       </div>
+
+      <app-share-dialog
+        [(open)]="shareOpen"
+        [longUrl]="shareLongUrl()"
+        [keepDuration]="store.keepDuration()"
+      />
 
       <p class="font-ui text-[0.72rem] text-tx-dim leading-relaxed text-center max-w-[640px] mx-auto mt-8 px-2">
         Fineprint — this is a side project, vibe-coded on weekends by some
@@ -121,18 +128,25 @@ export class ComparisonPage {
 
   protected readonly repoUrl = 'https://github.com/elekktrisch/whats-my-real-vehicle-cost';
 
+  protected readonly shareOpen = signal(false);
+
+  // Build the share URL deterministically from the current snapshot rather
+  // than reading window.location.href — the autosave effect debounces the
+  // address-bar update by 200ms, so a quick "move slider, click Share"
+  // sequence would otherwise capture a stale URL.
+  protected readonly shareLongUrl = computed(() => {
+    if (!this.isBrowser) return '';
+    const base = window.location.origin + window.location.pathname;
+    const param = encodeSnapshot(this.store.snapshot());
+    return `${base}?${URL_PARAM}=${encodeURIComponent(param)}`;
+  });
+
   protected reset(): void {
     this.store.reset();
   }
 
-  protected shareWhatsApp(): void {
-    if (typeof window === 'undefined') return;
-    const compressed = encodeShareSnapshot(this.store.snapshot());
-    const base = window.location.origin + window.location.pathname;
-    const shareUrl = `${base}?${SHARE_PARAM}=${compressed}`;
-    const text = `Check out this car cost breakdown — ${shareUrl}`;
-    const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(waUrl, '_blank', 'noopener,noreferrer');
+  protected openShare(): void {
+    this.shareOpen.set(true);
   }
 
   protected readonly distanceUnit = computed(() => this.store.localeConfig().distanceUnit);
