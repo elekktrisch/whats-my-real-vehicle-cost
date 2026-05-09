@@ -48,15 +48,6 @@ import { CashFields } from './cash-fields';
 
       <app-tco-chart [breakdown]="activeBreakdown()" />
 
-      <!--
-        Two columns on desktop (lg+): hero + vehicle on the left, financing +
-        personal situation on the right. Single column on smaller widths
-        stacks left-then-right, so on mobile the order is hero → vehicle →
-        financing → your-situation. items-start so the taller column doesn't
-        stretch the shorter one.
-        scroll-mt keeps the click-to-scroll target from tucking under the
-        sticky region.
-      -->
       <div
         id="mode-fields-section"
         class="grid grid-cols-1 lg:grid-cols-2 lg:items-start gap-5 scroll-mt-[260px] sm:scroll-mt-[300px]"

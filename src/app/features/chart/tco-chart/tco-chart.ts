@@ -272,6 +272,10 @@ export class TcoChart {
       events: isMobile ? [] : undefined,
       plugins: {
         legend: { display: false },
+        // The depreciation/maintenance curve editors register
+        // chartjs-plugin-dragdata globally; opt out here so the cumulative
+        // TCO chart stays read-only.
+        dragData: false,
         tooltip: {
           enabled: !isMobile,
           backgroundColor: '#141e33',

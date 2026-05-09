@@ -1,4 +1,4 @@
-import type { CostBreakdown } from '../scenario.types';
+import type { CostBreakdown, MonthlyTcoPoint } from '../scenario.types';
 import { financePayment } from './financing';
 import { opportunityCostStream } from './opportunity';
 import {
@@ -39,41 +39,22 @@ export function financeTco(input: FinanceTcoInputs): CostBreakdown {
   const totalMonths = Math.max(Math.round(input.keepDurationYears * 12), 1);
   const principal = Math.max(input.purchasePrice - input.downPayment, 0);
   const loanMonths = Math.min(input.loanTermMonths, totalMonths);
-  const monthly = financePayment({
+  const monthlyPayment = financePayment({
     principal,
     apr: input.apr,
     termMonths: input.loanTermMonths,
   });
-  const monthlyInterestRate = input.apr / 100 / 12;
 
-  // First pass: amortize the loan to find the per-month principal and interest
-  // splits. Each loan payment is also a cash outflow that stops earning the
-  // user's opportunity rate from that month forward.
-  const principalPart = new Array(totalMonths + 1).fill(0);
-  const interestPart = new Array(totalMonths + 1).fill(0);
-  {
-    let balance = principal;
-    for (let m = 1; m <= loanMonths && balance > 0; m++) {
-      const interest = balance * monthlyInterestRate;
-      const prin = Math.min(monthly - interest, balance);
-      balance -= prin;
-      interestPart[m] = interest;
-      principalPart[m] = prin;
-    }
-  }
+  const schedule = amortizeLoan({
+    principal,
+    monthlyPayment,
+    monthlyRate: input.apr / 100 / 12,
+    loanMonths,
+    totalMonths,
+  });
 
-  // Opportunity cost: every cash outflow into the financing decision (down +
-  // each loan payment) stops earning returns from outflow time onward. The
-  // down compounds for the full keep horizon; each monthly payment compounds
-  // from its payment month to end-of-keep.
-  const oppInjections: { month: number; amount: number }[] = [];
-  if (input.downPayment > 0) oppInjections.push({ month: 0, amount: input.downPayment });
-  for (let m = 1; m <= loanMonths; m++) {
-    const payment = principalPart[m] + interestPart[m];
-    if (payment > 0) oppInjections.push({ month: m, amount: payment });
-  }
   const opportunity = opportunityCostStream(
-    oppInjections,
+    financingCashOutflows(input.downPayment, schedule, loanMonths),
     input.opportunityCostRate,
     totalMonths,
   );
@@ -97,17 +78,15 @@ export function financeTco(input: FinanceTcoInputs): CostBreakdown {
   for (let m = 1; m <= totalMonths; m++) {
     const i = m - 1;
     const prev = series[m - 1];
+    const downThisMonth = m === 1 ? input.downPayment : 0;
+    const loanPaymentThisMonth = schedule.principalPart[m] + schedule.interestPart[m];
     series[m].fuel = prev.fuel + inc.fuel[i];
     series[m].insurance = prev.insurance + inc.insurance[i];
     series[m].maintenance = prev.maintenance + inc.maintenance[i];
     series[m].depreciationOrLease =
-      prev.depreciationOrLease + principalPart[m] + (m === 1 ? input.downPayment : 0);
-    series[m].interestAndFees = prev.interestAndFees + interestPart[m];
+      prev.depreciationOrLease + schedule.principalPart[m] + downThisMonth;
+    series[m].interestAndFees = prev.interestAndFees + schedule.interestPart[m];
     series[m].opportunityCost = opportunity[m];
-    // Cash flow: down at month 1, full loan payment (principal + interest)
-    // every month while the loan is active, plus running costs.
-    const downThisMonth = m === 1 ? input.downPayment : 0;
-    const loanPaymentThisMonth = principalPart[m] + interestPart[m];
     series[m].cashOut =
       prev.cashOut +
       downThisMonth +
@@ -117,14 +96,61 @@ export function financeTco(input: FinanceTcoInputs): CostBreakdown {
       inc.maintenance[i];
   }
 
-  const totalDepreciation = Math.max(input.purchasePrice - input.residualValue, 0);
-  const lastDep = series[totalMonths].depreciationOrLease;
-  if (lastDep > 0) {
-    const scale = totalDepreciation / lastDep;
-    for (let m = 1; m <= totalMonths; m++) {
-      series[m].depreciationOrLease = series[m].depreciationOrLease * scale;
-    }
-  }
-
+  rescaleDepreciationToResidual(series, totalMonths, input.purchasePrice - input.residualValue);
   return summarize(series);
+}
+
+interface AmortizationParams {
+  principal: number;
+  monthlyPayment: number;
+  monthlyRate: number;
+  loanMonths: number;
+  totalMonths: number;
+}
+
+interface LoanSchedule {
+  principalPart: number[];
+  interestPart: number[];
+}
+
+function amortizeLoan(p: AmortizationParams): LoanSchedule {
+  const principalPart = new Array<number>(p.totalMonths + 1).fill(0);
+  const interestPart = new Array<number>(p.totalMonths + 1).fill(0);
+  let balance = p.principal;
+  for (let m = 1; m <= p.loanMonths && balance > 0; m++) {
+    const interest = balance * p.monthlyRate;
+    const principalThisMonth = Math.min(p.monthlyPayment - interest, balance);
+    balance -= principalThisMonth;
+    interestPart[m] = interest;
+    principalPart[m] = principalThisMonth;
+  }
+  return { principalPart, interestPart };
+}
+
+function financingCashOutflows(
+  downPayment: number,
+  schedule: LoanSchedule,
+  loanMonths: number,
+): { month: number; amount: number }[] {
+  const outflows: { month: number; amount: number }[] = [];
+  if (downPayment > 0) outflows.push({ month: 0, amount: downPayment });
+  for (let m = 1; m <= loanMonths; m++) {
+    const payment = schedule.principalPart[m] + schedule.interestPart[m];
+    if (payment > 0) outflows.push({ month: m, amount: payment });
+  }
+  return outflows;
+}
+
+function rescaleDepreciationToResidual(
+  series: MonthlyTcoPoint[],
+  totalMonths: number,
+  totalDepreciation: number,
+): void {
+  const target = Math.max(totalDepreciation, 0);
+  const lastDep = series[totalMonths].depreciationOrLease;
+  if (lastDep <= 0) return;
+  const scale = target / lastDep;
+  for (let m = 1; m <= totalMonths; m++) {
+    series[m].depreciationOrLease *= scale;
+  }
 }
