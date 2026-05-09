@@ -2,11 +2,12 @@ import { Component, computed, inject } from '@angular/core';
 import { ScenarioStore } from '../../../scenario/scenario.store';
 import { formatCurrency } from '../../../scenario/locale.config';
 import { HeroColumn } from '../../atoms/hero-column/hero-column';
+import { Icon } from '../../atoms/icon/icon';
 import { cashHeroData, financeHeroData, leaseHeroData, type HeroData } from './hero-summary.data';
 
 @Component({
   selector: 'app-hero-summary',
-  imports: [HeroColumn],
+  imports: [HeroColumn, Icon],
   template: `
     <section class="hero-card">
       <div class="hero-grid">
@@ -59,6 +60,20 @@ import { cashHeroData, financeHeroData, leaseHeroData, type HeroData } from './h
         />
       </div>
 
+      <div class="hero-opportunity">
+        <span class="hero-opportunity-icon" aria-hidden="true">
+          <app-icon name="trending-up" [size]="18" [strokeWidth]="2" />
+        </span>
+        <span class="hero-opportunity-line">
+          Ignoring
+          <span class="hero-opportunity-amount">{{ opportunityCostFootnote() }}</span>
+          in opportunity cost
+        </span>
+      </div>
+      <p class="hero-opportunity-note">
+        Included in the true-cost view, not in the cash-out total.
+      </p>
+
       <div class="hero-details">
         <dl class="hero-breakdown">
           @for (item of data().breakdown; track item.label) {
@@ -78,11 +93,6 @@ import { cashHeroData, financeHeroData, leaseHeroData, type HeroData } from './h
           </div>
         </dl>
       </div>
-
-      <p class="hero-footnote font-ui text-[0.72rem] text-tx-dim leading-relaxed text-center">
-        Plus ≈ {{ opportunityCostFootnote() }} in opportunity cost. (included
-        in the true-cost view, not in the cash-out total)
-      </p>
     </section>
   `,
 })

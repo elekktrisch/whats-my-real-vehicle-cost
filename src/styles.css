@@ -393,10 +393,47 @@
     display: block;
     white-space: nowrap;
   }
-  /* Opportunity-cost footnote bridges the hero (cash-out only) and the
-   * chart (which includes opportunity cost as a layer). */
-  .hero-footnote {
-    margin-top: 0.75rem;
+  /* Opportunity-cost callout — bridges the hero (cash-out only) and the
+   * chart (which includes opportunity cost as a layer). Sits above the
+   * breakdown so the user sees the true-cost adjustment before scanning
+   * the line items. Icon + amount are visually emphasized; the
+   * parenthetical note below is small and dim. */
+  .hero-opportunity {
+    margin-top: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    color: var(--color-tx-muted);
+  }
+  .hero-opportunity-icon {
+    color: var(--color-accent);
+    display: inline-flex;
+    align-items: center;
+  }
+  .hero-opportunity-line {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .hero-opportunity-amount {
+    font-family: var(--font-mono);
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--color-tx);
+    letter-spacing: -0.02em;
+  }
+  .hero-opportunity-note {
+    font-family: var(--font-ui);
+    font-size: 0.7rem;
+    color: var(--color-tx-dim);
+    text-align: center;
+    line-height: 1.5;
+    margin-top: 0.25rem;
   }
 
   /* Top row joins the sticky stack. Background fully opaque (content can't

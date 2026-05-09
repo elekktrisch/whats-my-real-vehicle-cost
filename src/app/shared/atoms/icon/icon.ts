@@ -10,7 +10,8 @@ export type IconName =
   | 'close'
   | 'edit'
   | 'share'
-  | 'reset';
+  | 'reset'
+  | 'trending-up';
 
 interface IconDef {
   paths: string[];
@@ -45,6 +46,9 @@ const REGISTRY: Record<IconName, IconDef> = {
   },
   reset: {
     paths: ['M3 12a9 9 0 1 0 3-6.7', 'M3 4v6h6'],
+  },
+  'trending-up': {
+    paths: ['M3 17l6-6 4 4 8-8', 'M14 7h7v7'],
   },
 };
 
