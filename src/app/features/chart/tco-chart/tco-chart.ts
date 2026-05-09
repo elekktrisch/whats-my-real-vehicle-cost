@@ -277,7 +277,7 @@ export class TcoChart {
           bodyFont: { family: 'JetBrains Mono', size: tooltipBodySize } as never,
           padding: 10,
           callbacks: {
-            label: (ctx) => `  ${ctx.dataset.label}: ${this.money(ctx.parsed.y)}`,
+            label: (ctx) => `  ${ctx.dataset.label}: ${this.money(ctx.parsed.y ?? 0)}`,
           },
         },
       },
