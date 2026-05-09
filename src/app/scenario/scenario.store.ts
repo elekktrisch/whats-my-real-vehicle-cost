@@ -192,10 +192,21 @@ export class ScenarioStore {
     this.insuranceBindings.apply();
   }
 
+  // Fuel efficiency tolerance is unit-dependent: EV ranges are far wider
+  // than ICE ranges, and EU/US use different units (mpg vs L/100km, mi/kWh
+  // vs kWh/100km). Capturing the signals inside the comparator makes the
+  // resulting `computed` track them, so changing locale/powertrain
+  // re-evaluates the conflict with the right epsilon.
   private readonly fuelEfficiencyBindings = this.bindConflict(
     this.fuelEfficiencyOverride,
     () => this.fuelEfficiencyDefaultSignal(),
-    numEq(1.0),
+    (a, b) => {
+      const ev = this.powertrain() === 'EV';
+      const us = this.locale() === 'US';
+      // EV: ~1.5 mi/kWh (US) or ~6 kWh/100km (EU). ICE: ~2 mpg (US) or ~1 L/100km (EU).
+      const eps = ev ? (us ? 1.5 : 6) : us ? 2 : 1;
+      return Math.abs(a - b) <= eps;
+    },
   );
   readonly fuelEfficiencyConflict = this.fuelEfficiencyBindings.conflict;
   readonly fuelEfficiencyPillVisible = this.fuelEfficiencyBindings.pillVisible;
@@ -206,10 +217,19 @@ export class ScenarioStore {
     this.fuelEfficiencyBindings.apply();
   }
 
+  // Fuel price tolerance scales similarly: electricity prices vary widely
+  // ($0.15–0.35/kWh for EU, $0.10–0.20/kWh for US), and gasoline prices
+  // span a tighter percent range but use different units per locale.
   private readonly fuelPriceBindings = this.bindConflict(
     this.fuelPriceOverride,
     () => this.fuelPriceDefaultSignal(),
-    numEq(0.10),
+    (a, b) => {
+      const ev = this.powertrain() === 'EV';
+      const us = this.locale() === 'US';
+      // EV: ~$0.05/kWh (US) or ~€0.10/kWh (EU). ICE: ~$0.30/gal (US) or ~€0.15/L (EU).
+      const eps = ev ? (us ? 0.05 : 0.1) : us ? 0.3 : 0.15;
+      return Math.abs(a - b) <= eps;
+    },
   );
   readonly fuelPriceConflict = this.fuelPriceBindings.conflict;
   readonly fuelPricePillVisible = this.fuelPriceBindings.pillVisible;
@@ -641,7 +661,10 @@ export class ScenarioStore {
         key: 'fuelEfficiency',
         scope: 'global',
         label: this.powertrain() === 'EV' ? 'EV efficiency' : 'Fuel efficiency',
-        reason: `this is the typical figure for ${loc} ${this.powertrain()} vehicles. Override with your vehicle's spec sheet.`,
+        reason:
+          this.powertrain() === 'EV'
+            ? `this is the typical EV efficiency in ${loc}. Override with your vehicle's spec sheet.`
+            : `this is the typical fuel efficiency in ${loc}. Override with your vehicle's spec sheet.`,
         currentValue: `${override} ${unit}`,
         proposedValue: `${def} ${unit}`,
         sliderAnchor: 'slider-fuelEfficiency',
@@ -656,7 +679,10 @@ export class ScenarioStore {
         key: 'fuelPrice',
         scope: 'global',
         label: this.powertrain() === 'EV' ? 'Electricity price' : 'Fuel price',
-        reason: `this is the typical pump or electricity rate for ${loc} ${this.powertrain()}. Override with current local prices.`,
+        reason:
+          this.powertrain() === 'EV'
+            ? `this is the typical electricity rate in ${loc}. Override with your local utility tariff.`
+            : `this is the typical pump price in ${loc}. Override with current local prices.`,
         currentValue: formatCurrency(override, loc, 2),
         proposedValue: formatCurrency(def, loc, 2),
         sliderAnchor: 'slider-fuelPrice',

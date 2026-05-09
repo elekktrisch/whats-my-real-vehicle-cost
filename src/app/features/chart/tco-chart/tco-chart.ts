@@ -94,7 +94,7 @@ function buildStackedDataset(layer: LayerSpec, series: MonthlyTcoPoint[], isHidd
           Cumulative total cost of ownership
         </span>
         <div class="flex flex-wrap gap-x-1 gap-y-1">
-          @for (layer of layers; track layer.key) {
+          @for (layer of layers(); track layer.key) {
             <button
               type="button"
               class="legend-toggle"
@@ -145,7 +145,7 @@ function buildStackedDataset(layer: LayerSpec, series: MonthlyTcoPoint[], isHidd
           <thead>
             <tr>
               <th scope="col">Year</th>
-              @for (layer of layers; track layer.key) {
+              @for (layer of layers(); track layer.key) {
                 <th scope="col">{{ layer.label }}</th>
               }
               <th scope="col">Total cost</th>
@@ -156,7 +156,7 @@ function buildStackedDataset(layer: LayerSpec, series: MonthlyTcoPoint[], isHidd
             @for (point of yearlySamples(); track point.month) {
               <tr>
                 <th scope="row">{{ point.month / 12 }}</th>
-                @for (layer of layers; track layer.key) {
+                @for (layer of layers(); track layer.key) {
                   <td>{{ money(point[layer.key]) }}</td>
                 }
                 <td>{{ money(rowTotal(point)) }}</td>
@@ -171,7 +171,13 @@ function buildStackedDataset(layer: LayerSpec, series: MonthlyTcoPoint[], isHidd
 export class TcoChart {
   readonly breakdown = input.required<CostBreakdown>();
 
-  protected readonly layers = LAYERS;
+  // Replaces the static "Fuel / electricity" label with the powertrain-
+  // specific term so the legend reads "Electricity" on EV scenarios and
+  // "Fuel" on ICE. Keys/colors stay constant; only the display label flips.
+  protected readonly layers = computed<readonly LayerSpec[]>(() => {
+    const ev = this.store.powertrain() === 'EV';
+    return LAYERS.map((l) => (l.key === 'fuel' ? { ...l, label: ev ? 'Electricity' : 'Fuel' } : l));
+  });
   protected readonly cashOutColor = CASH_OUT_COLOR;
   protected readonly cashOutLabel = CASH_OUT_LABEL;
   // Per-session legend toggle state — ephemeral, never persisted to URL.
@@ -223,7 +229,7 @@ export class TcoChart {
     const hidden = this.hiddenSeries();
     const labels = series.map((p) => `Mo ${p.month}`);
     // Stacked-area cost layers — share `stack: 'cost'` so they sum vertically.
-    const stackDatasets = LAYERS.map((layer) =>
+    const stackDatasets = this.layers().map((layer) =>
       buildStackedDataset(layer, series, hidden.has(layer.key)),
     );
     // Overlay line: dashed neutral, no fill, on its own stack so it doesn't

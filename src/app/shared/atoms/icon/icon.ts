@@ -11,6 +11,7 @@ export type IconName =
   | 'edit'
   | 'share'
   | 'reset'
+  | 'star'
   | 'trending-up';
 
 interface IconDef {
@@ -47,6 +48,11 @@ const REGISTRY: Record<IconName, IconDef> = {
   reset: {
     paths: ['M3 12a9 9 0 1 0 3-6.7', 'M3 4v6h6'],
   },
+  star: {
+    paths: [
+      'M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01L12 2z',
+    ],
+  },
   'trending-up': {
     paths: ['M3 17l6-6 4 4 8-8', 'M14 7h7v7'],
   },
@@ -59,7 +65,7 @@ const REGISTRY: Record<IconName, IconDef> = {
       [attr.width]="size()"
       [attr.height]="size()"
       [attr.viewBox]="viewBox()"
-      fill="none"
+      [attr.fill]="filled() ? 'currentColor' : 'none'"
       stroke="currentColor"
       [attr.stroke-width]="strokeWidth()"
       stroke-linecap="round"
@@ -80,6 +86,7 @@ export class Icon {
   readonly size = input(20);
   readonly strokeWidth = input(1.5);
   readonly ariaLabel = input('');
+  readonly filled = input(false);
 
   protected readonly paths = computed(() => REGISTRY[this.name()].paths);
   protected readonly viewBox = computed(() => REGISTRY[this.name()].viewBox ?? '0 0 24 24');

@@ -1,8 +1,10 @@
 import { Component, computed, input, output } from '@angular/core';
 import type { Tab } from '../../../scenario/scenario.types';
+import { Icon } from '../../atoms/icon/icon';
 
 @Component({
   selector: 'app-mode-card',
+  imports: [Icon],
   template: `
     <button
       type="button"
@@ -63,9 +65,10 @@ import type { Tab } from '../../../scenario/scenario.types';
         <div class="mode-card-bottom-tag flex justify-center mt-[6px] sm:mt-[8px]">
           @if (recommended()) {
             <span
-              class="rounded-full bg-accent/15 text-accent text-[0.75rem] tracking-[0.1em] uppercase px-[7px] py-[1px] font-ui font-medium"
-              aria-label="Recommended"
+              class="inline-flex items-center gap-[4px] rounded-full bg-accent/15 text-accent text-[0.75rem] tracking-[0.1em] uppercase px-[8px] py-[2px] font-ui font-semibold ring-1 ring-accent/40"
+              aria-label="Recommended — best value"
             >
+              <app-icon name="star" [size]="11" [filled]="true" [strokeWidth]="0" />
               Best
             </span>
           } @else {
