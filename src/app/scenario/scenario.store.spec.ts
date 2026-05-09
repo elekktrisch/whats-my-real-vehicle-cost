@@ -413,6 +413,39 @@ describe('ScenarioStore — aggregated conflicts', () => {
     expect(store.conflictCount('finance')).toBe(1);
   });
 
+  it('visibleConflicts(): lease tab includes lease + global conflicts', () => {
+    const store = makeStore();
+    store.markHydrated();
+    store.activeTab.set('lease');
+    store.leaseAprOverride.set(1.5);   // lease-scoped
+    store.insuranceOverride.set(9999);  // global
+    const keys = store.visibleConflicts().map((c) => c.key);
+    expect(keys).toContain('leaseApr');
+    expect(keys).toContain('insurance');
+  });
+
+  it('visibleConflicts(): cash tab excludes lease-scoped conflicts', () => {
+    const store = makeStore();
+    store.markHydrated();
+    store.activeTab.set('cash');
+    store.leaseAprOverride.set(1.5);   // lease-scoped → must be hidden
+    store.insuranceOverride.set(9999);  // global → still visible
+    const keys = store.visibleConflicts().map((c) => c.key);
+    expect(keys).not.toContain('leaseApr');
+    expect(keys).toContain('insurance');
+  });
+
+  it('visibleConflicts(): finance tab excludes lease-scoped conflicts', () => {
+    const store = makeStore();
+    store.markHydrated();
+    store.activeTab.set('finance');
+    store.leaseEndChoiceOverride.set('buyOut'); // lease-scoped
+    store.fuelPriceOverride.set(99);             // global
+    const keys = store.visibleConflicts().map((c) => c.key);
+    expect(keys).not.toContain('leaseEndChoice');
+    expect(keys).toContain('fuelPrice');
+  });
+
   it('conflictCount("cash") includes only global conflicts', () => {
     const store = makeStore();
     store.markHydrated();

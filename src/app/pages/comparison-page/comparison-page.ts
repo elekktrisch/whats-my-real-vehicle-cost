@@ -52,7 +52,7 @@ const MOBILE_BP = 600;
             [distanceUnit]="distanceUnit()"
             [recommendationReason]="recommendationReason()"
           />
-          <app-warnings-list [conflicts]="store.activeConflicts()" />
+          <app-warnings-list [conflicts]="store.visibleConflicts()" />
         </div>
       </div>
 

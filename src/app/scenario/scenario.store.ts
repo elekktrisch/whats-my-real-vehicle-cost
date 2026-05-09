@@ -89,13 +89,14 @@ export class ScenarioStore {
     this.vehicleAge() === 0 ? APR_NEW_CAR : APR_USED_CAR,
   );
   readonly leaseApr = computed(() => this.leaseAprOverride() ?? this.leaseAprDefault());
-  // Per-lever tolerances are deliberately wider than one slider step so the
-  // pill only fires when the deviation is materially significant, not for
-  // sub-step drift or rounding artefacts. Roughly ~3–5 steps each.
+  // Per-lever tolerances are deliberately much wider than one slider step
+  // so the pill only fires when the deviation is materially significant,
+  // not for sub-step drift, rounding artefacts, or small judgement nudges.
+  // Roughly ~5–10 slider steps / ~5–10% of the typical default.
   private readonly leaseAprBindings = this.bindConflict(
     this.leaseAprOverride,
     () => this.leaseAprDefault(),
-    numEq(0.15),
+    numEq(0.25),
   );
   readonly leaseAprConflict = this.leaseAprBindings.conflict;
   readonly leaseAprPillVisible = this.leaseAprBindings.pillVisible;
@@ -132,7 +133,7 @@ export class ScenarioStore {
   private readonly residualValueBindings = this.bindConflict(
     this.residualValueOverride,
     () => this.residualValueDefault(),
-    numEq(1500),
+    numEq(3000),
   );
   readonly residualValueConflict = this.residualValueBindings.conflict;
   readonly residualValuePillVisible = this.residualValueBindings.pillVisible;
@@ -180,7 +181,7 @@ export class ScenarioStore {
   private readonly insuranceBindings = this.bindConflict(
     this.insuranceOverride,
     () => this.insuranceDefault(),
-    numEq(75),
+    numEq(150),
   );
   readonly insuranceConflict = this.insuranceBindings.conflict;
   readonly insurancePillVisible = this.insuranceBindings.pillVisible;
@@ -194,7 +195,7 @@ export class ScenarioStore {
   private readonly fuelEfficiencyBindings = this.bindConflict(
     this.fuelEfficiencyOverride,
     () => this.fuelEfficiencyDefaultSignal(),
-    numEq(0.5),
+    numEq(1.0),
   );
   readonly fuelEfficiencyConflict = this.fuelEfficiencyBindings.conflict;
   readonly fuelEfficiencyPillVisible = this.fuelEfficiencyBindings.pillVisible;
@@ -208,7 +209,7 @@ export class ScenarioStore {
   private readonly fuelPriceBindings = this.bindConflict(
     this.fuelPriceOverride,
     () => this.fuelPriceDefaultSignal(),
-    numEq(0.05),
+    numEq(0.10),
   );
   readonly fuelPriceConflict = this.fuelPriceBindings.conflict;
   readonly fuelPricePillVisible = this.fuelPriceBindings.pillVisible;
@@ -284,7 +285,7 @@ export class ScenarioStore {
   private readonly earlyTerminationFeeBindings = this.bindConflict(
     this.earlyTerminationFeeOverride,
     () => this.earlyTerminationFeeDefault(),
-    numEq(200),
+    numEq(500),
   );
   readonly earlyTerminationFeeConflict = this.earlyTerminationFeeBindings.conflict;
   readonly earlyTerminationFeePillVisible = this.earlyTerminationFeeBindings.pillVisible;
@@ -307,7 +308,7 @@ export class ScenarioStore {
   private readonly leaseEndResidualBindings = this.bindConflict(
     this.leaseEndResidualOverride,
     () => this.leaseEndResidualDefault(),
-    numEq(1500),
+    numEq(3000),
   );
   readonly leaseEndResidualConflict = this.leaseEndResidualBindings.conflict;
   readonly leaseEndResidualPillVisible = this.leaseEndResidualBindings.pillVisible;
@@ -720,6 +721,14 @@ export class ScenarioStore {
   conflictCount(tab: Tab): number {
     return conflictCountForTab(this.activeConflicts(), tab);
   }
+
+  // Active conflicts filtered to the currently selected tab — global
+  // conflicts are always visible, tab-scoped ones only when their tab is
+  // active. Drives the warnings list at the top of the comparison page.
+  readonly visibleConflicts = computed<readonly ActiveConflict[]>(() => {
+    const tab = this.activeTab();
+    return this.activeConflicts().filter((c) => c.scope === 'global' || c.scope === tab);
+  });
 
   // Per-lever descriptor lookup — same source of truth as the warnings list,
   // so an inline pill and its corresponding warnings-list row format their
