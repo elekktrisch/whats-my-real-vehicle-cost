@@ -246,77 +246,42 @@
     border: 1px solid var(--color-border);
     border-radius: 12px;
     padding: 1.25rem;
-    transition: padding 300ms ease-out !important;
   }
   @media (max-width: 599px) {
     .hero-card {
       padding: 1rem;
     }
   }
-  [data-scrolled='true'] .hero-card {
-    padding: 0.625rem 1rem;
-  }
-  @media (max-width: 599px) {
-    [data-scrolled='true'] .hero-card {
-      padding: 0.5rem 0.625rem;
-    }
-  }
-  /* 5-column grid: icon | left col | arrow | right col | icon. Icons and
-   * arrow stay visible even in compact; only the eyebrow + caption rows
-   * inside each column collapse. */
+  /* 5-column grid: icon | left col | arrow | right col | icon. */
   .hero-card .hero-grid {
     display: grid;
     grid-template-columns: auto auto auto auto auto;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    transition: gap 300ms ease-out !important;
   }
   @media (min-width: 600px) {
     .hero-card .hero-grid {
       gap: 1rem;
     }
   }
-  [data-scrolled='true'] .hero-card .hero-grid {
-    gap: 0.4rem;
-  }
   .hero-card .hero-num {
     font-size: 1.4rem;
     white-space: nowrap;
-    transition: font-size 300ms ease-out !important;
   }
   @media (max-width: 599px) {
     .hero-card .hero-num {
       font-size: 1.25rem;
     }
   }
-  [data-scrolled='true'] .hero-card .hero-num {
-    font-size: 1.1rem;
-  }
-  @media (max-width: 599px) {
-    [data-scrolled='true'] .hero-card .hero-num {
-      font-size: 1rem;
-    }
-  }
   .hero-card .hero-arrow svg {
     width: 44px;
     height: 44px;
-    transition: width 300ms ease-out , height 300ms ease-out !important;
   }
   @media (max-width: 599px) {
     .hero-card .hero-arrow svg {
       width: 28px;
       height: 28px;
-    }
-  }
-  [data-scrolled='true'] .hero-card .hero-arrow svg {
-    width: 24px;
-    height: 24px;
-  }
-  @media (max-width: 599px) {
-    [data-scrolled='true'] .hero-card .hero-arrow svg {
-      width: 20px;
-      height: 20px;
     }
   }
 
@@ -351,9 +316,9 @@
     text-decoration: line-through;
   }
 
-  /* + Details disclosure under the hero arrow. Each row: label on the left
-   * (with optional detail sub-text), amount on the right. Final row marks
-   * the total with a top border. */
+  /* Hero breakdown — always visible under the hero arrow. Each row: label
+   * on the left (with optional detail sub-text), amount on the right. Final
+   * row marks the total with a top border. */
   .hero-details {
     margin-top: 1rem;
   }
@@ -403,16 +368,13 @@
     font-size: 0.95rem;
   }
 
-  /* Money / car icons flanking the hero columns. Stay visible in compact
-   * (just smaller) so the money→asset story holds even when scrolled. Dim
-   * treatment lives on car.png in lease-renew (no asset retained). */
+  /* Money / car icons flanking the hero columns. Dim treatment lives on
+   * car.png in lease-renew (no asset retained). */
   .hero-column-icon {
     width: 40px;
     height: 40px;
     object-fit: contain;
     opacity: 1;
-    transition: width 300ms ease-out , height 300ms ease-out ,
-                opacity 300ms ease-out , filter 300ms ease-out !important;
   }
   @media (max-width: 599px) {
     .hero-column-icon {
@@ -420,73 +382,21 @@
       height: 32px;
     }
   }
-  [data-scrolled='true'] .hero-card .hero-column-icon {
-    width: 28px;
-    height: 28px;
-  }
-  @media (max-width: 599px) {
-    [data-scrolled='true'] .hero-card .hero-column-icon {
-      width: 24px;
-      height: 24px;
-    }
-  }
   .hero-column-icon-dim {
     opacity: 0.35;
     filter: grayscale(1);
   }
   /* `display: block` is the load-bearing detail — these are <span> elements
-   * via Tailwind utilities; without explicit block they're inline and don't
-   * respect max-height, which kills the height-collapse transition. Explicit
-   * max-height on the default state so the transition has a numeric starting
-   * point (max-height: none ↔ 0 doesn't interpolate). */
+   * via Tailwind utilities, which would otherwise be inline. */
   .hero-card .hero-eyebrow,
   .hero-card .hero-caption {
     display: block;
-    opacity: 1;
-    overflow: hidden;
     white-space: nowrap;
-    transition: opacity 300ms ease-out , max-height 300ms ease-out !important;
-  }
-  .hero-card .hero-eyebrow {
-    max-height: 24px;
-  }
-  .hero-card .hero-caption {
-    max-height: 48px;
-  }
-  [data-scrolled='true'] .hero-card .hero-eyebrow,
-  [data-scrolled='true'] .hero-card .hero-caption {
-    opacity: 0;
-    max-height: 0;
-  }
-  /* + Details disclosure collapses on scroll: compact hero is just
-   * [icon → number → arrow → number → icon]. */
-  .hero-details {
-    opacity: 1;
-    max-height: 600px;
-    overflow: hidden;
-    transition: opacity 300ms ease-out , max-height 300ms ease-out ,
-                margin-top 300ms ease-out !important;
-  }
-  [data-scrolled='true'] .hero-details {
-    opacity: 0;
-    max-height: 0;
-    margin-top: 0;
   }
   /* Opportunity-cost footnote bridges the hero (cash-out only) and the
-   * chart (which includes opportunity cost as a layer). Collapses with
-   * the rest of the hero ornament in compact state. */
+   * chart (which includes opportunity cost as a layer). */
   .hero-footnote {
-    opacity: 1;
-    max-height: 80px;
     margin-top: 0.75rem;
-    overflow: hidden;
-    transition: opacity 300ms ease-out , max-height 300ms ease-out ,
-                margin-top 300ms ease-out !important;
-  }
-  [data-scrolled='true'] .hero-footnote {
-    opacity: 0;
-    max-height: 0;
-    margin-top: 0;
   }
 
   /* Top row joins the sticky stack. Background fully opaque (content can't
@@ -599,13 +509,6 @@
   [data-scrolled='true'] .sticky-strip-pad {
     padding-top: 0.25rem;
     padding-bottom: 0.5rem;
-  }
-  .strip-to-hero-gap {
-    margin-top: 0.75rem;
-    transition: margin-top 300ms ease-out !important;
-  }
-  [data-scrolled='true'] .strip-to-hero-gap {
-    margin-top: 0.25rem;
   }
 
   .mode-card-total,

@@ -3,6 +3,7 @@ import { ScenarioStore } from '../../scenario/scenario.store';
 import { TcoChart } from '../chart/tco-chart/tco-chart';
 import { GlobalControls } from '../../shared/molecules/global-controls/global-controls';
 import { YourSituation } from '../../shared/molecules/your-situation/your-situation';
+import { HeroSummary } from '../../shared/molecules/hero-summary/hero-summary';
 import { LeaseFields } from './lease-fields';
 import { FinanceFields } from './finance-fields';
 import { CashFields } from './cash-fields';
@@ -13,6 +14,7 @@ import { CashFields } from './cash-fields';
     TcoChart,
     GlobalControls,
     YourSituation,
+    HeroSummary,
     LeaseFields,
     FinanceFields,
     CashFields,
@@ -46,23 +48,39 @@ import { CashFields } from './cash-fields';
 
       <app-tco-chart [breakdown]="activeBreakdown()" />
 
-      <!-- scroll-mt keeps the click-to-scroll target from tucking under the sticky region. -->
-      <div id="mode-fields-section" class="scroll-mt-[260px] sm:scroll-mt-[300px]">
-        @switch (store.activeTab()) {
-          @case ('lease') {
-            <app-lease-fields />
-          }
-          @case ('finance') {
-            <app-finance-fields />
-          }
-          @case ('cash') {
-            <app-cash-fields />
-          }
-        }
-      </div>
+      <!--
+        Two columns on desktop (lg+): hero + vehicle on the left, financing +
+        personal situation on the right. Single column on smaller widths
+        stacks left-then-right, so on mobile the order is hero → vehicle →
+        financing → your-situation. items-start so the taller column doesn't
+        stretch the shorter one.
+        scroll-mt keeps the click-to-scroll target from tucking under the
+        sticky region.
+      -->
+      <div
+        id="mode-fields-section"
+        class="grid grid-cols-1 lg:grid-cols-2 lg:items-start gap-5 scroll-mt-[260px] sm:scroll-mt-[300px]"
+      >
+        <div class="flex flex-col gap-5">
+          <app-hero-summary />
+          <app-global-controls />
+        </div>
 
-      <app-global-controls />
-      <app-your-situation />
+        <div class="flex flex-col gap-5">
+          @switch (store.activeTab()) {
+            @case ('lease') {
+              <app-lease-fields />
+            }
+            @case ('finance') {
+              <app-finance-fields />
+            }
+            @case ('cash') {
+              <app-cash-fields />
+            }
+          }
+          <app-your-situation />
+        </div>
+      </div>
     </div>
   `,
 })

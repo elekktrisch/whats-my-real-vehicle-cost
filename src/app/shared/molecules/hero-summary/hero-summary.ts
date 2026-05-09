@@ -1,23 +1,12 @@
-import { Component, HostListener, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { ScenarioStore } from '../../../scenario/scenario.store';
 import { formatCurrency } from '../../../scenario/locale.config';
 import { HeroColumn } from '../../atoms/hero-column/hero-column';
-import { Disclosure } from '../disclosure/disclosure';
 import { cashHeroData, financeHeroData, leaseHeroData, type HeroData } from './hero-summary.data';
-
-const SCROLL_KEYS = new Set([
-  'PageUp',
-  'PageDown',
-  'Home',
-  'End',
-  'ArrowUp',
-  'ArrowDown',
-  ' ', // Space — KeyboardEvent.key value
-]);
 
 @Component({
   selector: 'app-hero-summary',
-  imports: [HeroColumn, Disclosure],
+  imports: [HeroColumn],
   template: `
     <section class="hero-card">
       <div class="hero-grid">
@@ -70,60 +59,35 @@ const SCROLL_KEYS = new Set([
         />
       </div>
 
+      <div class="hero-details">
+        <dl class="hero-breakdown">
+          @for (item of data().breakdown; track item.label) {
+            <div class="breakdown-row">
+              <dt class="breakdown-label">
+                {{ item.label }}
+                @if (item.detail) {
+                  <span class="breakdown-detail">{{ item.detail }}</span>
+                }
+              </dt>
+              <dd class="breakdown-amount">{{ item.amount }}</dd>
+            </div>
+          }
+          <div class="breakdown-row breakdown-total">
+            <dt class="breakdown-label">Total cash out</dt>
+            <dd class="breakdown-amount">{{ data().outOfPocket }}</dd>
+          </div>
+        </dl>
+      </div>
+
       <p class="hero-footnote font-ui text-[0.72rem] text-tx-dim leading-relaxed text-center">
         Plus ≈ {{ opportunityCostFootnote() }} in opportunity cost. (included
         in the true-cost view, not in the cash-out total)
       </p>
-
-      <div class="hero-details">
-        <app-disclosure label="+ Details" [(open)]="detailsOpen">
-          <dl class="hero-breakdown">
-            @for (item of data().breakdown; track item.label) {
-              <div class="breakdown-row">
-                <dt class="breakdown-label">
-                  {{ item.label }}
-                  @if (item.detail) {
-                    <span class="breakdown-detail">{{ item.detail }}</span>
-                  }
-                </dt>
-                <dd class="breakdown-amount">{{ item.amount }}</dd>
-              </div>
-            }
-            <div class="breakdown-row breakdown-total">
-              <dt class="breakdown-label">Total cash out</dt>
-              <dd class="breakdown-amount">{{ data().outOfPocket }}</dd>
-            </div>
-          </dl>
-        </app-disclosure>
-      </div>
     </section>
   `,
 })
 export class HeroSummary {
   private readonly store = inject(ScenarioStore);
-
-  // Close details on direct user-input events that correlate with scroll
-  // intent — wheel, touchmove, keyboard scroll keys. NOT on the `scroll`
-  // event itself, which also fires for synthetic scrolls (browser scroll-
-  // anchoring after the sticky stack collapses, hydration / restored
-  // position, programmatic `scrollIntoView`).
-  protected readonly detailsOpen = signal(false);
-
-  @HostListener('window:wheel')
-  @HostListener('window:touchmove')
-  protected onUserScrollInput(): void {
-    if (this.detailsOpen()) this.detailsOpen.set(false);
-  }
-
-  @HostListener('window:keydown', ['$event'])
-  protected onKeydown(e: KeyboardEvent): void {
-    if (!this.detailsOpen()) return;
-    // Skip when the user is typing in an input — Space etc. are character
-    // keys there, not scroll commands.
-    const t = e.target as HTMLElement | null;
-    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
-    if (SCROLL_KEYS.has(e.key)) this.detailsOpen.set(false);
-  }
 
   protected readonly data = computed<HeroData>(() => {
     const tab = this.store.activeTab();

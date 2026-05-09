@@ -15,7 +15,6 @@ import {
   ComparisonStrip,
   ModeCardData,
 } from '../../shared/molecules/comparison-strip/comparison-strip';
-import { HeroSummary } from '../../shared/molecules/hero-summary/hero-summary';
 import { ModeDetailView } from '../../features/mode-detail-view/mode-detail-view';
 import { formatCurrency } from '../../scenario/locale.config';
 import type { CostBreakdown, Tab } from '../../scenario/scenario.types';
@@ -27,14 +26,14 @@ const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Loan', cash: 'Cas
 // collapse-induced layout shift can push scroll position back across it.
 // Wider gap on mobile to absorb iOS address-bar resize during scroll.
 const HYSTERESIS = {
-  desktop: { down: 500, up: 10 },
-  mobile: { down: 500, up: 10 },
+  desktop: { down: 100, up: 10 },
+  mobile: { down: 100, up: 10 },
 };
 const MOBILE_BP = 600;
 
 @Component({
   selector: 'app-comparison-page',
-  imports: [Icon, PageHeader, ComparisonStrip, HeroSummary, ModeDetailView],
+  imports: [Icon, PageHeader, ComparisonStrip, ModeDetailView],
   template: `
     <div
       class="max-w-[1200px] mx-auto px-4 sm:px-7 pb-[72px] relative z-[1] overflow-x-clip"
@@ -52,9 +51,6 @@ const MOBILE_BP = 600;
             [distanceUnit]="distanceUnit()"
             [recommendationReason]="recommendationReason()"
           />
-          <div class="strip-to-hero-gap">
-            <app-hero-summary />
-          </div>
         </div>
       </div>
 
