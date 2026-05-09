@@ -67,6 +67,15 @@ const MOBILE_BP = 600;
           <app-icon name="share" [size]="14" />
           Share via WhatsApp
         </button>
+        <a
+          [href]="repoUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          [class]="actionBtnClass"
+        >
+          <app-icon name="github" [size]="14" />
+          View on GitHub
+        </a>
       </div>
 
       <p class="font-ui text-[0.72rem] text-tx-dim leading-relaxed text-center max-w-[640px] mx-auto mt-8 px-2">
@@ -108,7 +117,9 @@ export class ComparisonPage {
   }
 
   protected readonly actionBtnClass =
-    'inline-flex items-center gap-2 h-9 px-4 rounded-[8px] bg-transparent border border-border-strong text-tx-muted hover:border-accent hover:text-accent font-ui text-[0.78rem] font-medium tracking-[0.06em] uppercase transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50';
+    'inline-flex items-center gap-2 h-9 px-4 rounded-[8px] bg-transparent border border-border-strong text-tx-muted hover:border-accent hover:text-accent font-ui text-[0.78rem] font-medium tracking-[0.06em] uppercase transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 no-underline';
+
+  protected readonly repoUrl = 'https://github.com/elekktrisch/whats-my-real-vehicle-cost';
 
   protected reset(): void {
     this.store.reset();
