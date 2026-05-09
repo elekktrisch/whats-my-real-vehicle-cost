@@ -6,6 +6,7 @@ import { LEASE_END_DEFAULTS, defaultScenario } from './scenario.defaults';
 import type {
   ChargerStatus,
   CostBreakdown,
+  DepreciationCurve,
   LeaseEndChoice,
   Locale,
   Powertrain,
@@ -13,7 +14,7 @@ import type {
   Tab,
 } from './scenario.types';
 import { backDeriveMsrp } from './calculations/msrp';
-import { depreciationFactor } from './calculations/depreciation';
+import { defaultCurveForPowertrain, depreciationFactor } from './calculations/depreciation';
 import { categorize, categoryMultipliers } from './calculations/category';
 import { leasePayment } from './calculations/financing';
 import { maintenanceK } from './calculations/maintenance';
@@ -48,6 +49,13 @@ export class ScenarioStore {
   readonly activeTab = signal<Tab>(this.initial.globals.activeTab);
   readonly chargerStatus = signal<ChargerStatus>(this.initial.globals.chargerStatus);
   readonly solar = signal(this.initial.globals.solar);
+  // null = use the per-powertrain default; toggling powertrain leaves an
+  // explicit override in place (per Q4 — single override, no per-powertrain
+  // stash). The curve is a domain object so callers don't index magic
+  // anchor positions.
+  readonly depreciationCurveOverride = signal<DepreciationCurve | null>(
+    this.initial.globals.depreciationCurve,
+  );
 
   readonly leaseAprOverride = signal<number | null>(this.initial.lease.apr);
   readonly leaseTerm = signal(this.initial.lease.leaseTerm);
@@ -107,7 +115,13 @@ export class ScenarioStore {
     this.leaseAprBindings.apply();
   }
 
-  readonly msrp = computed(() => backDeriveMsrp(this.purchasePrice(), this.vehicleAge()));
+  readonly depreciationCurve = computed(
+    () => this.depreciationCurveOverride() ?? defaultCurveForPowertrain(this.powertrain()),
+  );
+
+  readonly msrp = computed(() =>
+    backDeriveMsrp(this.purchasePrice(), this.vehicleAge(), this.depreciationCurve()),
+  );
   readonly vehicleCategory = computed(() => categorize(this.msrp(), this.locale()));
   readonly categoryMultipliers = computed(() => categoryMultipliers(this.vehicleCategory()));
   readonly localeConfig = computed(() => LOCALE_CONFIG[this.locale()]);
@@ -122,7 +136,7 @@ export class ScenarioStore {
 
   private readonly residualValueDefault = computed(() => {
     const endAge = this.vehicleAge() + this.keepDuration();
-    return Math.round(this.msrp() * depreciationFactor(endAge));
+    return Math.round(this.msrp() * depreciationFactor(endAge, this.depreciationCurve()));
   });
   readonly residualValue = computed(
     () => this.residualValueOverride() ?? this.residualValueDefault(),
@@ -320,7 +334,7 @@ export class ScenarioStore {
   // Used as buyout price.
   private readonly leaseEndResidualDefault = computed(() => {
     const endAge = this.vehicleAge() + this.leaseTerm() / 12;
-    return Math.round(this.msrp() * depreciationFactor(endAge));
+    return Math.round(this.msrp() * depreciationFactor(endAge, this.depreciationCurve()));
   });
   readonly leaseEndResidual = computed(
     () => this.leaseEndResidualOverride() ?? this.leaseEndResidualDefault(),
@@ -497,6 +511,7 @@ export class ScenarioStore {
       this.activeTab.set(merged.globals.activeTab);
       this.chargerStatus.set(merged.globals.chargerStatus);
       this.solar.set(merged.globals.solar);
+      this.depreciationCurveOverride.set(merged.globals.depreciationCurve);
 
       this.leaseAprOverride.set(merged.lease.apr);
       this.leaseTerm.set(merged.lease.leaseTerm);
@@ -537,6 +552,7 @@ export class ScenarioStore {
         activeTab: this.activeTab(),
         chargerStatus: this.chargerStatus(),
         solar: this.solar(),
+        depreciationCurve: this.depreciationCurveOverride(),
       },
       lease: {
         apr: this.leaseAprOverride(),

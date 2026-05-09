@@ -4,6 +4,7 @@ import { Toggle } from '../../atoms/toggle/toggle';
 import { SliderControl } from '../../slider-control/slider-control';
 import { Disclosure } from '../disclosure/disclosure';
 import { ConflictPill } from '../conflict-pill/conflict-pill';
+import { DepreciationCurveEditor } from '../depreciation-curve-editor/depreciation-curve-editor';
 import { MoneyPipe } from '../../pipes/money.pipe';
 import type { LeaseEndChoice } from '../../../scenario/scenario.types';
 
@@ -21,7 +22,7 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
  */
 @Component({
   selector: 'app-lease-end-section',
-  imports: [Toggle, SliderControl, Disclosure, ConflictPill, MoneyPipe],
+  imports: [Toggle, SliderControl, Disclosure, ConflictPill, DepreciationCurveEditor, MoneyPipe],
   template: `
     <div class="flex flex-col gap-3 mt-2 pt-3 border-t border-border" id="slider-leaseEndChoice">
       <div class="flex items-center justify-between gap-3 flex-wrap">
@@ -80,6 +81,9 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
 
       <app-disclosure label="+ Advanced">
         <div id="slider-leaseEndResidual">
+          <div class="flex justify-end mb-1">
+            <app-depreciation-curve-editor />
+          </div>
           <app-slider-control
             label="Residual at lease end"
             tip="Contractual residual value at the end of the lease term. Drives the monthly lease payment formula (depreciates from cap cost down to this number over the term). Auto-derived from the depreciation curve at vehicleAge + leaseTerm; override with the figure from your contract."

@@ -25,7 +25,7 @@ One-time setup on the repo: **Settings → Pages → Source: GitHub Actions** mu
 
 `git log` is authoritative for what shipped.
 
-**Visible app today:** single `/` route — splash on cold start, comparison page once the user engages or arrives via a `?s=` / `?c=` URL. All three financing modes (lease, finance, cash) are visible at once via a sticky comparison strip; the focused mode's chart and sliders sit below.
+**Visible app today:** single `/` route — splash on cold start, comparison page once the user engages or arrives via a `?s=` URL. All three financing modes (lease, finance, cash) are visible at once via a sticky comparison strip; the focused mode's chart and sliders sit below.
 
 ## Architecture
 
@@ -65,7 +65,7 @@ Pure data + math + state, no Angular UI dependencies in the calc layer. Built to
 - `locale.config.ts` — US/EU defaults, units, formatters, `detectLocaleFromBrowser()`. Insurance baselines: 2% US / 1.5% EU.
 - `scenario.defaults.ts` — `defaultScenario()` factory (leaseEndChoice defaults to null so auto-derive fires; lease.downPayment $5k/€4k; finance.downPayment $0). `LEASE_END_DEFAULTS` for fee fallbacks.
 - `scenario.store.ts` — `ScenarioStore` (`providedIn: 'root'`). Holds writable signals for globals + per-tab inputs (`leaseDownPayment`, `financeDownPayment`); exposes `computed` derivations (msrp, vehicle category, insurance/maintenance defaults, three breakdowns, effective monthly, cost per distance, `recommendedTab` based on lowest cost-per-distance, `activeDownPayment` switching on `activeTab`). Uses the **two-signal override pattern** (`_xOverride: signal<T | null>` + `xDefault: computed<T>` + public `x: computed<T>` returning `override ?? default`) for sticky overrides that serialize cleanly. Two effects: (1) URL autosave (`?s=<encoded-json>`), (2) cross-field clamping (down payments and residual ≤ purchase price).
-- `scenario.serializer.ts` — `encodeSnapshot` / `decodeSnapshot` for the autosaved `?s=<encoded-json>` form, plus a compressed share variant under `?c=` (used by the WhatsApp share button). URL is the only persistence channel; no localStorage.
+- `scenario.serializer.ts` — `encodeSnapshot` / `decodeSnapshot` for the autosaved `?s=<encoded-json>` form. URL is the only persistence channel; no localStorage. The share dialog wraps the long URL via `shortener.ts` (is.gd) for compact sharing.
 - `calculations/` — pure functions, one file per concern: `depreciation`, `msrp`, `category` (luxury × 1.3 insurance / × 1.8 maintenance), `financing` (lease + amortized loan), `opportunity`, `fuel`, `recommendation` (now: pick tab with lowest cost-per-distance, with locale-aware reason text), `tco` (the aggregator). Co-located `*.spec.ts` files.
 
 ### Lease TCO model

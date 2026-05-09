@@ -5,6 +5,7 @@ import { SliderGroup } from '../slider-group/slider-group';
 import { Disclosure } from '../disclosure/disclosure';
 import { MaintenanceDisplay } from '../maintenance-display/maintenance-display';
 import { ConflictPill } from '../conflict-pill/conflict-pill';
+import { DepreciationCurveEditor } from '../depreciation-curve-editor/depreciation-curve-editor';
 import { MoneyPipe } from '../../pipes/money.pipe';
 
 /**
@@ -19,7 +20,15 @@ import { MoneyPipe } from '../../pipes/money.pipe';
  */
 @Component({
   selector: 'app-global-controls',
-  imports: [SliderControl, SliderGroup, Disclosure, MaintenanceDisplay, ConflictPill, MoneyPipe],
+  imports: [
+    SliderControl,
+    SliderGroup,
+    Disclosure,
+    MaintenanceDisplay,
+    ConflictPill,
+    DepreciationCurveEditor,
+    MoneyPipe,
+  ],
   template: `
     <app-slider-group title="Vehicle" [caption]="contextCaption()">
       <div class="grid grid-cols-1 gap-x-6 gap-y-1">
@@ -64,6 +73,9 @@ import { MoneyPipe } from '../../pipes/money.pipe';
       <app-disclosure label="+ Advanced">
         <div class="grid grid-cols-1 gap-x-6 gap-y-3">
           <div id="slider-residualValue">
+            <div class="flex justify-end mb-1">
+              <app-depreciation-curve-editor />
+            </div>
             <app-slider-control
               label="Residual value"
               tip="Auto-derived from the depreciation curve at vehicleAge + keepDuration. Override with the residual percentage from your lease contract for an apples-to-apples lease comparison."

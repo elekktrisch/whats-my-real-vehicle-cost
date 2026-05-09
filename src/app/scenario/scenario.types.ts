@@ -10,6 +10,23 @@ export interface CategoryMultipliers {
   maintenance: number;
 }
 
+/** One sample on the depreciation curve — at vehicle `age` years, the resale value is `factor` × MSRP. */
+export interface DepreciationSample {
+  readonly age: number;
+  readonly factor: number;
+}
+
+/** 5-anchor depreciation curve. PCHIP interpolates between samples; past the last anchor it decays exponentially. */
+export interface DepreciationCurve {
+  readonly samples: readonly [
+    DepreciationSample,
+    DepreciationSample,
+    DepreciationSample,
+    DepreciationSample,
+    DepreciationSample,
+  ];
+}
+
 export interface Globals {
   locale: Locale;
   powertrain: Powertrain;
@@ -22,6 +39,8 @@ export interface Globals {
   activeTab: Tab;
   chargerStatus: ChargerStatus;
   solar: boolean;
+  /** Override curve. null = use the per-powertrain default. */
+  depreciationCurve: DepreciationCurve | null;
 }
 
 export interface LeaseInputs {

@@ -1,4 +1,5 @@
 import { defaultScenario } from './scenario.defaults';
+import { makeCurve } from './calculations/depreciation';
 import {
   SNAPSHOT_VERSION,
   URL_PARAM,
@@ -47,6 +48,35 @@ describe('scenario.serializer', () => {
       expect(recovered.overrides?.insurance).toBe(1234);
       expect(recovered.overrides?.fuelPrice).toBe(1.99);
       expect(recovered.overrides?.fuelEfficiency).toBe(8.4);
+    });
+
+    it('round-trips depreciationCurve as null (auto-derive)', () => {
+      const snap = defaultScenario('US');
+      snap.globals.depreciationCurve = null;
+      const recovered = decodeSnapshot(encodeSnapshot(snap));
+      expect(recovered.globals?.depreciationCurve).toBeNull();
+    });
+
+    it('round-trips depreciationCurve as a curve object', () => {
+      const snap = defaultScenario('US');
+      const custom = makeCurve([1.0, 0.5, 0.3, 0.18, 0.1]);
+      snap.globals.depreciationCurve = custom;
+      const recovered = decodeSnapshot(encodeSnapshot(snap));
+      expect(recovered.globals?.depreciationCurve).toEqual(custom);
+    });
+
+    it('decodes an old URL without depreciationCurve as missing (forward-compat)', () => {
+      // Mimic an old snapshot at the current schema version that simply
+      // doesn't carry the new field — applySnapshot then merges with the
+      // initial scenario which carries depreciationCurve: null.
+      const old = JSON.stringify({
+        v: SNAPSHOT_VERSION,
+        globals: { ...defaultScenario('US').globals },
+      });
+      // Strip the field so the JSON looks pre-feature.
+      const stripped = old.replace(/,"depreciationCurve":null/, '');
+      const recovered = decodeSnapshot(stripped);
+      expect(recovered.globals?.depreciationCurve).toBeUndefined();
     });
 
     it('round-trips the EV-context globals (chargerStatus + solar)', () => {
