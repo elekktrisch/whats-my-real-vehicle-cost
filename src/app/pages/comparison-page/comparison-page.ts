@@ -147,19 +147,55 @@ export class ComparisonPage {
     );
     const recPerDistance = perDistanceByMode.get(rec) ?? 0;
 
+    // For lease handback the user returns the car at end of keep, so the
+    // retained asset is 0; in every other scenario it's the residual at end
+    // of keep. The TCO total satisfies T = cashOut + opportunityCost − assetRetained.
+    const retainedAsset = (mode: Tab): number => {
+      if (mode !== 'lease') return this.store.residualValue();
+      return this.store.leaseEndChoice() === 'handBack' ? 0 : this.store.residualValue();
+    };
+
     return entries.map(({ mode, breakdown }) => {
       const monthly = breakdown.total / months;
       const perDistance = perDistanceByMode.get(mode) ?? 0;
       const isRecommended = mode === rec;
       const deltaPerDistance = perDistance - recPerDistance;
+
+      const cashOut =
+        breakdown.series.length > 0
+          ? breakdown.series[breakdown.series.length - 1].cashOut
+          : 0;
+      const oppCost = breakdown.totals.opportunityCost;
+      const asset = retainedAsset(mode);
+      const fT = formatCurrency(breakdown.total, locale, 0);
+      const fC = formatCurrency(cashOut, locale, 0);
+      const fO = formatCurrency(oppCost, locale, 0);
+      const fA = formatCurrency(asset, locale, 0);
+      const fM = formatCurrency(monthly, locale, 0);
+      const fP = formatCurrency(perDistance, locale, 2);
+      const totalDistance = Math.round(distance);
+      const fDist = totalDistance.toLocaleString();
+
+      const totalTip =
+        `True total cost over your keep duration. ` +
+        `${fC} cash out + ${fO} opportunity cost on tied-up capital − ${fA} asset retained at end of keep = ${fT}.`;
+      const monthlyTip =
+        `${fT} total ÷ ${months} months keep = ${fM}/mo. The "level monthly" equivalent.`;
+      const perDistanceTip =
+        `${fT} total ÷ ${fDist} ${distanceUnit} driven over keep duration = ${fP}/${distanceUnit}. ` +
+        `Useful for comparing scenarios with different mileages.`;
+
       return {
         mode,
         label: LABEL[mode],
         total: formatCompactCurrency(breakdown.total, locale),
-        totalFull: formatCurrency(breakdown.total, locale, 0),
+        totalFull: fT,
+        totalTip,
         monthly: formatCompactCurrency(monthly, locale),
-        monthlyFull: formatCurrency(monthly, locale, 0),
-        perDistance: formatCurrency(perDistance, locale, 2),
+        monthlyFull: fM,
+        monthlyTip,
+        perDistance: fP,
+        perDistanceTip,
         delta: isRecommended
           ? null
           : `+${formatCurrency(deltaPerDistance, locale, 2)}/${distanceUnit}`,

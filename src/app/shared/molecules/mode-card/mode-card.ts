@@ -39,7 +39,20 @@ import { Icon } from '../../atoms/icon/icon';
       </header>
 
       <div class="mode-card-total flex items-baseline justify-between flex-wrap gap-1 sm:gap-2">
-        <span [class]="rowLabelClass">Total</span>
+        <span [class]="rowLabelClass + ' inline-flex items-center gap-[4px]'">
+          Total
+          @if (totalTip()) {
+            <span
+              class="hidden sm:inline-flex items-center justify-center size-[14px] rounded-full bg-elevated border border-border-strong text-tx-dim text-[10px] leading-none cursor-help normal-case tracking-normal"
+              [attr.title]="totalTip()"
+              (click)="$event.stopPropagation()"
+              role="img"
+              [attr.aria-label]="totalTip()"
+            >
+              ?
+            </span>
+          }
+        </span>
         <span class="font-mono text-[0.72rem] sm:text-[0.85rem] text-tx tracking-[-0.02em]">
           <span class="sm:hidden">{{ total() }}</span>
           <span class="hidden sm:inline">{{ totalFull() }}</span>
@@ -47,7 +60,20 @@ import { Icon } from '../../atoms/icon/icon';
       </div>
 
       <div class="mode-card-monthly flex items-baseline justify-between flex-wrap gap-1 sm:gap-2 mt-[3px] sm:mt-[6px]">
-        <span [class]="rowLabelClass">Monthly</span>
+        <span [class]="rowLabelClass + ' inline-flex items-center gap-[4px]'">
+          Monthly
+          @if (monthlyTip()) {
+            <span
+              class="hidden sm:inline-flex items-center justify-center size-[14px] rounded-full bg-elevated border border-border-strong text-tx-dim text-[10px] leading-none cursor-help normal-case tracking-normal"
+              [attr.title]="monthlyTip()"
+              (click)="$event.stopPropagation()"
+              role="img"
+              [attr.aria-label]="monthlyTip()"
+            >
+              ?
+            </span>
+          }
+        </span>
         <span class="font-mono text-[0.78rem] sm:text-[0.95rem] font-medium text-tx tracking-[-0.02em]">
           <span class="sm:hidden">{{ monthly() }}</span>
           <span class="hidden sm:inline">{{ monthlyFull() }}</span>
@@ -55,7 +81,20 @@ import { Icon } from '../../atoms/icon/icon';
       </div>
 
       <div class="mode-card-per-distance flex items-baseline justify-between flex-wrap gap-2 mt-[2px] sm:mt-[4px]">
-        <span [class]="rowLabelClass">Per {{ distanceUnit() }}</span>
+        <span [class]="rowLabelClass + ' inline-flex items-center gap-[4px]'">
+          Per {{ distanceUnit() }}
+          @if (perDistanceTip()) {
+            <span
+              class="hidden sm:inline-flex items-center justify-center size-[14px] rounded-full bg-elevated border border-border-strong text-tx-dim text-[10px] leading-none cursor-help normal-case tracking-normal"
+              [attr.title]="perDistanceTip()"
+              (click)="$event.stopPropagation()"
+              role="img"
+              [attr.aria-label]="perDistanceTip()"
+            >
+              ?
+            </span>
+          }
+        </span>
         <span class="font-mono text-[0.72rem] sm:text-[0.78rem] text-tx-muted tracking-[-0.02em]">
           {{ perDistance() }}
         </span>
@@ -96,6 +135,9 @@ export class ModeCard {
   readonly distanceUnit = input.required<string>();
   readonly delta = input<string | null>(null);
   readonly conflictCount = input<number>(0);
+  readonly totalTip = input<string>('');
+  readonly monthlyTip = input<string>('');
+  readonly perDistanceTip = input<string>('');
   readonly tabId = input.required<string>();
   readonly panelId = input.required<string>();
 
