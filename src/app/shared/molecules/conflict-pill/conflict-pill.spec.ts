@@ -5,9 +5,13 @@ function make(): ComponentFixture<ConflictPill> {
   TestBed.configureTestingModule({ imports: [ConflictPill] });
   const fixture = TestBed.createComponent(ConflictPill);
   fixture.componentRef.setInput('visible', true);
-  fixture.componentRef.setInput('label', 'New-car rule');
+  fixture.componentRef.setInput('label', 'Lease APR');
   fixture.componentRef.setInput('proposedValue', '1%');
   fixture.componentRef.setInput('currentValue', '1.5%');
+  fixture.componentRef.setInput(
+    'reason',
+    'new cars qualify for promotional financing.',
+  );
   return fixture;
 }
 
@@ -19,12 +23,16 @@ describe('ConflictPill', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="conflict-pill"]')).toBeNull();
   });
 
-  it('renders proposedValue and currentValue when visible', () => {
+  it('renders proposedValue, currentValue and reason in the "Recommending X instead of Y because..." form', () => {
     const fixture = make();
     fixture.detectChanges();
     const text = (fixture.nativeElement.textContent ?? '') as string;
     expect(text).toContain('1%');
     expect(text).toContain('1.5%');
+    expect(text.toLowerCase()).toContain('recommending');
+    expect(text.toLowerCase()).toContain('instead of');
+    expect(text.toLowerCase()).toContain('because');
+    expect(text).toContain('new cars qualify for promotional financing.');
   });
 
   it('clicking apply emits apply', () => {

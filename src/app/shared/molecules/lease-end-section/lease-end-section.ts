@@ -57,6 +57,7 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
           [label]="c.label"
           [proposedValue]="c.proposedValue"
           [currentValue]="c.currentValue"
+          [reason]="c.reason"
           (apply)="c.apply()"
           (keep)="c.keep()"
         />
@@ -100,6 +101,7 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
               [label]="c.label"
               [proposedValue]="c.proposedValue"
               [currentValue]="c.currentValue"
+              [reason]="c.reason"
               (apply)="c.apply()"
               (keep)="c.keep()"
             />
@@ -187,6 +189,7 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
               [label]="c.label"
               [proposedValue]="c.proposedValue"
               [currentValue]="c.currentValue"
+              [reason]="c.reason"
               (apply)="c.apply()"
               (keep)="c.keep()"
             />

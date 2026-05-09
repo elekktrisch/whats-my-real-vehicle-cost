@@ -89,9 +89,13 @@ export class ScenarioStore {
     this.vehicleAge() === 0 ? APR_NEW_CAR : APR_USED_CAR,
   );
   readonly leaseApr = computed(() => this.leaseAprOverride() ?? this.leaseAprDefault());
+  // Per-lever tolerances are deliberately wider than one slider step so the
+  // pill only fires when the deviation is materially significant, not for
+  // sub-step drift or rounding artefacts. Roughly ~3–5 steps each.
   private readonly leaseAprBindings = this.bindConflict(
     this.leaseAprOverride,
     () => this.leaseAprDefault(),
+    numEq(0.15),
   );
   readonly leaseAprConflict = this.leaseAprBindings.conflict;
   readonly leaseAprPillVisible = this.leaseAprBindings.pillVisible;
@@ -128,6 +132,7 @@ export class ScenarioStore {
   private readonly residualValueBindings = this.bindConflict(
     this.residualValueOverride,
     () => this.residualValueDefault(),
+    numEq(1500),
   );
   readonly residualValueConflict = this.residualValueBindings.conflict;
   readonly residualValuePillVisible = this.residualValueBindings.pillVisible;
@@ -175,6 +180,7 @@ export class ScenarioStore {
   private readonly insuranceBindings = this.bindConflict(
     this.insuranceOverride,
     () => this.insuranceDefault(),
+    numEq(75),
   );
   readonly insuranceConflict = this.insuranceBindings.conflict;
   readonly insurancePillVisible = this.insuranceBindings.pillVisible;
@@ -188,6 +194,7 @@ export class ScenarioStore {
   private readonly fuelEfficiencyBindings = this.bindConflict(
     this.fuelEfficiencyOverride,
     () => this.fuelEfficiencyDefaultSignal(),
+    numEq(0.5),
   );
   readonly fuelEfficiencyConflict = this.fuelEfficiencyBindings.conflict;
   readonly fuelEfficiencyPillVisible = this.fuelEfficiencyBindings.pillVisible;
@@ -201,6 +208,7 @@ export class ScenarioStore {
   private readonly fuelPriceBindings = this.bindConflict(
     this.fuelPriceOverride,
     () => this.fuelPriceDefaultSignal(),
+    numEq(0.05),
   );
   readonly fuelPriceConflict = this.fuelPriceBindings.conflict;
   readonly fuelPricePillVisible = this.fuelPriceBindings.pillVisible;
@@ -276,6 +284,7 @@ export class ScenarioStore {
   private readonly earlyTerminationFeeBindings = this.bindConflict(
     this.earlyTerminationFeeOverride,
     () => this.earlyTerminationFeeDefault(),
+    numEq(200),
   );
   readonly earlyTerminationFeeConflict = this.earlyTerminationFeeBindings.conflict;
   readonly earlyTerminationFeePillVisible = this.earlyTerminationFeeBindings.pillVisible;
@@ -298,6 +307,7 @@ export class ScenarioStore {
   private readonly leaseEndResidualBindings = this.bindConflict(
     this.leaseEndResidualOverride,
     () => this.leaseEndResidualDefault(),
+    numEq(1500),
   );
   readonly leaseEndResidualConflict = this.leaseEndResidualBindings.conflict;
   readonly leaseEndResidualPillVisible = this.leaseEndResidualBindings.pillVisible;
@@ -579,7 +589,7 @@ export class ScenarioStore {
         scope: 'lease',
         label: 'Lease APR',
         reason:
-          'New cars (vehicleAge = 0) typically qualify for promotional ~1% manufacturer financing. Used cars run ~3%.',
+          'new cars (vehicleAge = 0) typically qualify for promotional ~1% manufacturer financing, while used cars run ~3%.',
         currentValue: `${override}%`,
         proposedValue: `${def}%`,
         sliderAnchor: 'slider-leaseApr',
@@ -595,7 +605,7 @@ export class ScenarioStore {
         scope: 'global',
         label: 'Residual value',
         reason:
-          'Auto-derived from MSRP × depreciation curve at vehicleAge + keepDuration. Adjust if your scenario or contract specifies a different residual.',
+          'the depreciation curve at vehicleAge + keepDuration suggests this end-of-keep value. Override with the figure from your contract for an apples-to-apples comparison.',
         currentValue: formatCurrency(override, loc, 0),
         proposedValue: formatCurrency(def, loc, 0),
         sliderAnchor: 'slider-residualValue',
@@ -611,7 +621,7 @@ export class ScenarioStore {
         scope: 'global',
         label: 'Insurance / yr',
         reason:
-          'Auto-derived from purchase price × locale rate × vehicle category. Override with a real quote for accuracy.',
+          'purchase price × locale rate × vehicle category yields this baseline. Override with a real quote for accuracy.',
         currentValue: formatCurrency(override, loc, 0),
         proposedValue: formatCurrency(def, loc, 0),
         sliderAnchor: 'slider-insurance',
@@ -630,7 +640,7 @@ export class ScenarioStore {
         key: 'fuelEfficiency',
         scope: 'global',
         label: this.powertrain() === 'EV' ? 'EV efficiency' : 'Fuel efficiency',
-        reason: `Default for ${loc} ${this.powertrain()}. Override with the figure from your vehicle's spec sheet.`,
+        reason: `this is the typical figure for ${loc} ${this.powertrain()} vehicles. Override with your vehicle's spec sheet.`,
         currentValue: `${override} ${unit}`,
         proposedValue: `${def} ${unit}`,
         sliderAnchor: 'slider-fuelEfficiency',
@@ -645,7 +655,7 @@ export class ScenarioStore {
         key: 'fuelPrice',
         scope: 'global',
         label: this.powertrain() === 'EV' ? 'Electricity price' : 'Fuel price',
-        reason: `Default for ${loc} ${this.powertrain()}. Override with current local pump or electricity prices.`,
+        reason: `this is the typical pump or electricity rate for ${loc} ${this.powertrain()}. Override with current local prices.`,
         currentValue: formatCurrency(override, loc, 2),
         proposedValue: formatCurrency(def, loc, 2),
         sliderAnchor: 'slider-fuelPrice',
@@ -662,7 +672,7 @@ export class ScenarioStore {
         scope: 'lease',
         label: 'End of lease',
         reason:
-          'Auto-selected based on keep duration vs. lease term: keep ≤ term → renew lease, keep > term → buy out.',
+          'keep duration vs. lease term picks the cheaper outcome — keep ≤ term → renew lease, keep > term → buy out.',
         currentValue: fmt(override),
         proposedValue: fmt(def),
         sliderAnchor: 'slider-leaseEndChoice',
@@ -678,7 +688,7 @@ export class ScenarioStore {
         scope: 'lease',
         label: 'Early termination penalty',
         reason:
-          'Approximated as (term − keep) / term × total depreciation. Replace with the exact figure from your contract’s early-exit table.',
+          '(term − keep) / term × total depreciation approximates typical lessor early-exit tables. Replace with the exact figure from your contract.',
         currentValue: formatCurrency(override, loc, 0),
         proposedValue: formatCurrency(def, loc, 0),
         sliderAnchor: 'slider-earlyTerminationFee',
@@ -694,7 +704,7 @@ export class ScenarioStore {
         scope: 'lease',
         label: 'Residual at lease end',
         reason:
-          'Auto-derived from MSRP × depreciation curve at vehicleAge + leaseTerm. Override with the figure from your lease contract.',
+          'the depreciation curve at vehicleAge + leaseTerm gives this contractual residual. Override with the figure from your lease contract.',
         currentValue: formatCurrency(override, loc, 0),
         proposedValue: formatCurrency(def, loc, 0),
         sliderAnchor: 'slider-leaseEndResidual',
@@ -733,9 +743,14 @@ export class ScenarioStore {
   // the user clicked "Keep mine"; the pill stays hidden as long as that pair
   // matches the current pair, so any reactive change to either side
   // re-evaluates and may re-show the pill.
+  //
+  // `equals` controls "fuzziness" — small numeric drifts under one slider
+  // step shouldn't fire a pill. Default is strict ===; numeric levers pass
+  // an absolute-tolerance comparator (`numEq(step)`).
   private bindConflict<T>(
     override: WritableSignal<T | null>,
     defaultGetter: () => T,
+    equals: (a: T, b: T) => boolean = (a, b) => a === b,
   ): {
     conflict: Signal<boolean>;
     pillVisible: Signal<boolean>;
@@ -745,7 +760,7 @@ export class ScenarioStore {
     const dismissedAt = signal<DismissedAt<T | null>>(null);
     const conflict = computed(() => {
       const o = override();
-      return o !== null && o !== defaultGetter();
+      return o !== null && !equals(o as T, defaultGetter());
     });
     const pillVisible = computed(() => {
       if (!this.hasHydrated()) return false;
@@ -765,4 +780,11 @@ export class ScenarioStore {
       },
     };
   }
+}
+
+// Absolute-tolerance equality for numeric levers. `step` is typically the
+// slider's step size — values within ±step of each other count as "equal"
+// for conflict purposes, so sub-step drift doesn't fire a pill.
+function numEq(step: number): (a: number, b: number) => boolean {
+  return (a, b) => Math.abs(a - b) <= step;
 }

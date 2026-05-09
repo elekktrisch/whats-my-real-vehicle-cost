@@ -19,24 +19,22 @@ import type { ActiveConflict } from '../../../scenario/conflicts';
         @for (c of conflicts(); track c.key) {
           <li
             data-testid="warnings-list-row"
-            class="flex flex-wrap items-start gap-x-3 gap-y-1"
+            class="flex items-start gap-x-3 gap-y-1"
           >
             <span aria-hidden="true" class="text-warning text-[0.95rem] mt-px">⚠</span>
-            <div class="flex-1 min-w-0">
+            <p class="flex-1 min-w-0 font-ui text-[0.78rem] text-tx-muted leading-snug">
               <a
                 [href]="'#' + c.sliderAnchor"
-                class="font-ui text-[0.82rem] font-medium text-tx hover:text-accent transition-colors duration-150"
+                class="font-medium text-tx hover:text-accent transition-colors duration-150"
               >
-                {{ c.label }}
+                {{ c.label }}:
               </a>
-              <span class="font-ui text-[0.78rem] text-tx-muted ml-2">
-                rule says <span class="font-mono text-tx">{{ c.proposedValue }}</span>
-                · you have <span class="font-mono text-tx-muted">{{ c.currentValue }}</span>
-              </span>
-              <p class="font-ui text-[0.74rem] text-tx-dim leading-snug mt-[2px]">
-                {{ c.reason }}
-              </p>
-            </div>
+              recommending
+              <span class="font-mono text-tx">{{ c.proposedValue }}</span>
+              instead of
+              <span class="font-mono text-tx-muted">{{ c.currentValue }}</span>
+              because {{ c.reason }}
+            </p>
             <div class="flex items-center gap-1 shrink-0">
               <button
                 type="button"
@@ -52,7 +50,7 @@ import type { ActiveConflict } from '../../../scenario/conflicts';
                 (click)="c.keep()"
                 class="font-ui text-[0.72rem] uppercase tracking-[0.06em] px-2 py-[2px] rounded border border-border hover:border-border-strong text-tx-muted transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/50"
               >
-                Keep mine
+                Keep {{ c.currentValue }}
               </button>
             </div>
           </li>

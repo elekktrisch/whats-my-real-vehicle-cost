@@ -266,10 +266,63 @@ describe('ScenarioStore — conflict detection (retrofitted levers)', () => {
     store.applyLeaseEndResidual();
     expect(store.leaseEndResidualOverride()).toBeNull();
 
-    store.earlyTerminationFeeOverride.set(1);
+    // In default scenario keep > term so the default is 0; pick an override
+    // well past the ±200 tolerance to force a conflict.
+    store.earlyTerminationFeeOverride.set(5000);
     expect(store.earlyTerminationFeeConflict()).toBe(true);
     store.applyEarlyTerminationFee();
     expect(store.earlyTerminationFeeOverride()).toBeNull();
+  });
+});
+
+describe('ScenarioStore — conflict tolerance (fuzzy match)', () => {
+  it('leaseApr: deviations within tolerance (~3 steps, ±0.15) do not trigger', () => {
+    const store = makeStore();
+    store.markHydrated();
+    store.vehicleAge.set(0); // default = 1
+    store.leaseAprOverride.set(1.1); // 2 steps beyond default — still within tolerance
+    expect(store.leaseAprConflict()).toBe(false);
+  });
+
+  it('leaseApr: a deviation beyond tolerance triggers a conflict', () => {
+    const store = makeStore();
+    store.markHydrated();
+    store.vehicleAge.set(0);
+    store.leaseAprOverride.set(1.5); // 0.5 > 0.15 → significant
+    expect(store.leaseAprConflict()).toBe(true);
+  });
+
+  it('residualValue: sub-tolerance deviation (≤ ~3 steps) does not trigger', () => {
+    const store = makeStore();
+    store.markHydrated();
+    const def = store.residualValue();
+    store.residualValueOverride.set(def + 1000); // within ±1500 tolerance
+    expect(store.residualValueConflict()).toBe(false);
+  });
+
+  it('residualValue: above-tolerance deviation triggers a conflict', () => {
+    const store = makeStore();
+    store.markHydrated();
+    const def = store.residualValue();
+    store.residualValueOverride.set(def + 5000);
+    expect(store.residualValueConflict()).toBe(true);
+  });
+
+  it('insurance: $50 deviation does not trigger (within ±75 tolerance)', () => {
+    const store = makeStore();
+    store.markHydrated();
+    const def = store.insurance();
+    store.insuranceOverride.set(def + 50);
+    expect(store.insuranceConflict()).toBe(false);
+  });
+
+  it('leaseEndChoice: any change is a conflict (strict equality, no fuzziness for enum)', () => {
+    const store = makeStore();
+    store.markHydrated();
+    store.leaseTerm.set(36);
+    store.keepDuration.set(3); // default → handBack
+    store.leaseEndChoiceOverride.set('buyOut');
+    expect(store.leaseEndChoiceConflict()).toBe(true);
   });
 });
 

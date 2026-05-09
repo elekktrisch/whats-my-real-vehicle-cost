@@ -15,13 +15,18 @@ import { Component, input, output } from '@angular/core';
         data-testid="conflict-pill"
         role="status"
         aria-live="polite"
-        class="flex flex-wrap items-center gap-2 -mt-[14px] mb-[20px] px-2 py-1 rounded-md bg-warning-soft border border-warning/40 text-[0.78rem] text-tx-muted"
+        class="flex items-start gap-2 -mt-[14px] mb-[20px] px-2 py-[6px] rounded-md bg-warning-soft border border-warning/40 text-[0.78rem] text-tx-muted"
       >
-        <span aria-hidden="true">⚠</span>
-        <span class="font-ui">
-          {{ label() }}: <span class="font-mono text-tx">{{ proposedValue() }}</span>
-        </span>
-        <span class="ml-auto flex items-center gap-1">
+        <span aria-hidden="true" class="mt-px">⚠</span>
+        <p class="flex-1 min-w-0 font-ui leading-snug">
+          <span class="font-medium text-tx">{{ label() }}:</span>
+          recommending
+          <span class="font-mono text-tx">{{ proposedValue() }}</span>
+          instead of
+          <span class="font-mono text-tx-muted">{{ currentValue() }}</span>
+          because {{ reason() }}
+        </p>
+        <span class="ml-auto flex items-center gap-1 shrink-0">
           <button
             type="button"
             data-testid="conflict-pill-apply"
@@ -48,6 +53,7 @@ export class ConflictPill {
   readonly label = input.required<string>();
   readonly proposedValue = input.required<string>();
   readonly currentValue = input.required<string>();
+  readonly reason = input.required<string>();
   readonly apply = output<void>();
   readonly keep = output<void>();
 }

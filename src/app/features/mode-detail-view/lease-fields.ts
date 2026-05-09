@@ -34,6 +34,7 @@ import { MoneyPipe } from '../../shared/pipes/money.pipe';
               [label]="c.label"
               [proposedValue]="c.proposedValue"
               [currentValue]="c.currentValue"
+              [reason]="c.reason"
               (apply)="c.apply()"
               (keep)="c.keep()"
             />
