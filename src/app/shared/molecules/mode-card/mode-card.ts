@@ -15,8 +15,18 @@ import type { Tab } from '../../../scenario/scenario.types';
       [class]="cardClass()"
     >
       <header class="mode-card-header flex items-center justify-between gap-1 sm:gap-2 min-w-0">
-        <span class="font-ui text-[0.75rem] font-semibold tracking-[0.06em] uppercase min-w-0 truncate">
+        <span class="font-ui text-[0.75rem] font-semibold tracking-[0.06em] uppercase min-w-0 truncate flex items-center gap-1">
           {{ label() }}
+          @if (conflictCount() > 0) {
+            <span
+              data-testid="mode-card-badge"
+              [attr.aria-label]="conflictCount() + ' rule conflict' + (conflictCount() === 1 ? '' : 's')"
+              class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-warning-soft border border-warning/40 text-warning font-mono text-[0.65rem] font-medium tracking-tight"
+              title="This mode has rule conflicts"
+            >
+              ⚠ {{ conflictCount() }}
+            </span>
+          }
         </span>
         <span
           class="mode-card-header-total shrink-0 font-mono text-[0.75rem] sm:text-[0.9rem] font-medium text-tx tracking-[-0.02em] whitespace-nowrap"
@@ -82,6 +92,7 @@ export class ModeCard {
   readonly perDistance = input.required<string>();
   readonly distanceUnit = input.required<string>();
   readonly delta = input<string | null>(null);
+  readonly conflictCount = input<number>(0);
   readonly tabId = input.required<string>();
   readonly panelId = input.required<string>();
 

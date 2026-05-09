@@ -15,6 +15,7 @@ import {
   ComparisonStrip,
   ModeCardData,
 } from '../../shared/molecules/comparison-strip/comparison-strip';
+import { WarningsList } from '../../shared/molecules/warnings-list/warnings-list';
 import { ModeDetailView } from '../../features/mode-detail-view/mode-detail-view';
 import { formatCompactCurrency, formatCurrency } from '../../scenario/locale.config';
 import type { CostBreakdown, Tab } from '../../scenario/scenario.types';
@@ -33,7 +34,7 @@ const MOBILE_BP = 600;
 
 @Component({
   selector: 'app-comparison-page',
-  imports: [Icon, PageHeader, ComparisonStrip, ModeDetailView],
+  imports: [Icon, PageHeader, ComparisonStrip, WarningsList, ModeDetailView],
   template: `
     <div
       class="max-w-[1200px] mx-auto px-4 sm:px-7 pb-[72px] relative z-[1] overflow-x-clip"
@@ -51,6 +52,7 @@ const MOBILE_BP = 600;
             [distanceUnit]="distanceUnit()"
             [recommendationReason]="recommendationReason()"
           />
+          <app-warnings-list [conflicts]="store.activeConflicts()" />
         </div>
       </div>
 
@@ -161,6 +163,7 @@ export class ComparisonPage {
         delta: isRecommended
           ? null
           : `+${formatCurrency(deltaPerDistance, locale, 2)}/${distanceUnit}`,
+        conflictCount: this.store.conflictCount(mode),
       };
     });
   });

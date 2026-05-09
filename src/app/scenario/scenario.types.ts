@@ -25,7 +25,8 @@ export interface Globals {
 }
 
 export interface LeaseInputs {
-  apr: number;
+  /** null = auto-derive from vehicleAge (1% new, 3% used). */
+  apr: number | null;
   leaseTerm: number;
   downPayment: number;
   /** null = auto-derive from keep-duration vs. lease term. Set by the user toggle. */

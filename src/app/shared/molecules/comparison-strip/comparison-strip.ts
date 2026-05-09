@@ -21,6 +21,7 @@ export interface ModeCardData {
   monthlyFull: string;
   perDistance: string;
   delta: string | null;
+  conflictCount: number;
 }
 
 const MODES: readonly Tab[] = ['lease', 'finance', 'cash'];
@@ -49,6 +50,7 @@ const MODES: readonly Tab[] = ['lease', 'finance', 'cash'];
             [perDistance]="card.perDistance"
             [distanceUnit]="distanceUnit()"
             [delta]="card.delta"
+            [conflictCount]="card.conflictCount"
             [tabId]="tabId(card.mode)"
             [panelId]="panelId(card.mode)"
             (select)="onSelect($event)"

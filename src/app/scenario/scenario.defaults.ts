@@ -24,7 +24,7 @@ export function defaultScenario(localeOverride?: Locale): ScenarioSnapshot {
       solar: true,
     },
     lease: {
-      apr: 3.0,
+      apr: null,
       leaseTerm: 48,
       downPayment: isUS ? 10000 : 8000,
       leaseEndChoice: null,

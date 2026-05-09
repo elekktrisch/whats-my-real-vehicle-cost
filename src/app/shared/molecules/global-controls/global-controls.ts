@@ -4,6 +4,7 @@ import { SliderControl } from '../../slider-control/slider-control';
 import { SliderGroup } from '../slider-group/slider-group';
 import { Disclosure } from '../disclosure/disclosure';
 import { MaintenanceDisplay } from '../maintenance-display/maintenance-display';
+import { ConflictPill } from '../conflict-pill/conflict-pill';
 import { MoneyPipe } from '../../pipes/money.pipe';
 
 /**
@@ -18,7 +19,7 @@ import { MoneyPipe } from '../../pipes/money.pipe';
  */
 @Component({
   selector: 'app-global-controls',
-  imports: [SliderControl, SliderGroup, Disclosure, MaintenanceDisplay, MoneyPipe],
+  imports: [SliderControl, SliderGroup, Disclosure, MaintenanceDisplay, ConflictPill, MoneyPipe],
   template: `
     <app-slider-group title="Vehicle" [caption]="contextCaption()">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
@@ -62,59 +63,115 @@ import { MoneyPipe } from '../../pipes/money.pipe';
 
       <app-disclosure label="+ Advanced">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-          <app-slider-control
-            label="Residual value"
-            tip="Auto-derived from the depreciation curve at vehicleAge + keepDuration. Override with the residual percentage from your lease contract for an apples-to-apples lease comparison."
-            [min]="0"
-            [max]="residualMax()"
-            [step]="500"
-            [minLabel]="0 | money:'compact'"
-            [maxLabel]="residualMax() | money:'compact'"
-            [prefix]="store.currencyPrefix()"
-            [suffix]="store.currencySuffix()"
-            [value]="store.residualValue()"
-            (valueChange)="store.setResidualValue($event)"
-          />
-          <app-slider-control
-            label="Insurance / yr"
-            tip="Annual full-coverage insurance. Defaults to purchase price × 2% (US) or 1.5% (EU), tuned by category. Override with your quote."
-            [min]="0"
-            [max]="6000"
-            [step]="25"
-            [minLabel]="0 | money:'compact'"
-            [maxLabel]="6000 | money:'compact'"
-            [prefix]="store.currencyPrefix()"
-            [suffix]="store.currencySuffix()"
-            [value]="store.insurance()"
-            (valueChange)="store.insuranceOverride.set($event)"
-          />
-          <app-slider-control
-            [label]="fuelEfficiencyLabel()"
-            tip="Vehicle efficiency. ICE uses mpg (US) or L/100km (EU). EV uses mi/kWh (US) or kWh/100km (EU)."
-            [min]="fuelEfficiencyMin()"
-            [max]="fuelEfficiencyMax()"
-            [step]="0.1"
-            [fractionDigits]="1"
-            [minLabel]="fuelEfficiencyMinLabel()"
-            [maxLabel]="fuelEfficiencyMaxLabel()"
-            [suffix]="' ' + fuelEfficiencyUnit()"
-            [value]="store.fuelEfficiency()"
-            (valueChange)="store.fuelEfficiencyOverride.set($event)"
-          />
-          <app-slider-control
-            [label]="fuelPriceLabel()"
-            tip="Per-unit price for fuel or electricity at your locale's typical rate."
-            [min]="0"
-            [max]="fuelPriceMax()"
-            [step]="0.01"
-            [fractionDigits]="2"
-            [minLabel]="0 | money:2"
-            [maxLabel]="fuelPriceMax() | money:2"
-            [prefix]="fuelPriceSymbol()"
-            [suffix]="fuelPriceSuffix()"
-            [value]="store.fuelPrice()"
-            (valueChange)="store.fuelPriceOverride.set($event)"
-          />
+          <div id="slider-residualValue">
+            <app-slider-control
+              label="Residual value"
+              tip="Auto-derived from the depreciation curve at vehicleAge + keepDuration. Override with the residual percentage from your lease contract for an apples-to-apples lease comparison."
+              [min]="0"
+              [max]="residualMax()"
+              [step]="500"
+              [minLabel]="0 | money:'compact'"
+              [maxLabel]="residualMax() | money:'compact'"
+              [prefix]="store.currencyPrefix()"
+              [suffix]="store.currencySuffix()"
+              [value]="store.residualValue()"
+              (valueChange)="store.setResidualValue($event)"
+              [isAuto]="store.residualValueOverride() === null"
+              (reset)="store.applyResidualValue()"
+            />
+            @if (store.conflictByKey().get('residualValue'); as c) {
+              <app-conflict-pill
+                [visible]="true"
+                [label]="c.label"
+                [proposedValue]="c.proposedValue"
+                [currentValue]="c.currentValue"
+                (apply)="c.apply()"
+                (keep)="c.keep()"
+              />
+            }
+          </div>
+          <div id="slider-insurance">
+            <app-slider-control
+              label="Insurance / yr"
+              tip="Annual full-coverage insurance. Defaults to purchase price × 2% (US) or 1.5% (EU), tuned by category. Override with your quote."
+              [min]="0"
+              [max]="6000"
+              [step]="25"
+              [minLabel]="0 | money:'compact'"
+              [maxLabel]="6000 | money:'compact'"
+              [prefix]="store.currencyPrefix()"
+              [suffix]="store.currencySuffix()"
+              [value]="store.insurance()"
+              (valueChange)="store.insuranceOverride.set($event)"
+              [isAuto]="store.insuranceOverride() === null"
+              (reset)="store.applyInsurance()"
+            />
+            @if (store.conflictByKey().get('insurance'); as c) {
+              <app-conflict-pill
+                [visible]="true"
+                [label]="c.label"
+                [proposedValue]="c.proposedValue"
+                [currentValue]="c.currentValue"
+                (apply)="c.apply()"
+                (keep)="c.keep()"
+              />
+            }
+          </div>
+          <div id="slider-fuelEfficiency">
+            <app-slider-control
+              [label]="fuelEfficiencyLabel()"
+              tip="Vehicle efficiency. ICE uses mpg (US) or L/100km (EU). EV uses mi/kWh (US) or kWh/100km (EU)."
+              [min]="fuelEfficiencyMin()"
+              [max]="fuelEfficiencyMax()"
+              [step]="0.1"
+              [fractionDigits]="1"
+              [minLabel]="fuelEfficiencyMinLabel()"
+              [maxLabel]="fuelEfficiencyMaxLabel()"
+              [suffix]="' ' + fuelEfficiencyUnit()"
+              [value]="store.fuelEfficiency()"
+              (valueChange)="store.fuelEfficiencyOverride.set($event)"
+              [isAuto]="store.fuelEfficiencyOverride() === null"
+              (reset)="store.applyFuelEfficiency()"
+            />
+            @if (store.conflictByKey().get('fuelEfficiency'); as c) {
+              <app-conflict-pill
+                [visible]="true"
+                [label]="c.label"
+                [proposedValue]="c.proposedValue"
+                [currentValue]="c.currentValue"
+                (apply)="c.apply()"
+                (keep)="c.keep()"
+              />
+            }
+          </div>
+          <div id="slider-fuelPrice">
+            <app-slider-control
+              [label]="fuelPriceLabel()"
+              tip="Per-unit price for fuel or electricity at your locale's typical rate."
+              [min]="0"
+              [max]="fuelPriceMax()"
+              [step]="0.01"
+              [fractionDigits]="2"
+              [minLabel]="0 | money:2"
+              [maxLabel]="fuelPriceMax() | money:2"
+              [prefix]="fuelPriceSymbol()"
+              [suffix]="fuelPriceSuffix()"
+              [value]="store.fuelPrice()"
+              (valueChange)="store.fuelPriceOverride.set($event)"
+              [isAuto]="store.fuelPriceOverride() === null"
+              (reset)="store.applyFuelPrice()"
+            />
+            @if (store.conflictByKey().get('fuelPrice'); as c) {
+              <app-conflict-pill
+                [visible]="true"
+                [label]="c.label"
+                [proposedValue]="c.proposedValue"
+                [currentValue]="c.currentValue"
+                (apply)="c.apply()"
+                (keep)="c.keep()"
+              />
+            }
+          </div>
           <app-maintenance-display />
         </div>
       </app-disclosure>

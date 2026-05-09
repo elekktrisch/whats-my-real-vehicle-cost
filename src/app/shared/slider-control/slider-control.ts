@@ -1,4 +1,4 @@
-import { Component, computed, input, model, signal } from '@angular/core';
+import { Component, computed, input, model, output, signal } from '@angular/core';
 import { InfoBadge } from '../info-badge/info-badge';
 
 @Component({
@@ -19,6 +19,10 @@ export class SliderControl {
   readonly suffix = input('');
   readonly fractionDigits = input(0);
   readonly value = model.required<number>();
+  // null (default) = lever has no auto/override mode (e.g. raw inputs like
+  // vehicleAge). true = currently auto-tracking. false = user has overridden.
+  readonly isAuto = input<boolean | null>(null);
+  readonly reset = output<void>();
 
   protected readonly focused = signal(false);
 

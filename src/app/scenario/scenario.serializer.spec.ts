@@ -27,6 +27,20 @@ describe('scenario.serializer', () => {
       expect(recovered.cash?.opportunityCostRate).toBe(snap.cash.opportunityCostRate);
     });
 
+    it('round-trips lease.apr=null (auto-track)', () => {
+      const snap = defaultScenario('US');
+      snap.lease.apr = null;
+      const recovered = decodeSnapshot(encodeSnapshot(snap));
+      expect(recovered.lease?.apr).toBeNull();
+    });
+
+    it('round-trips lease.apr as a numeric override', () => {
+      const snap = defaultScenario('US');
+      snap.lease.apr = 4.2;
+      const recovered = decodeSnapshot(encodeSnapshot(snap));
+      expect(recovered.lease?.apr).toBe(4.2);
+    });
+
     it('round-trips overridden fields (insurance, fuelPrice, fuelEfficiency)', () => {
       const snap = defaultScenario('EU');
       snap.overrides.insurance = 1234;

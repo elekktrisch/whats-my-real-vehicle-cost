@@ -16,6 +16,8 @@
   --color-accent-soft:  rgba(79, 142, 247, 0.1);
   --color-accent-glow:  rgba(79, 142, 247, 0.22);
   --color-coral:        #f4845f;
+  --color-warning:      #e6b14a;
+  --color-warning-soft: rgba(230, 177, 74, 0.12);
 
   /* ── Font tokens ───────────────────────────────────────────────────────── */
   --font-ui:   'Roboto', system-ui, sans-serif;
