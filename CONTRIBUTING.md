@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for taking the time. This is a small Angular 20 SPA — bug fixes, calculation accuracy improvements, and locale tweaks are all welcome.
+Thanks for taking the time. This is a small Angular 21 SPA — bug fixes, calculation accuracy improvements, and locale tweaks are all welcome.
 
 ## Getting set up
 
@@ -18,7 +18,7 @@ npm run build                                          # production build
 - `src/app/scenario/scenario.store.ts` — central signal store. State + computed derivations live here.
 - `src/app/scenario/calculations/` — pure functions, no Angular imports. The math is here. Each file has a co-located `*.spec.ts`.
   - `tco.ts` is the dispatcher; `tco-{lease,finance,cash}.ts` are per-mode accumulators.
-- `src/app/shared/atoms/` & `src/app/shared/molecules/` — view components, Angular 20 signal I/O (`input()`, `output()`, `model()`).
+- `src/app/shared/atoms/` & `src/app/shared/molecules/` — view components, Angular 21 signal I/O (`input()`, `output()`, `model()`).
 - `src/app/features/` — feature shells (chart, mode-detail-view).
 - `e2e/` — Playwright happy-case specs (desktop + mobile).
 

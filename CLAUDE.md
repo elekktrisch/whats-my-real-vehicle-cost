@@ -29,7 +29,7 @@ One-time setup on the repo: **Settings → Pages → Source: GitHub Actions** mu
 
 ## Architecture
 
-Angular 20 standalone components, no NgModules. Layout under `src/app/`:
+Angular 21 standalone components, no NgModules. Layout under `src/app/`:
 
 ```
 scenario/                    domain types, store, locale config, pure calc functions (+ specs)
@@ -81,7 +81,7 @@ Auto-selection: keep ≤ term → renew lease, keep > term → buyout. The user 
 
 ### Atoms — `src/app/shared/`
 
-All migrated to Angular 20 signal I/O (`input()`, `input.required()`, `model()`, no decorators, no `EventEmitter`).
+All migrated to Angular 21 signal I/O (`input()`, `input.required()`, `model()`, no decorators, no `EventEmitter`).
 
 - `shared/slider-control/` — labeled range slider + inline editable number readout (prefix/suffix/fractionDigits, clamps on blur).
 - `shared/kpi-card/`, `shared/info-badge/` — minimal display atoms.

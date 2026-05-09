@@ -160,7 +160,7 @@ Two more locales (UK, France/Italy) deferred. EU = Germany defaults is acknowled
 
 ## What survives from the current code
 
-- Angular 20 standalone components, signals where useful, FormsModule + ngModel
+- Angular 21 standalone components, signals where useful, FormsModule + ngModel
 - Chart.js + ng2-charts (chart definition rewrites for stacked-area)
 - Tailwind utility classes, existing color palette and typography
 - `SliderControl`, `KpiCard`, `InfoBadge` shared components — extended, not replaced
