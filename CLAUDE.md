@@ -68,6 +68,22 @@ Pure data + math + state, no Angular UI dependencies in the calc layer. Built to
 - `scenario.serializer.ts` — `encodeSnapshot` / `decodeSnapshot` for the autosaved `?s=<encoded-json>` form. URL is the only persistence channel; no localStorage. The share dialog wraps the long URL via `shortener.ts` (is.gd) for compact sharing.
 - `calculations/` — pure functions, one file per concern: `depreciation`, `msrp`, `category` (luxury × 1.3 insurance / × 1.8 maintenance), `financing` (lease + amortized loan), `opportunity`, `fuel`, `recommendation` (now: pick tab with lowest cost-per-distance, with locale-aware reason text), `tco` (the aggregator). Co-located `*.spec.ts` files.
 
+### Depreciation curve
+
+`calculations/depreciation.ts` is the single source of truth for vehicle resale-value modeling. The curve is a 5-anchor monotonic spline:
+
+- `ANCHOR_AGES = [0, 2, 4, 7, 12]` — fixed x positions in years.
+- `DEFAULT_CURVES.{ICE, EV}` — per-powertrain defaults (EV is ~10–15pp lower mid-curve to capture battery-anxiety depreciation in years 2–7).
+- `DepreciationCurve { samples: 5-tuple of {age, factor} }` — domain type lives in `scenario.types.ts`. Storage is **MSRP-normalized**: `samples[0].factor === 1.0` is an invariant.
+- `depreciationFactor(age, curve?)` interpolates with Fritsch–Carlson PCHIP between anchors and decays exponentially at 10%/yr past `age 12` (so resale never reaches zero). Default curve is ICE for backward compat.
+- `makeCurve(factors)` builds a curve from a 5-element y-array; `factorsOf(curve)` extracts it back. `clampFactorAt(factors, i, raw)` enforces monotonicity bounds (Y0 locked at 1.0; interior bounded by neighbors).
+
+The store wires this through three places: `msrp` (back-derived for used cars via `backDeriveMsrp(price, age, curve)`), `residualValueDefault` (end of keep), and `leaseEndResidualDefault` (end of lease term). All three use `store.depreciationCurve()` which resolves `depreciationCurveOverride() ?? defaultCurveForPowertrain(powertrain())`. **Toggling powertrain leaves any user override in place** — the override is a single global slot, no per-powertrain stash.
+
+`shared/molecules/depreciation-curve-editor/` is the user-facing editor — modal with a Chart.js preview (drag the 5 anchors via `chartjs-plugin-dragdata`) plus 5 numeric inputs for keyboard a11y, a chain display showing live MSRP / residuals, and a reset-to-default button. The trigger lives next to every curve-driven slider (`residualValue` in `global-controls.ts`, `leaseEndResidual` in `lease-end-section.ts`); a small accent dot on the trigger flags an active override.
+
+**Display-only normalization.** Internally the curve is MSRP-normalized (Y0 stored = 1.0). The editor *displays* every factor relative to `factor(vehicleAge)`, so the locked reference reads "100% at today's price" and MSRP appears as a value > 1.0 for used cars. On commit, displayed values are multiplied back by `factor(vehicleAge)` to land in stored space — `commitFactor` is the single conversion path used by both keyboard input and drag. The chart shows a dashed cross at `(vehicleAge, 1.0)` as a visual anchor.
+
 ### Lease TCO model
 
 Two modes, auto-derived from keep-duration vs. lease term, user-overrideable:
