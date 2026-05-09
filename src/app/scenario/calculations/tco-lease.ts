@@ -112,8 +112,11 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
       durationMonths: leasePeriod,
       monthlyFuel,
       monthlyInsurance,
-      maintenanceBase: input.maintenanceBase,
-      maintenanceK: input.maintenanceK * 0.5,
+      maintenance: input.maintenance,
+      // Lessor handles powertrain repairs under warranty, but consumables
+      // (tires, brakes, fluids, alignment) still age — half the gain above
+      // year-0, year-0 itself unchanged.
+      maintenanceAgingScale: 0.5,
     });
     const ownedInc = buildOwnedMonthsSeries({
       // The car aged through the lease term — owned tail starts at that age,
@@ -122,8 +125,7 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
       durationMonths: ownedMonths,
       monthlyFuel,
       monthlyInsurance,
-      maintenanceBase: input.maintenanceBase,
-      maintenanceK: input.maintenanceK,
+      maintenance: input.maintenance,
     });
 
     for (let m = 1; m <= totalMonths; m++) {
@@ -229,8 +231,7 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
       durationMonths: cycleLen,
       monthlyFuel,
       monthlyInsurance,
-      maintenanceBase: input.maintenanceBase,
-      maintenanceK: input.maintenanceK,
+      maintenance: input.maintenance,
     });
     const downContrib = input.downPayment / cycleLen;
 

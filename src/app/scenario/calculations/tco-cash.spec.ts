@@ -1,5 +1,14 @@
 import { tcoBreakdown } from './tco';
-import { maintenanceK } from './maintenance';
+import { MaintenanceContext, makeMaintenanceCurve } from './maintenance';
+
+// Reproduce the legacy linear `(1 + k × age) × baseRate` shape, sampled at
+// MAINTENANCE_ANCHOR_AGES, so existing year-N test expectations still hold.
+const mctxLinear = (msrp: number, k: number, baseRate: number): MaintenanceContext => ({
+  msrp,
+  curve: makeMaintenanceCurve([0, 3, 6, 10, 15].map((t) => baseRate * (1 + k * t))),
+  categoryMult: 1,
+  mileageFactor: 1,
+});
 
 const usCashShared = {
   tab: 'cash' as const,
@@ -12,8 +21,7 @@ const usCashShared = {
   keepDurationYears: 7,
   downPayment: 40000,
   insuranceAnnual: 2000,
-  maintenanceBase: 600,
-  maintenanceK: 0,
+  maintenance: mctxLinear(40000, 0, 0.015),
   fuelEfficiency: 28,
   fuelPrice: 3.5,
   chargerStatus: 'none' as const,
@@ -48,8 +56,7 @@ describe('cashTco — maintenance age curve', () => {
     keepDurationYears: 10,
     downPayment: 40000,
     insuranceAnnual: 2000,
-    maintenanceBase: 600,
-    maintenanceK: maintenanceK('mid', 'ICE'), // 0.08
+    maintenance: mctxLinear(40000, 0.08, 0.015), // mid-category ICE
     fuelEfficiency: 28,
     fuelPrice: 3.5,
     chargerStatus: 'none' as const,
@@ -70,7 +77,7 @@ describe('cashTco — maintenance age curve', () => {
   });
 
   it('total maintenance with k > 0 exceeds flat (k = 0)', () => {
-    const flat = tcoBreakdown({ ...cashAged, maintenanceK: 0 });
+    const flat = tcoBreakdown({ ...cashAged, maintenance: mctxLinear(40000, 0, 0.015) });
     const curved = tcoBreakdown(cashAged);
     expect(curved.totals.maintenance).toBeGreaterThan(flat.totals.maintenance);
   });
@@ -88,8 +95,7 @@ describe('cashTco — solar / home charger', () => {
     keepDurationYears: 5,
     downPayment: 40000,
     insuranceAnnual: 2000,
-    maintenanceBase: 400,
-    maintenanceK: maintenanceK('mid', 'EV'),
+    maintenance: mctxLinear(40000, 0.048, 0.01), // mid-category EV
     fuelEfficiency: 3.5,
     fuelPrice: 0.16,
     chargerStatus: 'none' as const,

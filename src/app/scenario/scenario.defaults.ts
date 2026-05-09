@@ -23,6 +23,7 @@ export function defaultScenario(localeOverride?: Locale): ScenarioSnapshot {
       chargerStatus: 'buying',
       solar: true,
       depreciationCurve: null,
+      maintenanceCurve: null,
     },
     lease: {
       apr: null,

@@ -1,6 +1,14 @@
 import type { CashTcoInputs, FinanceTcoInputs, LeaseTcoInputs } from './tco';
 import { tcoBreakdown } from './tco';
 import type { CostCategory } from '../scenario.types';
+import { MaintenanceContext, makeMaintenanceCurve } from './maintenance';
+
+const mctxLinear = (msrp: number, k: number, baseRate: number): MaintenanceContext => ({
+  msrp,
+  curve: makeMaintenanceCurve([0, 3, 6, 10, 15].map((t) => baseRate * (1 + k * t))),
+  categoryMult: 1,
+  mileageFactor: 1,
+});
 
 // ── Fixtures ───────────────────────────────────────────────────────────────
 
@@ -13,8 +21,7 @@ const baseShared = {
   annualMileage: 12_000,
   keepDurationYears: 5,
   insuranceAnnual: 1_750,
-  maintenanceBase: 525,
-  maintenanceK: 0.08,
+  maintenance: mctxLinear(35_000, 0.08, 0.015),
   fuelEfficiency: 28,
   fuelPrice: 3.5,
   chargerStatus: 'none' as const,
@@ -383,13 +390,15 @@ describe('TCO invariants — lease mode arithmetic', () => {
     // The lessor handles powertrain repairs but consumables (tires, brakes,
     // fluids) still age. So lease maintenance should be lower than ownership
     // but not perfectly flat over a multi-year keep.
-    const cash = tcoBreakdown(cashInputs({ keepDurationYears: 5, maintenanceK: 0.08 }));
+    const cash = tcoBreakdown(
+      cashInputs({ keepDurationYears: 5, maintenance: mctxLinear(35_000, 0.08, 0.015) }),
+    );
     const lease = tcoBreakdown(
       leaseInputs({
         keepDurationYears: 3,
         leaseTermMonths: 36,
         leaseEndChoice: 'buyOut',
-        maintenanceK: 0.08,
+        maintenance: mctxLinear(35_000, 0.08, 0.015),
       }),
     );
     // Cash maintenance over 5yr should clearly exceed lease maintenance over 3yr

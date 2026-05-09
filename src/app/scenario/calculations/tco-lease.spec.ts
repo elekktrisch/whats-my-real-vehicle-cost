@@ -1,5 +1,12 @@
 import { tcoBreakdown } from './tco';
-import { maintenanceK } from './maintenance';
+import { MaintenanceContext, makeMaintenanceCurve } from './maintenance';
+
+const mctxLinear = (msrp: number, k: number, baseRate: number): MaintenanceContext => ({
+  msrp,
+  curve: makeMaintenanceCurve([0, 3, 6, 10, 15].map((t) => baseRate * (1 + k * t))),
+  categoryMult: 1,
+  mileageFactor: 1,
+});
 
 const usLeaseShared = {
   tab: 'lease' as const,
@@ -12,8 +19,7 @@ const usLeaseShared = {
   keepDurationYears: 3,
   downPayment: 4000,
   insuranceAnnual: 1750,
-  maintenanceBase: 525,
-  maintenanceK: 0,
+  maintenance: mctxLinear(35000, 0, 0.015),
   fuelEfficiency: 28,
   fuelPrice: 3.5,
   chargerStatus: 'none' as const,
@@ -207,8 +213,7 @@ describe('leaseTco — maintenance age curve', () => {
       keepDurationYears: 6,
       leaseTermMonths: 36,
       leaseEndChoice: 'handBack',
-      maintenanceBase: 525,
-      maintenanceK: maintenanceK('mid', 'ICE'),
+      maintenance: mctxLinear(35000, 0.08, 0.015),
     });
     const cycle1Maint = r.series[36].maintenance - r.series[0].maintenance;
     const cycle2Maint = r.series[72].maintenance - r.series[36].maintenance;
@@ -226,8 +231,7 @@ describe('leaseTco — maintenance age curve', () => {
       keepDurationYears: 5,
       leaseTermMonths: 36,
       leaseEndChoice: 'buyOut',
-      maintenanceBase: 525,
-      maintenanceK: maintenanceK('mid', 'ICE'),
+      maintenance: mctxLinear(35000, 0.08, 0.015),
     });
     // First-month-of-owned-tail increment (car aged 3yr, full K).
     const firstTailMonth = r.series[37].maintenance - r.series[36].maintenance;
@@ -237,8 +241,7 @@ describe('leaseTco — maintenance age curve', () => {
       tab: 'cash' as const,
       vehicleAge: 0,
       keepDurationYears: 1,
-      maintenanceBase: 525,
-      maintenanceK: maintenanceK('mid', 'ICE'),
+      maintenance: mctxLinear(35000, 0.08, 0.015),
     });
     const freshMonth1 = cash.series[1].maintenance - cash.series[0].maintenance;
     // A 3-year-old car's monthly maintenance must be strictly greater than
@@ -252,8 +255,7 @@ describe('leaseTco — maintenance age curve', () => {
       keepDurationYears: 6,
       leaseTermMonths: 36,
       leaseEndChoice: 'buyOut',
-      maintenanceBase: 525,
-      maintenanceK: maintenanceK('mid', 'ICE'),
+      maintenance: mctxLinear(35000, 0.08, 0.015),
     });
     // Lease portion: half-aging (warranty handles powertrain, consumables age).
     // Owned tail: full aging.

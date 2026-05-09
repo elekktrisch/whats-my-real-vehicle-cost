@@ -86,8 +86,7 @@ export function financeTco(input: FinanceTcoInputs): CostBreakdown {
     durationMonths: totalMonths,
     monthlyFuel,
     monthlyInsurance,
-    maintenanceBase: input.maintenanceBase,
-    maintenanceK: input.maintenanceK,
+    maintenance: input.maintenance,
   });
 
   const series = allocateSeries(totalMonths);

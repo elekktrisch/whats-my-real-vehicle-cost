@@ -1,5 +1,6 @@
 import { financePayment } from '../../../scenario/calculations/financing';
 import { fuelCostOverYears } from '../../../scenario/calculations/fuel';
+import { maintenanceAt } from '../../../scenario/calculations/maintenance';
 import { formatCompactCurrency, formatCurrency } from '../../../scenario/locale.config';
 import type { ScenarioStore } from '../../../scenario/scenario.store';
 
@@ -51,7 +52,12 @@ interface RunningCosts {
 function runningCostsOverKeep(store: ScenarioStore): RunningCosts {
   const keep = store.keepDuration();
   const insurance = store.insurance() * keep;
-  const maintenance = store.maintenance() * keep;
+  // Mid-window sample × keep approximates the curve integral; for a roughly
+  // linear curve the error is negligible at the precision the hero summary
+  // displays.
+  const ctx = store.maintenanceContext();
+  const midAge = store.vehicleAge() + keep / 2;
+  const maintenance = maintenanceAt(ctx, midAge) * keep;
   const fuel = fuelCostOverYears({
     efficiency: store.fuelEfficiency(),
     fuelPrice: store.fuelPrice(),

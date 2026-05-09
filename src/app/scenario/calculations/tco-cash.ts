@@ -42,8 +42,7 @@ export function cashTco(input: CashTcoInputs): CostBreakdown {
     durationMonths: totalMonths,
     monthlyFuel,
     monthlyInsurance,
-    maintenanceBase: input.maintenanceBase,
-    maintenanceK: input.maintenanceK,
+    maintenance: input.maintenance,
   });
 
   const series = allocateSeries(totalMonths);

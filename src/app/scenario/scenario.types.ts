@@ -27,6 +27,23 @@ export interface DepreciationCurve {
   ];
 }
 
+/** One sample on the maintenance curve — at vehicle `age` years, the annual maintenance cost is `factor` × MSRP. */
+export interface MaintenanceSample {
+  readonly age: number;
+  readonly factor: number;
+}
+
+/** 5-anchor maintenance curve. PCHIP interpolates between samples; past the last anchor it extrapolates linearly at 3× the last-segment slope. */
+export interface MaintenanceCurve {
+  readonly samples: readonly [
+    MaintenanceSample,
+    MaintenanceSample,
+    MaintenanceSample,
+    MaintenanceSample,
+    MaintenanceSample,
+  ];
+}
+
 export interface Globals {
   locale: Locale;
   powertrain: Powertrain;
@@ -41,6 +58,8 @@ export interface Globals {
   solar: boolean;
   /** Override curve. null = use the per-powertrain default. */
   depreciationCurve: DepreciationCurve | null;
+  /** Override maintenance curve. null = use the per-powertrain default. */
+  maintenanceCurve: MaintenanceCurve | null;
 }
 
 export interface LeaseInputs {

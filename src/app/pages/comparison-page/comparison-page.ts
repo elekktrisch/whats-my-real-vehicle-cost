@@ -29,7 +29,7 @@ const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Loan', cash: 'Cas
 // Wider gap on mobile to absorb iOS address-bar resize during scroll.
 const HYSTERESIS = {
   desktop: { down: 100, up: 10 },
-  mobile: { down: 100, up: 10 },
+  mobile: { down: 200, up: 10 },
 };
 const MOBILE_BP = 600;
 

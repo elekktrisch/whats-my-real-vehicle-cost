@@ -1,4 +1,14 @@
 import { costPerDistance, effectiveMonthly, tcoBreakdown } from './tco';
+import { MaintenanceContext, makeMaintenanceCurve } from './maintenance';
+
+// Reproduce the legacy linear `(1 + k × age) × baseRate` shape, sampled at
+// MAINTENANCE_ANCHOR_AGES, so existing year-N test expectations still hold.
+const mctxLinear = (msrp: number, k: number, baseRate: number): MaintenanceContext => ({
+  msrp,
+  curve: makeMaintenanceCurve([0, 3, 6, 10, 15].map((t) => baseRate * (1 + k * t))),
+  categoryMult: 1,
+  mileageFactor: 1,
+});
 
 const usLeaseShared = {
   tab: 'lease' as const,
@@ -11,8 +21,7 @@ const usLeaseShared = {
   keepDurationYears: 3,
   downPayment: 4000,
   insuranceAnnual: 1750,
-  maintenanceBase: 525,
-  maintenanceK: 0,
+  maintenance: mctxLinear(35000, 0, 0.015),
   fuelEfficiency: 28,
   fuelPrice: 3.5,
   chargerStatus: 'none' as const,
@@ -70,8 +79,7 @@ describe('tcoBreakdown', () => {
       keepDurationYears: 3,
       downPayment: 4000,
       insuranceAnnual: 1750,
-      maintenanceBase: 525,
-      maintenanceK: 0,
+      maintenance: mctxLinear(35000, 0, 0.015),
       fuelEfficiency: 28,
       fuelPrice: 3.5,
       chargerStatus: 'none',

@@ -59,21 +59,25 @@ Chart.register(dragDataPlugin);
       #dlg
       (close)="onDialogClose()"
       (click)="onBackdropClick($event)"
-      class="m-auto p-0 rounded-[18px] bg-surface text-tx border border-border max-w-[480px] w-[calc(100%-2rem)] [&::backdrop]:bg-black/60 [&::backdrop]:backdrop-blur-sm"
+      class="m-auto p-0 rounded-[18px] bg-surface text-tx border border-border max-w-[480px] w-[calc(100%-2rem)] max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain [&::backdrop]:bg-black/60 [&::backdrop]:backdrop-blur-sm"
     >
       <div class="p-6 sm:p-7 flex flex-col gap-5">
         <header class="flex items-center justify-between">
           <h2 class="font-ui text-[1rem] font-medium tracking-[-0.01em] text-tx">
             Depreciation curve
           </h2>
-          <button
-            type="button"
-            (click)="close()"
-            aria-label="Close"
-            class="size-7 inline-flex items-center justify-center rounded-[8px] text-tx-muted hover:text-tx hover:bg-elevated transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
-          >
-            <app-icon name="close" [size]="16" />
-          </button>
+          <!-- form method="dialog" closes the dialog natively via submit —
+               more reliable than (click) on mobile Safari where the modal
+               <dialog> context can swallow synthesized click events. -->
+          <form method="dialog" class="contents">
+            <button
+              type="submit"
+              aria-label="Close"
+              class="size-7 inline-flex items-center justify-center rounded-[8px] text-tx-muted hover:text-tx hover:bg-elevated transition-colors duration-150 cursor-pointer touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+            >
+              <app-icon name="close" [size]="16" />
+            </button>
+          </form>
         </header>
 
         <p class="font-ui text-[0.78rem] text-tx-muted leading-snug">
@@ -161,20 +165,22 @@ Chart.register(dragDataPlugin);
               type="button"
               data-testid="curve-reset"
               (click)="reset()"
-              class="inline-flex items-center gap-1.5 h-8 px-3 rounded-[8px] bg-transparent border border-border-strong text-tx-muted hover:border-accent hover:text-accent font-ui text-[0.72rem] font-medium tracking-[0.06em] uppercase transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+              (pointerup)="reset()"
+              class="inline-flex items-center gap-1.5 h-8 px-3 rounded-[8px] bg-transparent border border-border-strong text-tx-muted hover:border-accent hover:text-accent font-ui text-[0.72rem] font-medium tracking-[0.06em] uppercase transition-colors duration-150 cursor-pointer touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
             >
               <app-icon name="reset" [size]="12" /> Reset to default
             </button>
           } @else {
             <span></span>
           }
-          <button
-            type="button"
-            (click)="close()"
-            class="inline-flex items-center justify-center h-8 px-4 rounded-[8px] bg-accent text-bg border border-accent hover:brightness-110 font-ui text-[0.75rem] font-medium tracking-[0.06em] uppercase transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
-          >
-            Done
-          </button>
+          <form method="dialog" class="contents">
+            <button
+              type="submit"
+              class="inline-flex items-center justify-center h-8 px-4 rounded-[8px] bg-accent text-bg border border-accent hover:brightness-110 font-ui text-[0.75rem] font-medium tracking-[0.06em] uppercase transition-colors duration-150 cursor-pointer touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+            >
+              Done
+            </button>
+          </form>
         </div>
       </div>
     </dialog>
