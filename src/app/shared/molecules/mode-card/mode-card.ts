@@ -46,8 +46,7 @@ import { Icon } from '../../atoms/icon/icon';
               class="hidden sm:inline-flex items-center justify-center size-[14px] rounded-full bg-elevated border border-border-strong text-tx-dim text-[10px] leading-none cursor-help normal-case tracking-normal"
               [attr.title]="totalTip()"
               (click)="$event.stopPropagation()"
-              role="img"
-              [attr.aria-label]="totalTip()"
+              aria-hidden="true"
             >
               ?
             </span>
@@ -67,8 +66,7 @@ import { Icon } from '../../atoms/icon/icon';
               class="hidden sm:inline-flex items-center justify-center size-[14px] rounded-full bg-elevated border border-border-strong text-tx-dim text-[10px] leading-none cursor-help normal-case tracking-normal"
               [attr.title]="monthlyTip()"
               (click)="$event.stopPropagation()"
-              role="img"
-              [attr.aria-label]="monthlyTip()"
+              aria-hidden="true"
             >
               ?
             </span>
@@ -88,8 +86,7 @@ import { Icon } from '../../atoms/icon/icon';
               class="hidden sm:inline-flex items-center justify-center size-[14px] rounded-full bg-elevated border border-border-strong text-tx-dim text-[10px] leading-none cursor-help normal-case tracking-normal"
               [attr.title]="perDistanceTip()"
               (click)="$event.stopPropagation()"
-              role="img"
-              [attr.aria-label]="perDistanceTip()"
+              aria-hidden="true"
             >
               ?
             </span>

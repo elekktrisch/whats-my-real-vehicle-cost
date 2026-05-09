@@ -31,7 +31,7 @@ test.describe('cold start', () => {
     await page.goto('/');
     await page.getByRole('button', { name: /get started/i }).click();
 
-    const badges = page.locator('[aria-label="Recommended"]');
+    const badges = page.locator('[aria-label^="Recommended"]');
     await expect(badges).toHaveCount(1);
   });
 });
