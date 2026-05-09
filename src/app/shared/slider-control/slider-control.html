@@ -2,6 +2,24 @@
   <label class="flex items-center gap-[5px] text-[0.78rem] font-medium text-tx-muted">
     {{ label() }}
     <app-info-badge [tip]="tip()" />
+    @if (isAuto() === true) {
+      <span
+        data-testid="auto-tag"
+        class="font-ui text-[0.65rem] uppercase tracking-[0.08em] text-tx-dim border border-border rounded px-[4px] py-px ml-1"
+      >
+        auto
+      </span>
+    } @else if (isAuto() === false) {
+      <button
+        type="button"
+        data-testid="reset-link"
+        (click)="reset.emit()"
+        class="font-ui text-[0.7rem] text-tx-dim hover:text-accent ml-1 transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/50 rounded px-[2px]"
+        title="Reset to auto-derived value"
+      >
+        ↻ reset
+      </button>
+    }
   </label>
 
   <div

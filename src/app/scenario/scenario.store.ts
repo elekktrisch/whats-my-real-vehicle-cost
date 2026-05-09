@@ -1,4 +1,4 @@
-import { Injectable, Signal, computed, inject, signal } from '@angular/core';
+import { Injectable, Signal, WritableSignal, computed, inject, signal } from '@angular/core';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { LOCALE_CONFIG, fuelEfficiencyDefault, fuelPriceDefault } from './locale.config';
@@ -20,6 +20,16 @@ import { maintenanceK } from './calculations/maintenance';
 import { recommendTab } from './calculations/recommendation';
 import { costPerDistance, effectiveMonthly, tcoBreakdown } from './calculations/tco';
 import { setupAutosave } from './scenario.persistence';
+import { ActiveConflict, conflictCountForTab } from './conflicts';
+import { formatCurrency } from './locale.config';
+
+// Tuple recorded when the user dismisses a conflict pill. The pill stays
+// hidden as long as (override, default) match what was dismissed; any
+// reactive change to either side re-evaluates and may re-show the pill.
+type DismissedAt<T> = { override: T; def: T } | null;
+
+const APR_NEW_CAR = 1.0;
+const APR_USED_CAR = 3.0;
 
 @Injectable({ providedIn: 'root' })
 export class ScenarioStore {
@@ -39,7 +49,7 @@ export class ScenarioStore {
   readonly chargerStatus = signal<ChargerStatus>(this.initial.globals.chargerStatus);
   readonly solar = signal(this.initial.globals.solar);
 
-  readonly leaseApr = signal(this.initial.lease.apr);
+  readonly leaseAprOverride = signal<number | null>(this.initial.lease.apr);
   readonly leaseTerm = signal(this.initial.lease.leaseTerm);
   readonly leaseDownPayment = signal(this.initial.lease.downPayment);
   readonly leaseEndChoiceOverride = signal<LeaseEndChoice | null>(null);
@@ -73,6 +83,30 @@ export class ScenarioStore {
   private readonly _isHydrating = signal(false);
   readonly isHydrating = this._isHydrating.asReadonly();
 
+  // Lease APR auto-derives from vehicleAge: new cars qualify for promotional
+  // ~1% manufacturer financing; used cars run ~3%.
+  private readonly leaseAprDefault = computed(() =>
+    this.vehicleAge() === 0 ? APR_NEW_CAR : APR_USED_CAR,
+  );
+  readonly leaseApr = computed(() => this.leaseAprOverride() ?? this.leaseAprDefault());
+  // Per-lever tolerances are deliberately much wider than one slider step
+  // so the pill only fires when the deviation is materially significant,
+  // not for sub-step drift, rounding artefacts, or small judgement nudges.
+  // Roughly ~5–10 slider steps / ~5–10% of the typical default.
+  private readonly leaseAprBindings = this.bindConflict(
+    this.leaseAprOverride,
+    () => this.leaseAprDefault(),
+    numEq(0.25),
+  );
+  readonly leaseAprConflict = this.leaseAprBindings.conflict;
+  readonly leaseAprPillVisible = this.leaseAprBindings.pillVisible;
+  dismissLeaseApr(): void {
+    this.leaseAprBindings.dismiss();
+  }
+  applyLeaseApr(): void {
+    this.leaseAprBindings.apply();
+  }
+
   readonly msrp = computed(() => backDeriveMsrp(this.purchasePrice(), this.vehicleAge()));
   readonly vehicleCategory = computed(() => categorize(this.msrp(), this.locale()));
   readonly categoryMultipliers = computed(() => categoryMultipliers(this.vehicleCategory()));
@@ -95,6 +129,19 @@ export class ScenarioStore {
   );
   setResidualValue(value: number | null): void {
     this.residualValueOverride.set(value);
+  }
+  private readonly residualValueBindings = this.bindConflict(
+    this.residualValueOverride,
+    () => this.residualValueDefault(),
+    numEq(3000),
+  );
+  readonly residualValueConflict = this.residualValueBindings.conflict;
+  readonly residualValuePillVisible = this.residualValueBindings.pillVisible;
+  dismissResidualValue(): void {
+    this.residualValueBindings.dismiss();
+  }
+  applyResidualValue(): void {
+    this.residualValueBindings.apply();
   }
 
   private insuranceDefault = computed(() => {
@@ -131,6 +178,68 @@ export class ScenarioStore {
   );
   readonly fuelPrice = computed(() => this.fuelPriceOverride() ?? this.fuelPriceDefaultSignal());
 
+  private readonly insuranceBindings = this.bindConflict(
+    this.insuranceOverride,
+    () => this.insuranceDefault(),
+    numEq(150),
+  );
+  readonly insuranceConflict = this.insuranceBindings.conflict;
+  readonly insurancePillVisible = this.insuranceBindings.pillVisible;
+  dismissInsurance(): void {
+    this.insuranceBindings.dismiss();
+  }
+  applyInsurance(): void {
+    this.insuranceBindings.apply();
+  }
+
+  // Fuel efficiency tolerance is unit-dependent: EV ranges are far wider
+  // than ICE ranges, and EU/US use different units (mpg vs L/100km, mi/kWh
+  // vs kWh/100km). Capturing the signals inside the comparator makes the
+  // resulting `computed` track them, so changing locale/powertrain
+  // re-evaluates the conflict with the right epsilon.
+  private readonly fuelEfficiencyBindings = this.bindConflict(
+    this.fuelEfficiencyOverride,
+    () => this.fuelEfficiencyDefaultSignal(),
+    (a, b) => {
+      const ev = this.powertrain() === 'EV';
+      const us = this.locale() === 'US';
+      // EV: ~1.5 mi/kWh (US) or ~6 kWh/100km (EU). ICE: ~2 mpg (US) or ~1 L/100km (EU).
+      const eps = ev ? (us ? 1.5 : 6) : us ? 2 : 1;
+      return Math.abs(a - b) <= eps;
+    },
+  );
+  readonly fuelEfficiencyConflict = this.fuelEfficiencyBindings.conflict;
+  readonly fuelEfficiencyPillVisible = this.fuelEfficiencyBindings.pillVisible;
+  dismissFuelEfficiency(): void {
+    this.fuelEfficiencyBindings.dismiss();
+  }
+  applyFuelEfficiency(): void {
+    this.fuelEfficiencyBindings.apply();
+  }
+
+  // Fuel price tolerance scales similarly: electricity prices vary widely
+  // ($0.15–0.35/kWh for EU, $0.10–0.20/kWh for US), and gasoline prices
+  // span a tighter percent range but use different units per locale.
+  private readonly fuelPriceBindings = this.bindConflict(
+    this.fuelPriceOverride,
+    () => this.fuelPriceDefaultSignal(),
+    (a, b) => {
+      const ev = this.powertrain() === 'EV';
+      const us = this.locale() === 'US';
+      // EV: ~$0.05/kWh (US) or ~€0.10/kWh (EU). ICE: ~$0.30/gal (US) or ~€0.15/L (EU).
+      const eps = ev ? (us ? 0.05 : 0.1) : us ? 0.3 : 0.15;
+      return Math.abs(a - b) <= eps;
+    },
+  );
+  readonly fuelPriceConflict = this.fuelPriceBindings.conflict;
+  readonly fuelPricePillVisible = this.fuelPriceBindings.pillVisible;
+  dismissFuelPrice(): void {
+    this.fuelPriceBindings.dismiss();
+  }
+  applyFuelPrice(): void {
+    this.fuelPriceBindings.apply();
+  }
+
   readonly recommendedTab = computed(() => {
     const annualMiles = this.annualMileage();
     const years = this.keepDuration();
@@ -145,11 +254,24 @@ export class ScenarioStore {
     });
   });
 
-  readonly leaseEndChoice = computed<LeaseEndChoice>(() => {
-    const override = this.leaseEndChoiceOverride();
-    if (override) return override;
-    return this.keepDuration() * 12 > this.leaseTerm() ? 'buyOut' : 'handBack';
-  });
+  private readonly leaseEndChoiceDefault = computed<LeaseEndChoice>(() =>
+    this.keepDuration() * 12 > this.leaseTerm() ? 'buyOut' : 'handBack',
+  );
+  readonly leaseEndChoice = computed<LeaseEndChoice>(
+    () => this.leaseEndChoiceOverride() ?? this.leaseEndChoiceDefault(),
+  );
+  private readonly leaseEndChoiceBindings = this.bindConflict<LeaseEndChoice>(
+    this.leaseEndChoiceOverride,
+    () => this.leaseEndChoiceDefault(),
+  );
+  readonly leaseEndChoiceConflict = this.leaseEndChoiceBindings.conflict;
+  readonly leaseEndChoicePillVisible = this.leaseEndChoiceBindings.pillVisible;
+  dismissLeaseEndChoice(): void {
+    this.leaseEndChoiceBindings.dismiss();
+  }
+  applyLeaseEndChoice(): void {
+    this.leaseEndChoiceBindings.apply();
+  }
 
   readonly dispositionFee = computed(
     () => this.dispositionFeeOverride() ?? LEASE_END_DEFAULTS.dispositionFee,
@@ -180,6 +302,19 @@ export class ScenarioStore {
     const value = override ?? this.earlyTerminationFeeDefault();
     return Math.min(value, this.earlyTerminationFeeMax());
   });
+  private readonly earlyTerminationFeeBindings = this.bindConflict(
+    this.earlyTerminationFeeOverride,
+    () => this.earlyTerminationFeeDefault(),
+    numEq(500),
+  );
+  readonly earlyTerminationFeeConflict = this.earlyTerminationFeeBindings.conflict;
+  readonly earlyTerminationFeePillVisible = this.earlyTerminationFeeBindings.pillVisible;
+  dismissEarlyTerminationFee(): void {
+    this.earlyTerminationFeeBindings.dismiss();
+  }
+  applyEarlyTerminationFee(): void {
+    this.earlyTerminationFeeBindings.apply();
+  }
 
   // Auto-derived residual at end of LEASE TERM (not end of keep).
   // Used as buyout price.
@@ -190,6 +325,19 @@ export class ScenarioStore {
   readonly leaseEndResidual = computed(
     () => this.leaseEndResidualOverride() ?? this.leaseEndResidualDefault(),
   );
+  private readonly leaseEndResidualBindings = this.bindConflict(
+    this.leaseEndResidualOverride,
+    () => this.leaseEndResidualDefault(),
+    numEq(3000),
+  );
+  readonly leaseEndResidualConflict = this.leaseEndResidualBindings.conflict;
+  readonly leaseEndResidualPillVisible = this.leaseEndResidualBindings.pillVisible;
+  dismissLeaseEndResidual(): void {
+    this.leaseEndResidualBindings.dismiss();
+  }
+  applyLeaseEndResidual(): void {
+    this.leaseEndResidualBindings.apply();
+  }
 
   // Lease payment uses the LEASE-END residual (contractual figure at end of
   // lease term), not the end-of-keep residual. Critical when keep > term:
@@ -350,7 +498,7 @@ export class ScenarioStore {
       this.chargerStatus.set(merged.globals.chargerStatus);
       this.solar.set(merged.globals.solar);
 
-      this.leaseApr.set(merged.lease.apr);
+      this.leaseAprOverride.set(merged.lease.apr);
       this.leaseTerm.set(merged.lease.leaseTerm);
       this.leaseDownPayment.set(merged.lease.downPayment);
       this.leaseEndChoiceOverride.set(merged.lease.leaseEndChoice);
@@ -391,7 +539,7 @@ export class ScenarioStore {
         solar: this.solar(),
       },
       lease: {
-        apr: this.leaseApr(),
+        apr: this.leaseAprOverride(),
         leaseTerm: this.leaseTerm(),
         downPayment: this.leaseDownPayment(),
         leaseEndChoice: this.leaseEndChoiceOverride(),
@@ -444,10 +592,234 @@ export class ScenarioStore {
     }
   }
 
+  // Aggregated descriptor list for the warnings UI. Each entry corresponds
+  // to a visible conflict pill — the descriptors carry verbose reason copy,
+  // formatted current/proposed values, and Apply/Keep callbacks. Filtered
+  // by `*PillVisible` so dismissed conflicts and pre-hydration state
+  // produce an empty list automatically.
+  readonly activeConflicts = computed<readonly ActiveConflict[]>(() => {
+    const out: ActiveConflict[] = [];
+    const loc = this.locale();
+    const efUnit = this.localeConfig().distanceUnit;
+
+    if (this.leaseAprPillVisible()) {
+      const override = this.leaseAprOverride()!;
+      const def = this.leaseAprDefault();
+      out.push({
+        key: 'leaseApr',
+        scope: 'lease',
+        label: 'Lease APR',
+        reason:
+          'new cars (vehicleAge = 0) typically qualify for promotional ~1% manufacturer financing, while used cars run ~3%.',
+        currentValue: `${override}%`,
+        proposedValue: `${def}%`,
+        sliderAnchor: 'slider-leaseApr',
+        apply: () => this.applyLeaseApr(),
+        keep: () => this.dismissLeaseApr(),
+      });
+    }
+    if (this.residualValuePillVisible()) {
+      const override = this.residualValueOverride()!;
+      const def = this.residualValueDefault();
+      out.push({
+        key: 'residualValue',
+        scope: 'global',
+        label: 'Residual value',
+        reason:
+          'the depreciation curve at vehicleAge + keepDuration suggests this end-of-keep value. Override with the figure from your contract for an apples-to-apples comparison.',
+        currentValue: formatCurrency(override, loc, 0),
+        proposedValue: formatCurrency(def, loc, 0),
+        sliderAnchor: 'slider-residualValue',
+        apply: () => this.applyResidualValue(),
+        keep: () => this.dismissResidualValue(),
+      });
+    }
+    if (this.insurancePillVisible()) {
+      const override = this.insuranceOverride()!;
+      const def = this.insuranceDefault();
+      out.push({
+        key: 'insurance',
+        scope: 'global',
+        label: 'Insurance / yr',
+        reason:
+          'purchase price × locale rate × vehicle category yields this baseline. Override with a real quote for accuracy.',
+        currentValue: formatCurrency(override, loc, 0),
+        proposedValue: formatCurrency(def, loc, 0),
+        sliderAnchor: 'slider-insurance',
+        apply: () => this.applyInsurance(),
+        keep: () => this.dismissInsurance(),
+      });
+    }
+    if (this.fuelEfficiencyPillVisible()) {
+      const override = this.fuelEfficiencyOverride()!;
+      const def = this.fuelEfficiencyDefaultSignal();
+      const unit =
+        this.powertrain() === 'EV'
+          ? this.localeConfig().evEfficiencyUnit
+          : this.localeConfig().iceEfficiencyUnit;
+      out.push({
+        key: 'fuelEfficiency',
+        scope: 'global',
+        label: this.powertrain() === 'EV' ? 'EV efficiency' : 'Fuel efficiency',
+        reason:
+          this.powertrain() === 'EV'
+            ? `this is the typical EV efficiency in ${loc}. Override with your vehicle's spec sheet.`
+            : `this is the typical fuel efficiency in ${loc}. Override with your vehicle's spec sheet.`,
+        currentValue: `${override} ${unit}`,
+        proposedValue: `${def} ${unit}`,
+        sliderAnchor: 'slider-fuelEfficiency',
+        apply: () => this.applyFuelEfficiency(),
+        keep: () => this.dismissFuelEfficiency(),
+      });
+    }
+    if (this.fuelPricePillVisible()) {
+      const override = this.fuelPriceOverride()!;
+      const def = this.fuelPriceDefaultSignal();
+      out.push({
+        key: 'fuelPrice',
+        scope: 'global',
+        label: this.powertrain() === 'EV' ? 'Electricity price' : 'Fuel price',
+        reason:
+          this.powertrain() === 'EV'
+            ? `this is the typical electricity rate in ${loc}. Override with your local utility tariff.`
+            : `this is the typical pump price in ${loc}. Override with current local prices.`,
+        currentValue: formatCurrency(override, loc, 2),
+        proposedValue: formatCurrency(def, loc, 2),
+        sliderAnchor: 'slider-fuelPrice',
+        apply: () => this.applyFuelPrice(),
+        keep: () => this.dismissFuelPrice(),
+      });
+    }
+    if (this.leaseEndChoicePillVisible()) {
+      const override = this.leaseEndChoiceOverride()!;
+      const def = this.leaseEndChoiceDefault();
+      const fmt = (c: LeaseEndChoice) => (c === 'buyOut' ? 'Buy out' : 'Renew lease');
+      out.push({
+        key: 'leaseEndChoice',
+        scope: 'lease',
+        label: 'End of lease',
+        reason:
+          'keep duration vs. lease term picks the cheaper outcome — keep ≤ term → renew lease, keep > term → buy out.',
+        currentValue: fmt(override),
+        proposedValue: fmt(def),
+        sliderAnchor: 'slider-leaseEndChoice',
+        apply: () => this.applyLeaseEndChoice(),
+        keep: () => this.dismissLeaseEndChoice(),
+      });
+    }
+    if (this.earlyTerminationFeePillVisible()) {
+      const override = this.earlyTerminationFeeOverride()!;
+      const def = this.earlyTerminationFeeDefault();
+      out.push({
+        key: 'earlyTerminationFee',
+        scope: 'lease',
+        label: 'Early termination penalty',
+        reason:
+          '(term − keep) / term × total depreciation approximates typical lessor early-exit tables. Replace with the exact figure from your contract.',
+        currentValue: formatCurrency(override, loc, 0),
+        proposedValue: formatCurrency(def, loc, 0),
+        sliderAnchor: 'slider-earlyTerminationFee',
+        apply: () => this.applyEarlyTerminationFee(),
+        keep: () => this.dismissEarlyTerminationFee(),
+      });
+    }
+    if (this.leaseEndResidualPillVisible()) {
+      const override = this.leaseEndResidualOverride()!;
+      const def = this.leaseEndResidualDefault();
+      out.push({
+        key: 'leaseEndResidual',
+        scope: 'lease',
+        label: 'Residual at lease end',
+        reason:
+          'the depreciation curve at vehicleAge + leaseTerm gives this contractual residual. Override with the figure from your lease contract.',
+        currentValue: formatCurrency(override, loc, 0),
+        proposedValue: formatCurrency(def, loc, 0),
+        sliderAnchor: 'slider-leaseEndResidual',
+        apply: () => this.applyLeaseEndResidual(),
+        keep: () => this.dismissLeaseEndResidual(),
+      });
+    }
+    // efUnit suppresses the unused-binding lint when no fuelEfficiency conflict.
+    void efUnit;
+    return out;
+  });
+
+  conflictCount(tab: Tab): number {
+    return conflictCountForTab(this.activeConflicts(), tab);
+  }
+
+  // Active conflicts filtered to the currently selected tab — global
+  // conflicts are always visible, tab-scoped ones only when their tab is
+  // active. Drives the warnings list at the top of the comparison page.
+  readonly visibleConflicts = computed<readonly ActiveConflict[]>(() => {
+    const tab = this.activeTab();
+    return this.activeConflicts().filter((c) => c.scope === 'global' || c.scope === tab);
+  });
+
+  // Per-lever descriptor lookup — same source of truth as the warnings list,
+  // so an inline pill and its corresponding warnings-list row format their
+  // values identically. Returns undefined when the lever has no active
+  // conflict (dismissed, hydrating, or override matches default).
+  readonly conflictByKey = computed(() => {
+    const map = new Map<string, ActiveConflict>();
+    for (const c of this.activeConflicts()) map.set(c.key, c);
+    return map;
+  });
+
   private readonly router = inject(Router);
   private readonly location = inject(Location);
 
   constructor() {
     setupAutosave(this, this.router, this.location);
   }
+
+  // Builds the conflict + dismissal + apply machinery for one override-pattern
+  // lever. The dismissed-at tuple records (override, default) at the moment
+  // the user clicked "Keep mine"; the pill stays hidden as long as that pair
+  // matches the current pair, so any reactive change to either side
+  // re-evaluates and may re-show the pill.
+  //
+  // `equals` controls "fuzziness" — small numeric drifts under one slider
+  // step shouldn't fire a pill. Default is strict ===; numeric levers pass
+  // an absolute-tolerance comparator (`numEq(step)`).
+  private bindConflict<T>(
+    override: WritableSignal<T | null>,
+    defaultGetter: () => T,
+    equals: (a: T, b: T) => boolean = (a, b) => a === b,
+  ): {
+    conflict: Signal<boolean>;
+    pillVisible: Signal<boolean>;
+    dismiss: () => void;
+    apply: () => void;
+  } {
+    const dismissedAt = signal<DismissedAt<T | null>>(null);
+    const conflict = computed(() => {
+      const o = override();
+      return o !== null && !equals(o as T, defaultGetter());
+    });
+    const pillVisible = computed(() => {
+      if (!this.hasHydrated()) return false;
+      if (!conflict()) return false;
+      const d = dismissedAt();
+      if (d === null) return true;
+      return d.override !== override() || d.def !== defaultGetter();
+    });
+    return {
+      conflict,
+      pillVisible,
+      dismiss: () =>
+        dismissedAt.set({ override: override(), def: defaultGetter() }),
+      apply: () => {
+        override.set(null);
+        dismissedAt.set(null);
+      },
+    };
+  }
+}
+
+// Absolute-tolerance equality for numeric levers. `step` is typically the
+// slider's step size — values within ±step of each other count as "equal"
+// for conflict purposes, so sub-step drift doesn't fire a pill.
+function numEq(step: number): (a: number, b: number) => boolean {
+  return (a, b) => Math.abs(a - b) <= step;
 }

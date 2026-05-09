@@ -73,11 +73,18 @@ function homeChargerInstall(store: ScenarioStore): number {
   return store.localeConfig().defaultHomeChargerInstall;
 }
 
-function runningCostItems(rc: RunningCosts, fmt: (v: number) => string): BreakdownItem[] {
+function runningCostItems(
+  rc: RunningCosts,
+  fmt: (v: number) => string,
+  store: ScenarioStore,
+): BreakdownItem[] {
   return [
     { label: 'Insurance', amount: fmt(rc.insurance) },
     { label: 'Maintenance', amount: fmt(rc.maintenance) },
-    { label: 'Fuel / electricity', amount: fmt(rc.fuel) },
+    {
+      label: store.powertrain() === 'EV' ? 'Electricity' : 'Fuel',
+      amount: fmt(rc.fuel),
+    },
   ];
 }
 
@@ -159,7 +166,7 @@ export function leaseHeroData(store: ScenarioStore): HeroData {
     total = downSum + monthlySum + handbackSum;
   }
 
-  items.push(...runningCostItems(rc, fmt));
+  items.push(...runningCostItems(rc, fmt, store));
   total += rc.total;
   const charger = homeChargerInstall(store);
   if (charger > 0) {
@@ -215,7 +222,7 @@ export function financeHeroData(store: ScenarioStore): HeroData {
     amount: fmt(monthlySum),
     detail: `${fmt(monthly)} × ${loanMonths} mo`,
   });
-  items.push(...runningCostItems(rc, fmt));
+  items.push(...runningCostItems(rc, fmt, store));
   const charger = homeChargerInstall(store);
   if (charger > 0) {
     items.push({ label: 'Home charger install', amount: fmt(charger) });
@@ -251,7 +258,7 @@ export function cashHeroData(store: ScenarioStore): HeroData {
 
   const items: BreakdownItem[] = [
     { label: 'Purchase price', amount: fmt(purchase) },
-    ...runningCostItems(rc, fmt),
+    ...runningCostItems(rc, fmt, store),
   ];
   const charger = homeChargerInstall(store);
   if (charger > 0) {

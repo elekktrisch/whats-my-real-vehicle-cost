@@ -10,7 +10,15 @@ export type IconName =
   | 'close'
   | 'edit'
   | 'share'
-  | 'reset';
+  | 'reset'
+  | 'star'
+  | 'trending-up'
+  | 'github'
+  | 'whatsapp'
+  | 'telegram'
+  | 'mail'
+  | 'x'
+  | 'link';
 
 interface IconDef {
   paths: string[];
@@ -46,6 +54,39 @@ const REGISTRY: Record<IconName, IconDef> = {
   reset: {
     paths: ['M3 12a9 9 0 1 0 3-6.7', 'M3 4v6h6'],
   },
+  star: {
+    paths: [
+      'M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01L12 2z',
+    ],
+  },
+  'trending-up': {
+    paths: ['M3 17l6-6 4 4 8-8', 'M14 7h7v7'],
+  },
+  github: {
+    paths: [
+      'M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22',
+    ],
+  },
+  whatsapp: {
+    paths: [
+      'M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z',
+    ],
+  },
+  telegram: {
+    paths: ['M22 2L11 13', 'M22 2l-7 20-4-9-9-4 20-7z'],
+  },
+  mail: {
+    paths: ['M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z', 'M22 6l-10 7L2 6'],
+  },
+  x: {
+    paths: ['M6 6l12 12', 'M18 6L6 18'],
+  },
+  link: {
+    paths: [
+      'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71',
+      'M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71',
+    ],
+  },
 };
 
 @Component({
@@ -55,7 +96,7 @@ const REGISTRY: Record<IconName, IconDef> = {
       [attr.width]="size()"
       [attr.height]="size()"
       [attr.viewBox]="viewBox()"
-      fill="none"
+      [attr.fill]="filled() ? 'currentColor' : 'none'"
       stroke="currentColor"
       [attr.stroke-width]="strokeWidth()"
       stroke-linecap="round"
@@ -76,6 +117,7 @@ export class Icon {
   readonly size = input(20);
   readonly strokeWidth = input(1.5);
   readonly ariaLabel = input('');
+  readonly filled = input(false);
 
   protected readonly paths = computed(() => REGISTRY[this.name()].paths);
   protected readonly viewBox = computed(() => REGISTRY[this.name()].viewBox ?? '0 0 24 24');

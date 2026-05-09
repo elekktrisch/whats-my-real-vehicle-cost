@@ -24,7 +24,7 @@ describe('leaseHeroData', () => {
     expect(labels).toContain('Handback fee');
     expect(labels).toContain('Insurance');
     expect(labels).toContain('Maintenance');
-    expect(labels).toContain('Fuel / electricity');
+    expect(labels).toContain('Fuel');
     expect(data.outOfPocketCaption).toBe('mainly years 1-3');
     expect(data.outOfPocketCaptionMobile).toBe('yrs 1-3');
   });

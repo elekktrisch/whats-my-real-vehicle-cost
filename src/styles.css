@@ -16,6 +16,8 @@
   --color-accent-soft:  rgba(79, 142, 247, 0.1);
   --color-accent-glow:  rgba(79, 142, 247, 0.22);
   --color-coral:        #f4845f;
+  --color-warning:      #e6b14a;
+  --color-warning-soft: rgba(230, 177, 74, 0.12);
 
   /* ── Font tokens ───────────────────────────────────────────────────────── */
   --font-ui:   'Roboto', system-ui, sans-serif;
@@ -246,77 +248,42 @@
     border: 1px solid var(--color-border);
     border-radius: 12px;
     padding: 1.25rem;
-    transition: padding 300ms ease-out !important;
   }
   @media (max-width: 599px) {
     .hero-card {
       padding: 1rem;
     }
   }
-  [data-scrolled='true'] .hero-card {
-    padding: 0.625rem 1rem;
-  }
-  @media (max-width: 599px) {
-    [data-scrolled='true'] .hero-card {
-      padding: 0.5rem 0.625rem;
-    }
-  }
-  /* 5-column grid: icon | left col | arrow | right col | icon. Icons and
-   * arrow stay visible even in compact; only the eyebrow + caption rows
-   * inside each column collapse. */
+  /* 5-column grid: icon | left col | arrow | right col | icon. */
   .hero-card .hero-grid {
     display: grid;
     grid-template-columns: auto auto auto auto auto;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    transition: gap 300ms ease-out !important;
   }
   @media (min-width: 600px) {
     .hero-card .hero-grid {
       gap: 1rem;
     }
   }
-  [data-scrolled='true'] .hero-card .hero-grid {
-    gap: 0.4rem;
-  }
   .hero-card .hero-num {
     font-size: 1.4rem;
     white-space: nowrap;
-    transition: font-size 300ms ease-out !important;
   }
   @media (max-width: 599px) {
     .hero-card .hero-num {
       font-size: 1.25rem;
     }
   }
-  [data-scrolled='true'] .hero-card .hero-num {
-    font-size: 1.1rem;
-  }
-  @media (max-width: 599px) {
-    [data-scrolled='true'] .hero-card .hero-num {
-      font-size: 1rem;
-    }
-  }
   .hero-card .hero-arrow svg {
     width: 44px;
     height: 44px;
-    transition: width 300ms ease-out , height 300ms ease-out !important;
   }
   @media (max-width: 599px) {
     .hero-card .hero-arrow svg {
       width: 28px;
       height: 28px;
-    }
-  }
-  [data-scrolled='true'] .hero-card .hero-arrow svg {
-    width: 24px;
-    height: 24px;
-  }
-  @media (max-width: 599px) {
-    [data-scrolled='true'] .hero-card .hero-arrow svg {
-      width: 20px;
-      height: 20px;
     }
   }
 
@@ -351,9 +318,9 @@
     text-decoration: line-through;
   }
 
-  /* + Details disclosure under the hero arrow. Each row: label on the left
-   * (with optional detail sub-text), amount on the right. Final row marks
-   * the total with a top border. */
+  /* Hero breakdown — always visible under the hero arrow. Each row: label
+   * on the left (with optional detail sub-text), amount on the right. Final
+   * row marks the total with a top border. */
   .hero-details {
     margin-top: 1rem;
   }
@@ -403,16 +370,13 @@
     font-size: 0.95rem;
   }
 
-  /* Money / car icons flanking the hero columns. Stay visible in compact
-   * (just smaller) so the money→asset story holds even when scrolled. Dim
-   * treatment lives on car.png in lease-renew (no asset retained). */
+  /* Money / car icons flanking the hero columns. Dim treatment lives on
+   * car.png in lease-renew (no asset retained). */
   .hero-column-icon {
     width: 40px;
     height: 40px;
     object-fit: contain;
     opacity: 1;
-    transition: width 300ms ease-out , height 300ms ease-out ,
-                opacity 300ms ease-out , filter 300ms ease-out !important;
   }
   @media (max-width: 599px) {
     .hero-column-icon {
@@ -420,73 +384,58 @@
       height: 32px;
     }
   }
-  [data-scrolled='true'] .hero-card .hero-column-icon {
-    width: 28px;
-    height: 28px;
-  }
-  @media (max-width: 599px) {
-    [data-scrolled='true'] .hero-card .hero-column-icon {
-      width: 24px;
-      height: 24px;
-    }
-  }
   .hero-column-icon-dim {
     opacity: 0.35;
     filter: grayscale(1);
   }
   /* `display: block` is the load-bearing detail — these are <span> elements
-   * via Tailwind utilities; without explicit block they're inline and don't
-   * respect max-height, which kills the height-collapse transition. Explicit
-   * max-height on the default state so the transition has a numeric starting
-   * point (max-height: none ↔ 0 doesn't interpolate). */
+   * via Tailwind utilities, which would otherwise be inline. */
   .hero-card .hero-eyebrow,
   .hero-card .hero-caption {
     display: block;
-    opacity: 1;
-    overflow: hidden;
     white-space: nowrap;
-    transition: opacity 300ms ease-out , max-height 300ms ease-out !important;
   }
-  .hero-card .hero-eyebrow {
-    max-height: 24px;
+  /* Opportunity-cost callout — bridges the hero (cash-out only) and the
+   * chart (which includes opportunity cost as a layer). Sits above the
+   * breakdown so the user sees the true-cost adjustment before scanning
+   * the line items. Icon + amount are visually emphasized; the
+   * parenthetical note below is small and dim. */
+  .hero-opportunity {
+    margin-top: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    color: var(--color-tx-muted);
   }
-  .hero-card .hero-caption {
-    max-height: 48px;
+  .hero-opportunity-icon {
+    color: var(--color-accent);
+    display: inline-flex;
+    align-items: center;
   }
-  [data-scrolled='true'] .hero-card .hero-eyebrow,
-  [data-scrolled='true'] .hero-card .hero-caption {
-    opacity: 0;
-    max-height: 0;
+  .hero-opportunity-line {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+    justify-content: center;
   }
-  /* + Details disclosure collapses on scroll: compact hero is just
-   * [icon → number → arrow → number → icon]. */
-  .hero-details {
-    opacity: 1;
-    max-height: 600px;
-    overflow: hidden;
-    transition: opacity 300ms ease-out , max-height 300ms ease-out ,
-                margin-top 300ms ease-out !important;
+  .hero-opportunity-amount {
+    font-family: var(--font-mono);
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--color-tx);
+    letter-spacing: -0.02em;
   }
-  [data-scrolled='true'] .hero-details {
-    opacity: 0;
-    max-height: 0;
-    margin-top: 0;
-  }
-  /* Opportunity-cost footnote bridges the hero (cash-out only) and the
-   * chart (which includes opportunity cost as a layer). Collapses with
-   * the rest of the hero ornament in compact state. */
-  .hero-footnote {
-    opacity: 1;
-    max-height: 80px;
-    margin-top: 0.75rem;
-    overflow: hidden;
-    transition: opacity 300ms ease-out , max-height 300ms ease-out ,
-                margin-top 300ms ease-out !important;
-  }
-  [data-scrolled='true'] .hero-footnote {
-    opacity: 0;
-    max-height: 0;
-    margin-top: 0;
+  .hero-opportunity-note {
+    font-family: var(--font-ui);
+    font-size: 0.7rem;
+    color: var(--color-tx-dim);
+    text-align: center;
+    line-height: 1.5;
+    margin-top: 0.25rem;
   }
 
   /* Top row joins the sticky stack. Background fully opaque (content can't
@@ -600,15 +549,11 @@
     padding-top: 0.25rem;
     padding-bottom: 0.5rem;
   }
-  .strip-to-hero-gap {
-    margin-top: 0.75rem;
-    transition: margin-top 300ms ease-out !important;
-  }
-  [data-scrolled='true'] .strip-to-hero-gap {
-    margin-top: 0.25rem;
-  }
 
   .mode-card-total,
+  .mode-card-monthly,
+  .mode-card-per-distance,
+  .mode-card-bottom-tag,
   .recommendation-reason {
     opacity: 1;
     overflow: hidden;
@@ -618,13 +563,63 @@
   .mode-card-total {
     max-height: 28px;
   }
+  .mode-card-monthly {
+    max-height: 32px;
+  }
+  .mode-card-per-distance {
+    max-height: 28px;
+  }
+  .mode-card-bottom-tag {
+    max-height: 32px;
+  }
   .recommendation-reason {
     max-height: 80px;
   }
-  [data-scrolled='true'] .mode-card-total {
+  [data-scrolled='true'] .mode-card-total,
+  [data-scrolled='true'] .mode-card-monthly,
+  [data-scrolled='true'] .mode-card-per-distance,
+  [data-scrolled='true'] .mode-card-bottom-tag {
     opacity: 0;
     max-height: 0;
-    margin-top: 0;
+    /* !important needed to beat Tailwind's mt-[3px] / mt-[6px] / mt-[8px]
+     * utilities — without it each collapsed row keeps its top-margin and
+     * the card grows a phantom gap at the bottom. */
+    margin-top: 0 !important;
+  }
+
+  /* Header total fades in only when the strip compresses — sits to the
+   * right of the label so the compact row reads "Lease  $32.5k". Width is
+   * always reserved (element stays in the DOM) so neighbors don't reflow
+   * during the fade. On the recommended card the total picks up the accent
+   * color in compressed state so the "Best" cue carries over after the
+   * bottom badge has folded away. */
+  .mode-card-header-total {
+    opacity: 0;
+    transition: opacity 250ms ease-out , color 250ms ease-out !important;
+  }
+  [data-scrolled='true'] .mode-card-header-total {
+    opacity: 1;
+  }
+  [data-scrolled='true'] .mode-card-recommended .mode-card-header-total {
+    /* !important inverts the layer cascade: components-layer !important beats
+     * Tailwind's text-tx utility in @layer utilities. Without it the utility
+     * wins despite our higher selector specificity. */
+    color: var(--color-accent) !important;
+  }
+
+  /* Compressed cards collapse their inner rows, so the leftover padding
+   * looks oversized — tighten it to keep the strip vertically compact.
+   * !important needed to beat Tailwind's p-[6px] / sm:p-[12px] utilities
+   * (utilities layer wins normal declarations regardless of specificity).
+   * Animated to match the row collapse. */
+  .mode-card-shine,
+  .mode-card-shine-active {
+    transition: box-shadow 200ms ease-out , background-color 200ms ease-out ,
+                padding 300ms ease-out !important;
+  }
+  [data-scrolled='true'] .mode-card-shine,
+  [data-scrolled='true'] .mode-card-shine-active {
+    padding: 4px 8px !important;
   }
   [data-scrolled='true'] .recommendation-reason {
     opacity: 0;

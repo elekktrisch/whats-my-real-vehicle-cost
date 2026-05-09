@@ -25,25 +25,6 @@ export function setupAutosave(store: ScenarioStore, router: Router, location: Lo
     }
   });
 
-  let residualBaseline: { price: number; age: number; keep: number } | null = null;
-  effect(() => {
-    const price = store.purchasePrice();
-    const age = store.vehicleAge();
-    const keep = store.keepDuration();
-    if (store.isHydrating() || !store.hasHydrated()) return;
-    if (residualBaseline === null) {
-      residualBaseline = { price, age, keep };
-      return;
-    }
-    if (
-      price !== residualBaseline.price ||
-      age !== residualBaseline.age ||
-      keep !== residualBaseline.keep
-    ) {
-      store.setResidualValue(null);
-      residualBaseline = { price, age, keep };
-    }
-  });
 }
 
 function persist(snap: ScenarioSnapshot, router: Router, location: Location): void {

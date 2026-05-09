@@ -3,6 +3,7 @@ import { ScenarioStore } from '../../../scenario/scenario.store';
 import { Toggle } from '../../atoms/toggle/toggle';
 import { SliderControl } from '../../slider-control/slider-control';
 import { Disclosure } from '../disclosure/disclosure';
+import { ConflictPill } from '../conflict-pill/conflict-pill';
 import { MoneyPipe } from '../../pipes/money.pipe';
 import type { LeaseEndChoice } from '../../../scenario/scenario.types';
 
@@ -20,12 +21,28 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
  */
 @Component({
   selector: 'app-lease-end-section',
-  imports: [Toggle, SliderControl, Disclosure, MoneyPipe],
+  imports: [Toggle, SliderControl, Disclosure, ConflictPill, MoneyPipe],
   template: `
-    <div class="flex flex-col gap-3 mt-2 pt-3 border-t border-border">
+    <div class="flex flex-col gap-3 mt-2 pt-3 border-t border-border" id="slider-leaseEndChoice">
       <div class="flex items-center justify-between gap-3 flex-wrap">
-        <span class="font-ui text-[0.75rem] font-medium tracking-[0.12em] uppercase text-tx-dim">
+        <span class="font-ui text-[0.75rem] font-medium tracking-[0.12em] uppercase text-tx-dim flex items-center gap-2">
           End of lease
+          @if (store.leaseEndChoiceOverride() === null) {
+            <span
+              class="font-ui text-[0.65rem] uppercase tracking-[0.08em] text-tx-dim border border-border rounded px-[4px] py-px"
+            >
+              auto
+            </span>
+          } @else {
+            <button
+              type="button"
+              (click)="store.applyLeaseEndChoice()"
+              class="font-ui text-[0.7rem] text-tx-dim hover:text-accent transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/50 rounded px-[2px]"
+              title="Reset to auto-derived choice"
+            >
+              ↻ reset
+            </button>
+          }
         </span>
         <app-toggle
           [options]="choices"
@@ -34,6 +51,17 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
           ariaLabel="Lease end choice"
         />
       </div>
+      @if (store.conflictByKey().get('leaseEndChoice'); as c) {
+        <app-conflict-pill
+          [visible]="true"
+          [label]="c.label"
+          [proposedValue]="c.proposedValue"
+          [currentValue]="c.currentValue"
+          [reason]="c.reason"
+          (apply)="c.apply()"
+          (keep)="c.keep()"
+        />
+      }
 
       @if (choice() === 'handBack') {
         <p class="font-ui text-[0.78rem] text-tx-muted leading-snug">
@@ -51,19 +79,34 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
       }
 
       <app-disclosure label="+ Advanced">
-        <app-slider-control
-          label="Residual at lease end"
-          tip="Contractual residual value at the end of the lease term. Drives the monthly lease payment formula (depreciates from cap cost down to this number over the term). Auto-derived from the depreciation curve at vehicleAge + leaseTerm; override with the figure from your contract."
-          [min]="0"
-          [max]="leaseEndResidualMax()"
-          [step]="500"
-          [minLabel]="0 | money:'compact'"
-          [maxLabel]="leaseEndResidualMax() | money:'compact'"
-          [prefix]="store.currencyPrefix()"
-          [suffix]="store.currencySuffix()"
-          [value]="store.leaseEndResidual()"
-          (valueChange)="store.leaseEndResidualOverride.set($event)"
-        />
+        <div id="slider-leaseEndResidual">
+          <app-slider-control
+            label="Residual at lease end"
+            tip="Contractual residual value at the end of the lease term. Drives the monthly lease payment formula (depreciates from cap cost down to this number over the term). Auto-derived from the depreciation curve at vehicleAge + leaseTerm; override with the figure from your contract."
+            [min]="0"
+            [max]="leaseEndResidualMax()"
+            [step]="500"
+            [minLabel]="0 | money:'compact'"
+            [maxLabel]="leaseEndResidualMax() | money:'compact'"
+            [prefix]="store.currencyPrefix()"
+            [suffix]="store.currencySuffix()"
+            [value]="store.leaseEndResidual()"
+            (valueChange)="store.leaseEndResidualOverride.set($event)"
+            [isAuto]="store.leaseEndResidualOverride() === null"
+            (reset)="store.applyLeaseEndResidual()"
+          />
+          @if (store.conflictByKey().get('leaseEndResidual'); as c) {
+            <app-conflict-pill
+              [visible]="true"
+              [label]="c.label"
+              [proposedValue]="c.proposedValue"
+              [currentValue]="c.currentValue"
+              [reason]="c.reason"
+              (apply)="c.apply()"
+              (keep)="c.keep()"
+            />
+          }
+        </div>
         @if (choice() === 'handBack') {
           <app-slider-control
             label="Disposition fee"
@@ -121,6 +164,7 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
           />
         }
         <div
+          id="slider-earlyTerminationFee"
           [class.opacity-50]="!earlyTerminationApplies()"
           [class.pointer-events-none]="!earlyTerminationApplies()"
         >
@@ -136,7 +180,20 @@ import type { LeaseEndChoice } from '../../../scenario/scenario.types';
             [suffix]="store.currencySuffix()"
             [value]="store.earlyTerminationFee()"
             (valueChange)="store.earlyTerminationFeeOverride.set($event)"
+            [isAuto]="store.earlyTerminationFeeOverride() === null"
+            (reset)="store.applyEarlyTerminationFee()"
           />
+          @if (store.conflictByKey().get('earlyTerminationFee'); as c) {
+            <app-conflict-pill
+              [visible]="true"
+              [label]="c.label"
+              [proposedValue]="c.proposedValue"
+              [currentValue]="c.currentValue"
+              [reason]="c.reason"
+              (apply)="c.apply()"
+              (keep)="c.keep()"
+            />
+          }
           @if (!earlyTerminationApplies()) {
             <div class="font-ui text-[0.75rem] text-tx-dim -mt-3 leading-snug">
               Not applicable: keep duration ({{ store.keepDuration() }} yr) is at

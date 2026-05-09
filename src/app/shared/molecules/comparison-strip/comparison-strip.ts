@@ -16,9 +16,15 @@ export interface ModeCardData {
   mode: Tab;
   label: string;
   total: string;
+  totalFull: string;
+  totalTip: string;
   monthly: string;
+  monthlyFull: string;
+  monthlyTip: string;
   perDistance: string;
+  perDistanceTip: string;
   delta: string | null;
+  conflictCount: number;
 }
 
 const MODES: readonly Tab[] = ['lease', 'finance', 'cash'];
@@ -41,10 +47,16 @@ const MODES: readonly Tab[] = ['lease', 'finance', 'cash'];
             [active]="card.mode === active()"
             [recommended]="card.mode === recommended()"
             [total]="card.total"
+            [totalFull]="card.totalFull"
             [monthly]="card.monthly"
+            [monthlyFull]="card.monthlyFull"
             [perDistance]="card.perDistance"
             [distanceUnit]="distanceUnit()"
             [delta]="card.delta"
+            [conflictCount]="card.conflictCount"
+            [totalTip]="card.totalTip"
+            [monthlyTip]="card.monthlyTip"
+            [perDistanceTip]="card.perDistanceTip"
             [tabId]="tabId(card.mode)"
             [panelId]="panelId(card.mode)"
             (select)="onSelect($event)"

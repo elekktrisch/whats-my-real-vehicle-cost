@@ -33,7 +33,6 @@
     "@angular/platform-browser-dynamic": "^21.2.12",
     "@angular/router": "^21.2.12",
     "chart.js": "^4.5.1",
-    "fflate": "^0.8.2",
     "ng2-charts": "^10.0.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",

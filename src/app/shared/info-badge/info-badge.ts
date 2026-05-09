@@ -17,7 +17,11 @@ let nextId = 0;
       >
         ?
       </span>
-      <span class="sr-only" [id]="describedById()">{{ tip() }}</span>
+      <!-- aria-hidden keeps this span out of ancestor "name from content"
+           compute (e.g. mode-card tabs). aria-describedby references still
+           resolve through aria-hidden subtrees per ARIA spec, so screen
+           readers still announce the tip when the badge is focused. -->
+      <span class="sr-only" [id]="describedById()" aria-hidden="true">{{ tip() }}</span>
     </button>
   `,
 })
