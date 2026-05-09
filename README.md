@@ -12,6 +12,10 @@ A total-cost-of-ownership (TCO) calculator that shows what a car *really* costs 
 
 **Try it →** <https://elekktrisch.github.io/whats-my-real-vehicle-cost/>
 
+![Screenshot of the comparison page](./docs/screenshot.png)
+
+<!-- TODO: capture and commit docs/screenshot.png — comparison page on desktop, chart visible, all three modes in the strip. -->
+
 ## Why
 
 Most car-cost calculators stop at the monthly payment. The interesting comparison — *lease vs. finance vs. cash* — turns on the layers most shoppers never see: depreciation curve, opportunity cost on the down payment, lease-end fees, fuel/electricity at your locale's rates, insurance scaled by vehicle category, maintenance growing with mileage and age. This app puts all of those on one chart so the cross-mode comparison stays apples-to-apples.
@@ -89,6 +93,14 @@ For deeper docs:
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md) — code-level architecture
 - [`CLAUDE.md`](./CLAUDE.md) — agent-targeted notes (commands, conventions, deploy)
 - [`USE_CASES.md`](./USE_CASES.md) — example scenarios
+
+## Contributing
+
+Patches welcome — see [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the dev loop, code conventions, and where to look first.
+
+## License
+
+[MIT](./LICENSE) © Roman Schlegel.
 
 ## Disclaimer
 

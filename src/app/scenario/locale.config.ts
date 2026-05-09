@@ -141,3 +141,27 @@ export function formatCurrency(value: number, locale: Locale, fractionDigits = 0
     ? `${sign}${formatted} ${cfg.currencySymbol}`
     : `${sign}${cfg.currencySymbol}${formatted}`;
 }
+
+/**
+ * Compact-currency for tight UI captions: "$32,500" → "$32.5k", "$5,000" →
+ * "$5k". Sub-1000 values keep `subThousandFractionDigits` decimals (default 0
+ * for hero captions, 2 for the money pipe so cents render correctly).
+ *
+ * Round-to-hundreds-then-divide-by-ten gives one decimal place above the
+ * threshold: 32500 → 325 → 32.5.
+ */
+export function formatCompactCurrency(
+  value: number,
+  locale: Locale,
+  subThousandFractionDigits = 0,
+): string {
+  const cfg = LOCALE_CONFIG[locale];
+  const abs = Math.abs(value);
+  const subThousandScale = 10 ** subThousandFractionDigits;
+  const k =
+    abs >= 1000
+      ? `${Math.round(abs / 100) / 10}k`
+      : String(Math.round(abs * subThousandScale) / subThousandScale);
+  const sign = value < 0 ? '-' : '';
+  return cfg.currencyAfter ? `${sign}${k} ${cfg.currencySymbol}` : `${sign}${cfg.currencySymbol}${k}`;
+}

@@ -1,6 +1,6 @@
 import { financePayment } from '../../../scenario/calculations/financing';
 import { fuelCostOverYears } from '../../../scenario/calculations/fuel';
-import { formatCurrency } from '../../../scenario/locale.config';
+import { formatCompactCurrency, formatCurrency } from '../../../scenario/locale.config';
 import type { ScenarioStore } from '../../../scenario/scenario.store';
 
 export interface BreakdownItem {
@@ -29,13 +29,11 @@ export interface HeroData {
   retainsAsset: boolean;
 }
 
-// Compact-currency helper for mobile captions: "$5,000" → "$5k", "$32,500" → "$32.5k".
+// Compact-currency helper for mobile captions. Sub-1000 values render as
+// whole numbers here (hero never shows cents); the money pipe uses the
+// 2-decimal variant for templates.
 function compactMoney(v: number, store: ScenarioStore): string {
-  const cfg = store.localeConfig();
-  const abs = Math.abs(v);
-  const k = abs >= 1000 ? `${Math.round(abs / 100) / 10}k` : String(Math.round(abs));
-  const sign = v < 0 ? '-' : '';
-  return cfg.currencyAfter ? `${sign}${k} ${cfg.currencySymbol}` : `${sign}${cfg.currencySymbol}${k}`;
+  return formatCompactCurrency(v, store.locale());
 }
 
 interface RunningCosts {

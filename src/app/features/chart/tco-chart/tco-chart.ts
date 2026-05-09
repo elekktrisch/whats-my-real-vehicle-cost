@@ -67,6 +67,23 @@ const TABLET_BP = 900;
 const CASH_OUT_COLOR = '#dde3f0';
 const CASH_OUT_LABEL = 'Cash';
 
+function buildStackedDataset(layer: LayerSpec, series: MonthlyTcoPoint[], isHidden: boolean) {
+  return {
+    label: layer.label,
+    data: series.map((p) => p[layer.key]),
+    borderColor: layer.color,
+    backgroundColor: layer.fill,
+    fill: true,
+    tension: 0.25,
+    borderWidth: 1.25,
+    pointRadius: 0,
+    pointHoverRadius: 3,
+    pointHoverBackgroundColor: layer.color,
+    stack: 'cost',
+    hidden: isHidden,
+  };
+}
+
 @Component({
   selector: 'app-tco-chart',
   imports: [BaseChartDirective],
@@ -206,20 +223,9 @@ export class TcoChart {
     const hidden = this.hiddenSeries();
     const labels = series.map((p) => `Mo ${p.month}`);
     // Stacked-area cost layers — share `stack: 'cost'` so they sum vertically.
-    const stackDatasets = LAYERS.map((layer) => ({
-      label: layer.label,
-      data: series.map((p) => p[layer.key]),
-      borderColor: layer.color,
-      backgroundColor: layer.fill,
-      fill: true,
-      tension: 0.25,
-      borderWidth: 1.25,
-      pointRadius: 0,
-      pointHoverRadius: 3,
-      pointHoverBackgroundColor: layer.color,
-      stack: 'cost',
-      hidden: hidden.has(layer.key),
-    }));
+    const stackDatasets = LAYERS.map((layer) =>
+      buildStackedDataset(layer, series, hidden.has(layer.key)),
+    );
     // Overlay line: dashed neutral, no fill, on its own stack so it doesn't
     // sum with the cost layers — its Y is the raw cashOut value.
     const overlayDataset = {

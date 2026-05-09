@@ -12,11 +12,15 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   // CI gets a single worker for log readability + lower flake; locally use all cores.
   workers: process.env.CI ? 1 : undefined,
-  reporter: process.env.CI ? [['github'], ['list']] : 'list',
+  reporter: process.env.CI
+    ? [['html', { open: 'never' }], ['github'], ['list']]
+    : 'list',
   use: {
     baseURL: BASE_URL,
     trace: 'retain-on-failure',
-    screenshot: 'only-on-failure',
+    // Capture screenshots on every test step (not just failures) so green
+    // runs still produce artifacts you can review after the fact.
+    screenshot: 'on',
   },
   projects: [
     {
