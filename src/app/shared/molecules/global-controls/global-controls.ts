@@ -22,7 +22,7 @@ import { MoneyPipe } from '../../pipes/money.pipe';
   imports: [SliderControl, SliderGroup, Disclosure, MaintenanceDisplay, ConflictPill, MoneyPipe],
   template: `
     <app-slider-group title="Vehicle" [caption]="contextCaption()">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
+      <div class="grid grid-cols-1 gap-x-6 gap-y-1">
         <app-slider-control
           label="Annual mileage"
           tip="How far you drive each year. Drives fuel cost and (combined with keep-duration) lease overage risk."
@@ -62,7 +62,7 @@ import { MoneyPipe } from '../../pipes/money.pipe';
       </div>
 
       <app-disclosure label="+ Advanced">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+        <div class="grid grid-cols-1 gap-x-6 gap-y-3">
           <div id="slider-residualValue">
             <app-slider-control
               label="Residual value"
