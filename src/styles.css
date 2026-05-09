@@ -550,6 +550,8 @@
 
   .mode-card-total,
   .mode-card-monthly,
+  .mode-card-per-distance,
+  .mode-card-bottom-tag,
   .recommendation-reason {
     opacity: 1;
     overflow: hidden;
@@ -562,14 +564,60 @@
   .mode-card-monthly {
     max-height: 32px;
   }
+  .mode-card-per-distance {
+    max-height: 28px;
+  }
+  .mode-card-bottom-tag {
+    max-height: 32px;
+  }
   .recommendation-reason {
     max-height: 80px;
   }
   [data-scrolled='true'] .mode-card-total,
-  [data-scrolled='true'] .mode-card-monthly {
+  [data-scrolled='true'] .mode-card-monthly,
+  [data-scrolled='true'] .mode-card-per-distance,
+  [data-scrolled='true'] .mode-card-bottom-tag {
     opacity: 0;
     max-height: 0;
-    margin-top: 0;
+    /* !important needed to beat Tailwind's mt-[3px] / mt-[6px] / mt-[8px]
+     * utilities — without it each collapsed row keeps its top-margin and
+     * the card grows a phantom gap at the bottom. */
+    margin-top: 0 !important;
+  }
+
+  /* Header total fades in only when the strip compresses — sits to the
+   * right of the label so the compact row reads "Lease  $32.5k". Width is
+   * always reserved (element stays in the DOM) so neighbors don't reflow
+   * during the fade. On the recommended card the total picks up the accent
+   * color in compressed state so the "Best" cue carries over after the
+   * bottom badge has folded away. */
+  .mode-card-header-total {
+    opacity: 0;
+    transition: opacity 250ms ease-out , color 250ms ease-out !important;
+  }
+  [data-scrolled='true'] .mode-card-header-total {
+    opacity: 1;
+  }
+  [data-scrolled='true'] .mode-card-recommended .mode-card-header-total {
+    /* !important inverts the layer cascade: components-layer !important beats
+     * Tailwind's text-tx utility in @layer utilities. Without it the utility
+     * wins despite our higher selector specificity. */
+    color: var(--color-accent) !important;
+  }
+
+  /* Compressed cards collapse their inner rows, so the leftover padding
+   * looks oversized — tighten it to keep the strip vertically compact.
+   * !important needed to beat Tailwind's p-[6px] / sm:p-[12px] utilities
+   * (utilities layer wins normal declarations regardless of specificity).
+   * Animated to match the row collapse. */
+  .mode-card-shine,
+  .mode-card-shine-active {
+    transition: box-shadow 200ms ease-out , background-color 200ms ease-out ,
+                padding 300ms ease-out !important;
+  }
+  [data-scrolled='true'] .mode-card-shine,
+  [data-scrolled='true'] .mode-card-shine-active {
+    padding: 4px 8px !important;
   }
   [data-scrolled='true'] .recommendation-reason {
     opacity: 0;

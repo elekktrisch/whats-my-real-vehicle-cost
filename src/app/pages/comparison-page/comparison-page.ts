@@ -154,7 +154,9 @@ export class ComparisonPage {
         mode,
         label: LABEL[mode],
         total: formatCompactCurrency(breakdown.total, locale),
+        totalFull: formatCurrency(breakdown.total, locale, 0),
         monthly: formatCompactCurrency(monthly, locale),
+        monthlyFull: formatCurrency(monthly, locale, 0),
         perDistance: formatCurrency(perDistance, locale, 2),
         delta: isRecommended
           ? null

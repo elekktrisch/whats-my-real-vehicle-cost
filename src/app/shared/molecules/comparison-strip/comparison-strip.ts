@@ -16,7 +16,9 @@ export interface ModeCardData {
   mode: Tab;
   label: string;
   total: string;
+  totalFull: string;
   monthly: string;
+  monthlyFull: string;
   perDistance: string;
   delta: string | null;
 }
@@ -41,7 +43,9 @@ const MODES: readonly Tab[] = ['lease', 'finance', 'cash'];
             [active]="card.mode === active()"
             [recommended]="card.mode === recommended()"
             [total]="card.total"
+            [totalFull]="card.totalFull"
             [monthly]="card.monthly"
+            [monthlyFull]="card.monthlyFull"
             [perDistance]="card.perDistance"
             [distanceUnit]="distanceUnit()"
             [delta]="card.delta"
