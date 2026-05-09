@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { ScenarioStore } from './scenario.store';
 import { defaultScenario } from './scenario.defaults';
+import { DEFAULT_CURVES, makeCurve } from './calculations/depreciation';
 
 function makeStore(): ScenarioStore {
   TestBed.configureTestingModule({
@@ -538,3 +539,101 @@ describe('ScenarioStore — invariants', () => {
   });
 });
 
+describe('ScenarioStore — depreciation curve override', () => {
+  it('depreciationCurve() resolves to ICE default when powertrain=ICE and no override', () => {
+    const store = makeStore();
+    store.setPowertrain('ICE');
+    expect(store.depreciationCurveOverride()).toBeNull();
+    expect(store.depreciationCurve()).toEqual(DEFAULT_CURVES.ICE);
+  });
+
+  it('depreciationCurve() resolves to EV default when powertrain=EV and no override', () => {
+    const store = makeStore();
+    store.setPowertrain('EV');
+    expect(store.depreciationCurve()).toEqual(DEFAULT_CURVES.EV);
+  });
+
+  it('explicit override wins over the powertrain default', () => {
+    const store = makeStore();
+    const custom = makeCurve([1.0, 0.5, 0.3, 0.18, 0.1]);
+    store.depreciationCurveOverride.set(custom);
+    expect(store.depreciationCurve()).toEqual(custom);
+  });
+
+  it('clearing the override (null) returns to the powertrain default', () => {
+    const store = makeStore();
+    store.setPowertrain('EV');
+    store.depreciationCurveOverride.set(makeCurve([1, 0.6, 0.4, 0.25, 0.15]));
+    store.depreciationCurveOverride.set(null);
+    expect(store.depreciationCurve()).toEqual(DEFAULT_CURVES.EV);
+  });
+
+  it('toggling powertrain leaves the user override in place (per Q4)', () => {
+    const store = makeStore();
+    const custom = makeCurve([1.0, 0.5, 0.3, 0.18, 0.1]);
+    store.depreciationCurveOverride.set(custom);
+    store.setPowertrain('EV');
+    expect(store.depreciationCurve()).toEqual(custom);
+    store.setPowertrain('ICE');
+    expect(store.depreciationCurve()).toEqual(custom);
+  });
+
+  it('residualValue auto-default tracks the active curve', () => {
+    const store = makeStore();
+    store.setPowertrain('ICE');
+    store.residualValueOverride.set(null);
+    store.purchasePrice.set(30_000);
+    store.vehicleAge.set(0);
+    store.keepDuration.set(4); // exactly anchor
+    const iceResidual = store.residualValue();
+    store.setPowertrain('EV');
+    const evResidual = store.residualValue();
+    // EV curve is steeper at age 4 (0.36 vs 0.49) → lower residual.
+    expect(evResidual).toBeLessThan(iceResidual);
+  });
+
+  it('leaseEndResidual auto-default tracks the active curve', () => {
+    const store = makeStore();
+    store.leaseEndResidualOverride.set(null);
+    store.purchasePrice.set(30_000);
+    store.vehicleAge.set(0);
+    store.leaseTerm.set(48); // 4yr → exactly anchor
+    store.setPowertrain('ICE');
+    const iceLer = store.leaseEndResidual();
+    store.setPowertrain('EV');
+    const evLer = store.leaseEndResidual();
+    expect(evLer).toBeLessThan(iceLer);
+  });
+
+  it('msrp back-derive for a used car tracks the active curve', () => {
+    const store = makeStore();
+    store.purchasePrice.set(15_000);
+    store.vehicleAge.set(4); // exactly anchor
+    store.setPowertrain('ICE');
+    const iceMsrp = store.msrp();
+    store.setPowertrain('EV');
+    const evMsrp = store.msrp();
+    // EV curve steeper → 15k corresponds to a higher original sticker.
+    expect(evMsrp).toBeGreaterThan(iceMsrp);
+    // Sanity: 15000 / 0.49 ≈ 30,612 ICE; 15000 / 0.36 ≈ 41,667 EV.
+    expect(iceMsrp).toBeCloseTo(15_000 / 0.49, 0);
+    expect(evMsrp).toBeCloseTo(15_000 / 0.36, 0);
+  });
+
+  it('snapshot round-trip preserves the curve override', () => {
+    const store = makeStore();
+    const custom = makeCurve([1.0, 0.5, 0.3, 0.18, 0.1]);
+    store.depreciationCurveOverride.set(custom);
+    const snap = store.snapshot();
+    expect(snap.globals.depreciationCurve).toEqual(custom);
+    store.applySnapshot(defaultScenario()); // wipe
+    expect(store.depreciationCurveOverride()).toBeNull();
+    store.applySnapshot(snap); // restore
+    expect(store.depreciationCurveOverride()).toEqual(custom);
+  });
+
+  it('snapshot round-trip preserves null (auto-derive)', () => {
+    const store = makeStore();
+    expect(store.snapshot().globals.depreciationCurve).toBeNull();
+  });
+});
