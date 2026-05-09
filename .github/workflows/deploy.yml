@@ -1,8 +1,12 @@
 # Build the Angular app and deploy it to GitHub Pages.
+# Tests also run on every PR targeting master so that branch protection
+# can require them to pass before merging.
 name: Deploy to GitHub Pages
 
 on:
   push:
+    branches: [master]
+  pull_request:
     branches: [master]
   workflow_dispatch:
 
@@ -109,9 +113,12 @@ jobs:
           echo "📊 Download \`playwright-report\` (HTML) or \`playwright-test-results\` (raw) from the **Artifacts** section of this run." >> "$GITHUB_STEP_SUMMARY"
 
   # ─── Job 3: production build, SPA fallback, bundle artifact ──────────────
+  # Skipped on pull_request — PRs only need the test gate. Build + deploy
+  # run when the merge lands on master (push event).
   build:
     name: Build
     needs: [unit-tests, e2e]
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo

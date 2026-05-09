@@ -6,7 +6,7 @@ A total-cost-of-ownership (TCO) calculator that shows what a car *really* costs 
 
 [![Deploy](https://github.com/elekktrisch/whats-my-real-vehicle-cost/actions/workflows/deploy.yml/badge.svg)](https://github.com/elekktrisch/whats-my-real-vehicle-cost/actions/workflows/deploy.yml)
 [![Live](https://img.shields.io/badge/live-elekktrisch.github.io-4f8ef7)](https://elekktrisch.github.io/whats-my-real-vehicle-cost/)
-[![Angular](https://img.shields.io/badge/Angular-20-dd0031)](https://angular.dev)
+[![Angular](https://img.shields.io/badge/Angular-21-dd0031)](https://angular.dev)
 [![Tailwind](https://img.shields.io/badge/Tailwind-4-38bdf8)](https://tailwindcss.com)
 [![Playwright](https://img.shields.io/badge/Playwright-e2e-2ead33)](https://playwright.dev)
 
@@ -33,7 +33,7 @@ Most car-cost calculators stop at the monthly payment. The interesting compariso
 
 ## Tech stack
 
-- **[Angular 20](https://angular.dev)** — standalone components, signals everywhere, no NgModules
+- **[Angular 21](https://angular.dev)** — standalone components, signals everywhere, no NgModules
 - **[Chart.js 4](https://www.chartjs.org)** + ng2-charts for the cumulative TCO chart
 - **[Tailwind CSS 4](https://tailwindcss.com)** — utility-first with project-defined color/font tokens
 - **[fflate](https://github.com/101arrowz/fflate)** for share-URL compression

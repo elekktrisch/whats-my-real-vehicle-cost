@@ -1,6 +1,6 @@
 # Architecture
 
-How [PRODUCT.md](./PRODUCT.md) and [USE_CASES.md](./USE_CASES.md) get built. Angular 20, standalone components, signals everywhere, no NgModules.
+How [PRODUCT.md](./PRODUCT.md) and [USE_CASES.md](./USE_CASES.md) get built. Angular 21, standalone components, signals everywhere, no NgModules.
 
 For the current code-level layout (component tree, store shape, file paths), see [CLAUDE.md](./CLAUDE.md). This document covers the architectural *why*: principles, the override pattern, calc-engine layout, testing strategy.
 
