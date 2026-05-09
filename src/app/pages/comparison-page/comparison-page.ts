@@ -16,7 +16,7 @@ import {
   ModeCardData,
 } from '../../shared/molecules/comparison-strip/comparison-strip';
 import { ModeDetailView } from '../../features/mode-detail-view/mode-detail-view';
-import { formatCurrency } from '../../scenario/locale.config';
+import { formatCompactCurrency, formatCurrency } from '../../scenario/locale.config';
 import type { CostBreakdown, Tab } from '../../scenario/scenario.types';
 
 const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Loan', cash: 'Cash' };
@@ -153,8 +153,8 @@ export class ComparisonPage {
       return {
         mode,
         label: LABEL[mode],
-        total: formatCurrency(breakdown.total, locale, 0),
-        monthly: formatCurrency(monthly, locale, 0),
+        total: formatCompactCurrency(breakdown.total, locale),
+        monthly: formatCompactCurrency(monthly, locale),
         perDistance: formatCurrency(perDistance, locale, 2),
         delta: isRecommended
           ? null

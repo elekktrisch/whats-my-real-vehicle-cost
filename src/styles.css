@@ -512,6 +512,7 @@
   }
 
   .mode-card-total,
+  .mode-card-monthly,
   .recommendation-reason {
     opacity: 1;
     overflow: hidden;
@@ -521,10 +522,14 @@
   .mode-card-total {
     max-height: 28px;
   }
+  .mode-card-monthly {
+    max-height: 32px;
+  }
   .recommendation-reason {
     max-height: 80px;
   }
-  [data-scrolled='true'] .mode-card-total {
+  [data-scrolled='true'] .mode-card-total,
+  [data-scrolled='true'] .mode-card-monthly {
     opacity: 0;
     max-height: 0;
     margin-top: 0;

@@ -38,21 +38,21 @@ import type { Tab } from '../../../scenario/scenario.types';
 
       <div class="mode-card-total flex items-baseline justify-between flex-wrap gap-1 sm:gap-2">
         <span [class]="rowLabelClass">Total</span>
-        <span class="font-mono text-[0.78rem] sm:text-[0.85rem] text-tx tracking-[-0.02em]">
+        <span class="font-mono text-[0.72rem] sm:text-[0.85rem] text-tx tracking-[-0.02em]">
           {{ total() }}
         </span>
       </div>
 
-      <div class="flex items-baseline justify-between flex-wrap gap-1 sm:gap-2 mt-[6px]">
+      <div class="mode-card-monthly flex items-baseline justify-between flex-wrap gap-1 sm:gap-2 mt-[3px] sm:mt-[6px]">
         <span [class]="rowLabelClass">Monthly</span>
-        <span class="font-mono text-[0.85rem] sm:text-[0.95rem] font-medium text-tx tracking-[-0.02em]">
+        <span class="font-mono text-[0.78rem] sm:text-[0.95rem] font-medium text-tx tracking-[-0.02em]">
           {{ monthly() }}
         </span>
       </div>
 
-      <div class="flex items-baseline justify-between flex-wrap gap-2 mt-[4px]">
+      <div class="flex items-baseline justify-between flex-wrap gap-2 mt-[2px] sm:mt-[4px]">
         <span [class]="rowLabelClass">Per {{ distanceUnit() }}</span>
-        <span class="font-mono text-[0.78rem] text-tx-muted tracking-[-0.02em]">
+        <span class="font-mono text-[0.72rem] sm:text-[0.78rem] text-tx-muted tracking-[-0.02em]">
           {{ perDistance() }}
         </span>
       </div>
@@ -82,7 +82,7 @@ export class ModeCard {
     // it long delta strings would push the strip past the viewport.
     const base = [
       'block w-full min-w-0 text-left rounded-[12px] transition-[box-shadow,background-color] duration-200',
-      'p-[10px] sm:p-[14px]',
+      'p-[8px] sm:p-[12px]',
       'border cursor-pointer',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
     ];
