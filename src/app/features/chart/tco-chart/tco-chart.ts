@@ -132,6 +132,7 @@ function buildStackedDataset(layer: LayerSpec, series: MonthlyTcoPoint[], isHidd
         <canvas
           baseChart
           role="img"
+          class="touch-pan-y"
           [attr.aria-label]="ariaSummary()"
           [data]="chartData()"
           [type]="'line'"
