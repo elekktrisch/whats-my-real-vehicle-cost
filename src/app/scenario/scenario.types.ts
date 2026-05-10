@@ -1,4 +1,5 @@
-export type Locale = 'US' | 'EU';
+export type Region = 'US' | 'EU';
+export type Language = 'en' | 'de' | 'it' | 'fr' | 'es';
 export type Powertrain = 'ICE' | 'EV';
 export type Tab = 'lease' | 'finance' | 'cash';
 export type VehicleCategory = 'economy' | 'mid' | 'luxury';
@@ -45,7 +46,7 @@ export interface MaintenanceCurve {
 }
 
 export interface Globals {
-  locale: Locale;
+  region: Region;
   powertrain: Powertrain;
   purchasePrice: number;
   /** null = auto-derive from msrp × depreciationFactor(vehicleAge + keepDuration). */

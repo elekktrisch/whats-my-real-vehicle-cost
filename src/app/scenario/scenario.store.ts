@@ -1,19 +1,29 @@
 import { Injectable, Signal, WritableSignal, computed, inject, signal } from '@angular/core';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
-import { LOCALE_CONFIG, fuelEfficiencyDefault, fuelPriceDefault } from './locale.config';
+import { TranslocoService } from '@jsverse/transloco';
+import {
+  FormatContext,
+  bcp47ForContext,
+  currencyForContext,
+  fuelEfficiencyDefault,
+  fuelPriceDefault,
+  regionConfigForContext,
+} from './region.config';
 import { LEASE_END_DEFAULTS, defaultScenario } from './scenario.defaults';
 import type {
   ChargerStatus,
   CostBreakdown,
   DepreciationCurve,
+  Language,
   LeaseEndChoice,
-  Locale,
+  Region,
   MaintenanceCurve,
   Powertrain,
   ScenarioSnapshot,
   Tab,
 } from './scenario.types';
+import { writeStoredLanguage } from '../../i18n/detect';
 import { backDeriveMsrp } from './calculations/msrp';
 import { defaultCurveForPowertrain, depreciationFactor } from './calculations/depreciation';
 import { categorize, categoryMultipliers } from './calculations/category';
@@ -26,7 +36,7 @@ import { recommendTab } from './calculations/recommendation';
 import { costPerDistance, effectiveMonthly, tcoBreakdown } from './calculations/tco';
 import { setupAutosave } from './scenario.persistence';
 import { ActiveConflict, conflictCountForTab } from './conflicts';
-import { formatCurrency } from './locale.config';
+import { formatCurrency } from './region.config';
 
 // Tuple recorded when the user dismisses a conflict pill. The pill stays
 // hidden as long as (override, default) match what was dismissed; any
@@ -40,7 +50,19 @@ const APR_USED_CAR = 3.0;
 export class ScenarioStore {
   private readonly initial = defaultScenario();
 
-  readonly locale = signal<Locale>(this.initial.globals.locale);
+  readonly region = signal<Region>(this.initial.globals.region);
+  // Language is independent from `region` (which controls units/currency).
+  // Detection + persistence live outside the `?s=` snapshot — see
+  // PLAN-i18n.md and `setLanguage` below.
+  readonly language = signal<Language>('en');
+  // Bundle threaded through formatCurrency / formatCompactCurrency. Region
+  // picks symbol + placement; language picks number conventions.
+  readonly formatContext = computed<FormatContext>(() => ({
+    region: this.region(),
+    language: this.language(),
+  }));
+  // Derived BCP-47 for `toLocaleString` callers.
+  readonly bcp47 = computed<string>(() => bcp47ForContext(this.formatContext()));
   readonly powertrain = signal<Powertrain>(this.initial.globals.powertrain);
   readonly purchasePrice = signal(this.initial.globals.purchasePrice);
   // Override-pattern: each `xOverride` is a `WritableSignal<T | null>` where
@@ -127,16 +149,20 @@ export class ScenarioStore {
   readonly msrp = computed(() =>
     backDeriveMsrp(this.purchasePrice(), this.vehicleAge(), this.depreciationCurve()),
   );
-  readonly vehicleCategory = computed(() => categorize(this.msrp(), this.locale()));
+  readonly vehicleCategory = computed(() => categorize(this.msrp(), this.region()));
   readonly categoryMultipliers = computed(() => categoryMultipliers(this.vehicleCategory()));
-  readonly localeConfig = computed(() => LOCALE_CONFIG[this.locale()]);
+  // Region config is context-aware: UK overlay applies when en+EU so seed
+  // values for fuel price / electricity / home charger install reflect UK.
+  readonly regionConfig = computed(() => regionConfigForContext(this.formatContext()));
+  // Currency display follows (region, language) — en+EU swaps € → £.
+  readonly currencyDisplay = computed(() => currencyForContext(this.formatContext()));
   readonly currencyPrefix = computed(() => {
-    const cfg = this.localeConfig();
-    return cfg.currencyAfter ? '' : cfg.currencySymbol;
+    const cur = this.currencyDisplay();
+    return cur.after ? '' : cur.symbol;
   });
   readonly currencySuffix = computed(() => {
-    const cfg = this.localeConfig();
-    return cfg.currencyAfter ? ' ' + cfg.currencySymbol : '';
+    const cur = this.currencyDisplay();
+    return cur.after ? ' ' + cur.symbol : '';
   });
 
   private readonly residualValueDefault = computed(() => {
@@ -164,13 +190,13 @@ export class ScenarioStore {
   }
 
   private insuranceDefault = computed(() => {
-    const cfg = this.localeConfig();
+    const cfg = this.regionConfig();
     return this.purchasePrice() * cfg.insuranceRate * this.categoryMultipliers().insurance;
   });
   // Heavy drivers wear cars out faster — scale every term of the maintenance
   // curve by annualMileage / nominal so the band steepens.
   private readonly mileageFactor = computed(() => {
-    const nominal = this.locale() === 'US' ? 12000 : 15000;
+    const nominal = this.region() === 'US' ? 12000 : 15000;
     return Math.max(this.annualMileage() / nominal, 0);
   });
   readonly maintenanceCurve = computed(
@@ -187,10 +213,10 @@ export class ScenarioStore {
     mileageFactor: this.mileageFactor(),
   }));
   private fuelEfficiencyDefaultSignal = computed(() =>
-    fuelEfficiencyDefault(this.locale(), this.powertrain()),
+    fuelEfficiencyDefault(this.formatContext(), this.powertrain()),
   );
   private fuelPriceDefaultSignal = computed(() =>
-    fuelPriceDefault(this.locale(), this.powertrain()),
+    fuelPriceDefault(this.formatContext(), this.powertrain()),
   );
 
   readonly insurance = computed(() => this.insuranceOverride() ?? this.insuranceDefault());
@@ -219,7 +245,7 @@ export class ScenarioStore {
   private readonly fuelEfficiencyBindings = this.bindConflict(
     this.fuelEfficiencyOverride,
     () => this.fuelEfficiencyDefaultSignal(),
-    numEqDynamic(() => fuelEfficiencyTolerance(this.powertrain(), this.locale())),
+    numEqDynamic(() => fuelEfficiencyTolerance(this.powertrain(), this.region())),
   );
   readonly fuelEfficiencyConflict = this.fuelEfficiencyBindings.conflict;
   readonly fuelEfficiencyPillVisible = this.fuelEfficiencyBindings.pillVisible;
@@ -233,7 +259,7 @@ export class ScenarioStore {
   private readonly fuelPriceBindings = this.bindConflict(
     this.fuelPriceOverride,
     () => this.fuelPriceDefaultSignal(),
-    numEqDynamic(() => fuelPriceTolerance(this.powertrain(), this.locale())),
+    numEqDynamic(() => fuelPriceTolerance(this.powertrain(), this.region())),
   );
   readonly fuelPriceConflict = this.fuelPriceBindings.conflict;
   readonly fuelPricePillVisible = this.fuelPriceBindings.pillVisible;
@@ -253,8 +279,6 @@ export class ScenarioStore {
         finance: costPerDistance(this.financeBreakdown(), annualMiles, years),
         cash: costPerDistance(this.cashBreakdown(), annualMiles, years),
       },
-      locale: this.locale(),
-      distanceUnit: this.localeConfig().distanceUnit,
     });
   });
 
@@ -355,7 +379,7 @@ export class ScenarioStore {
       residualValue: this.leaseEndResidual(),
       apr: this.leaseApr(),
       termMonths: this.leaseTerm(),
-      locale: this.locale(),
+      region: this.region(),
     }),
   );
 
@@ -363,7 +387,7 @@ export class ScenarioStore {
   // knobs + opp-cost rate). Per-mode breakdowns spread this and add their
   // financing-specific fields (down payment, APR, term, lease-end choice…).
   private readonly commonBreakdownArgs = computed(() => ({
-    locale: this.locale(),
+    region: this.region(),
     powertrain: this.powertrain(),
     purchasePrice: this.purchasePrice(),
     residualValue: this.residualValue(),
@@ -377,6 +401,9 @@ export class ScenarioStore {
     chargerStatus: this.chargerStatus(),
     solar: this.solar(),
     opportunityCostRate: this.opportunityCostRate(),
+    // Resolved here so the calc layer doesn't need a language axis —
+    // regionConfig is already context-aware at this point.
+    homeChargerInstall: this.regionConfig().defaultHomeChargerInstall,
   }));
 
   readonly leaseBreakdown = computed<CostBreakdown>(() =>
@@ -434,47 +461,62 @@ export class ScenarioStore {
   // overrides have to be dropped during the toggle. The stash holds each
   // previous value, keyed by the combo it belongs to, so toggling back
   // restores it. Insurance keys on locale only; fuel keys on (locale, pt).
-  private readonly insuranceStash = new Map<Locale, number | null>();
+  private readonly insuranceStash = new Map<Region, number | null>();
   private readonly fuelEffStash = new Map<string, number | null>();
   private readonly fuelPriceStash = new Map<string, number | null>();
-  private fuelComboKey(locale: Locale, pt: Powertrain): string {
-    return `${locale}|${pt}`;
+  private fuelComboKey(region: Region, pt: Powertrain): string {
+    return `${region}|${pt}`;
   }
 
-  setLocale(v: Locale): void {
-    if (this.locale() === v) return;
-    const oldLocale = this.locale();
+  setRegion(v: Region): void {
+    if (this.region() === v) return;
+    const oldRegion = this.region();
     const pt = this.powertrain();
-    this.stashInsuranceOverride(oldLocale);
-    this.stashFuelOverrides(oldLocale, pt);
-    this.locale.set(v);
+    this.stashInsuranceOverride(oldRegion);
+    this.stashFuelOverrides(oldRegion, pt);
+    this.region.set(v);
     this.restoreInsuranceOverride(v);
     this.restoreFuelOverrides(v, pt);
   }
 
-  setPowertrain(v: Powertrain): void {
-    if (this.powertrain() === v) return;
-    const loc = this.locale();
-    const oldPt = this.powertrain();
-    // Insurance keys on locale only — powertrain toggle leaves it alone.
-    this.stashFuelOverrides(loc, oldPt);
-    this.powertrain.set(v);
-    this.restoreFuelOverrides(loc, v);
+  // Updates the active UI language. Syncs to Transloco so templates re-render,
+  // and (by default) writes to localStorage so a manual override survives
+  // reload. APP_INITIALIZER passes `persist: false` for browser-detected
+  // values — only user-initiated flips should write storage.
+  setLanguage(v: Language, opts: { persist?: boolean } = { persist: true }): void {
+    if (this.language() === v) {
+      // Still ensure Transloco is in sync on initial APP_INITIALIZER call.
+      if (this.transloco.getActiveLang() !== v) this.transloco.setActiveLang(v);
+      return;
+    }
+    this.language.set(v);
+    this.transloco.setActiveLang(v);
+    if (opts.persist) writeStoredLanguage(v);
   }
 
-  private stashInsuranceOverride(locale: Locale): void {
-    this.insuranceStash.set(locale, this.insuranceOverride());
+  setPowertrain(v: Powertrain): void {
+    if (this.powertrain() === v) return;
+    const reg = this.region();
+    const oldPt = this.powertrain();
+    // Insurance keys on region only — powertrain toggle leaves it alone.
+    this.stashFuelOverrides(reg, oldPt);
+    this.powertrain.set(v);
+    this.restoreFuelOverrides(reg, v);
   }
-  private restoreInsuranceOverride(locale: Locale): void {
-    this.insuranceOverride.set(this.insuranceStash.get(locale) ?? null);
+
+  private stashInsuranceOverride(region: Region): void {
+    this.insuranceStash.set(region, this.insuranceOverride());
   }
-  private stashFuelOverrides(locale: Locale, pt: Powertrain): void {
-    const key = this.fuelComboKey(locale, pt);
+  private restoreInsuranceOverride(region: Region): void {
+    this.insuranceOverride.set(this.insuranceStash.get(region) ?? null);
+  }
+  private stashFuelOverrides(region: Region, pt: Powertrain): void {
+    const key = this.fuelComboKey(region, pt);
     this.fuelEffStash.set(key, this.fuelEfficiencyOverride());
     this.fuelPriceStash.set(key, this.fuelPriceOverride());
   }
-  private restoreFuelOverrides(locale: Locale, pt: Powertrain): void {
-    const key = this.fuelComboKey(locale, pt);
+  private restoreFuelOverrides(region: Region, pt: Powertrain): void {
+    const key = this.fuelComboKey(region, pt);
     this.fuelEfficiencyOverride.set(this.fuelEffStash.get(key) ?? null);
     this.fuelPriceOverride.set(this.fuelPriceStash.get(key) ?? null);
   }
@@ -499,7 +541,7 @@ export class ScenarioStore {
     };
     this._isHydrating.set(true);
     try {
-      this.locale.set(merged.globals.locale);
+      this.region.set(merged.globals.region);
       this.powertrain.set(merged.globals.powertrain);
       this.purchasePrice.set(merged.globals.purchasePrice);
       this.residualValueOverride.set(merged.globals.residualValue);
@@ -539,7 +581,7 @@ export class ScenarioStore {
   snapshot(): ScenarioSnapshot {
     return {
       globals: {
-        locale: this.locale(),
+        region: this.region(),
         powertrain: this.powertrain(),
         purchasePrice: this.purchasePrice(),
         // Persist null on auto-derived; keeps URLs short and lets the curve
@@ -615,8 +657,10 @@ export class ScenarioStore {
   // produce an empty list automatically.
   readonly activeConflicts = computed<readonly ActiveConflict[]>(() => {
     const out: ActiveConflict[] = [];
-    const loc = this.locale();
-    const efUnit = this.localeConfig().distanceUnit;
+    const fmt = this.formatContext();
+    const lang = this.language();
+    const t = (key: string, params?: Record<string, unknown>) =>
+      this.transloco.translate(key, params, lang);
 
     if (this.leaseAprPillVisible()) {
       const override = this.leaseAprOverride()!;
@@ -624,9 +668,8 @@ export class ScenarioStore {
       out.push({
         key: 'leaseApr',
         scope: 'lease',
-        label: 'Lease APR',
-        reason:
-          'new cars (vehicleAge = 0) typically qualify for promotional ~1% manufacturer financing, while used cars run ~3%.',
+        label: t('conflicts.leaseApr.label'),
+        reason: t('conflicts.leaseApr.reason'),
         currentValue: `${override}%`,
         proposedValue: `${def}%`,
         sliderAnchor: 'slider-leaseApr',
@@ -640,11 +683,10 @@ export class ScenarioStore {
       out.push({
         key: 'residualValue',
         scope: 'global',
-        label: 'Residual value',
-        reason:
-          'the depreciation curve at vehicleAge + keepDuration suggests this end-of-keep value. Override with the figure from your contract for an apples-to-apples comparison.',
-        currentValue: formatCurrency(override, loc, 0),
-        proposedValue: formatCurrency(def, loc, 0),
+        label: t('conflicts.residualValue.label'),
+        reason: t('conflicts.residualValue.reason'),
+        currentValue: formatCurrency(override, fmt, 0),
+        proposedValue: formatCurrency(def, fmt, 0),
         sliderAnchor: 'slider-residualValue',
         apply: () => this.applyResidualValue(),
         keep: () => this.dismissResidualValue(),
@@ -656,11 +698,10 @@ export class ScenarioStore {
       out.push({
         key: 'insurance',
         scope: 'global',
-        label: 'Insurance / yr',
-        reason:
-          'purchase price × locale rate × vehicle category yields this baseline. Override with a real quote for accuracy.',
-        currentValue: formatCurrency(override, loc, 0),
-        proposedValue: formatCurrency(def, loc, 0),
+        label: t('conflicts.insurance.label'),
+        reason: t('conflicts.insurance.reason'),
+        currentValue: formatCurrency(override, fmt, 0),
+        proposedValue: formatCurrency(def, fmt, 0),
         sliderAnchor: 'slider-insurance',
         apply: () => this.applyInsurance(),
         keep: () => this.dismissInsurance(),
@@ -671,16 +712,16 @@ export class ScenarioStore {
       const def = this.fuelEfficiencyDefaultSignal();
       const unit =
         this.powertrain() === 'EV'
-          ? this.localeConfig().evEfficiencyUnit
-          : this.localeConfig().iceEfficiencyUnit;
+          ? this.regionConfig().evEfficiencyUnit
+          : this.regionConfig().iceEfficiencyUnit;
+      const isEV = this.powertrain() === 'EV';
       out.push({
         key: 'fuelEfficiency',
         scope: 'global',
-        label: this.powertrain() === 'EV' ? 'EV efficiency' : 'Fuel efficiency',
-        reason:
-          this.powertrain() === 'EV'
-            ? `this is the typical EV efficiency in ${loc}. Override with your vehicle's spec sheet.`
-            : `this is the typical fuel efficiency in ${loc}. Override with your vehicle's spec sheet.`,
+        label: t(isEV ? 'conflicts.evEfficiency.label' : 'conflicts.fuelEfficiency.label'),
+        reason: t(isEV ? 'conflicts.evEfficiency.reason' : 'conflicts.fuelEfficiency.reason', {
+          region: this.region(),
+        }),
         currentValue: `${override} ${unit}`,
         proposedValue: `${def} ${unit}`,
         sliderAnchor: 'slider-fuelEfficiency',
@@ -691,16 +732,16 @@ export class ScenarioStore {
     if (this.fuelPricePillVisible()) {
       const override = this.fuelPriceOverride()!;
       const def = this.fuelPriceDefaultSignal();
+      const isEV = this.powertrain() === 'EV';
       out.push({
         key: 'fuelPrice',
         scope: 'global',
-        label: this.powertrain() === 'EV' ? 'Electricity price' : 'Fuel price',
-        reason:
-          this.powertrain() === 'EV'
-            ? `this is the typical electricity rate in ${loc}. Override with your local utility tariff.`
-            : `this is the typical pump price in ${loc}. Override with current local prices.`,
-        currentValue: formatCurrency(override, loc, 2),
-        proposedValue: formatCurrency(def, loc, 2),
+        label: t(isEV ? 'conflicts.electricityPrice.label' : 'conflicts.fuelPrice.label'),
+        reason: t(isEV ? 'conflicts.electricityPrice.reason' : 'conflicts.fuelPrice.reason', {
+          region: this.region(),
+        }),
+        currentValue: formatCurrency(override, fmt, 2),
+        proposedValue: formatCurrency(def, fmt, 2),
         sliderAnchor: 'slider-fuelPrice',
         apply: () => this.applyFuelPrice(),
         keep: () => this.dismissFuelPrice(),
@@ -709,15 +750,14 @@ export class ScenarioStore {
     if (this.leaseEndChoicePillVisible()) {
       const override = this.leaseEndChoiceOverride()!;
       const def = this.leaseEndChoiceDefault();
-      const fmt = (c: LeaseEndChoice) => (c === 'buyOut' ? 'Buy out' : 'Renew lease');
+      const choiceLabel = (c: LeaseEndChoice) => t(`leaseEnd.choice.${c}`);
       out.push({
         key: 'leaseEndChoice',
         scope: 'lease',
-        label: 'End of lease',
-        reason:
-          'keep duration vs. lease term picks the cheaper outcome — keep ≤ term → renew lease, keep > term → buy out.',
-        currentValue: fmt(override),
-        proposedValue: fmt(def),
+        label: t('conflicts.leaseEndChoice.label'),
+        reason: t('conflicts.leaseEndChoice.reason'),
+        currentValue: choiceLabel(override),
+        proposedValue: choiceLabel(def),
         sliderAnchor: 'slider-leaseEndChoice',
         apply: () => this.applyLeaseEndChoice(),
         keep: () => this.dismissLeaseEndChoice(),
@@ -729,11 +769,10 @@ export class ScenarioStore {
       out.push({
         key: 'earlyTerminationFee',
         scope: 'lease',
-        label: 'Early termination penalty',
-        reason:
-          '(term − keep) / term × total depreciation approximates typical lessor early-exit tables. Replace with the exact figure from your contract.',
-        currentValue: formatCurrency(override, loc, 0),
-        proposedValue: formatCurrency(def, loc, 0),
+        label: t('conflicts.earlyTerminationFee.label'),
+        reason: t('conflicts.earlyTerminationFee.reason'),
+        currentValue: formatCurrency(override, fmt, 0),
+        proposedValue: formatCurrency(def, fmt, 0),
         sliderAnchor: 'slider-earlyTerminationFee',
         apply: () => this.applyEarlyTerminationFee(),
         keep: () => this.dismissEarlyTerminationFee(),
@@ -745,18 +784,15 @@ export class ScenarioStore {
       out.push({
         key: 'leaseEndResidual',
         scope: 'lease',
-        label: 'Residual at lease end',
-        reason:
-          'the depreciation curve at vehicleAge + leaseTerm gives this contractual residual. Override with the figure from your lease contract.',
-        currentValue: formatCurrency(override, loc, 0),
-        proposedValue: formatCurrency(def, loc, 0),
+        label: t('conflicts.leaseEndResidual.label'),
+        reason: t('conflicts.leaseEndResidual.reason'),
+        currentValue: formatCurrency(override, fmt, 0),
+        proposedValue: formatCurrency(def, fmt, 0),
         sliderAnchor: 'slider-leaseEndResidual',
         apply: () => this.applyLeaseEndResidual(),
         keep: () => this.dismissLeaseEndResidual(),
       });
     }
-    // efUnit suppresses the unused-binding lint when no fuelEfficiency conflict.
-    void efUnit;
     return out;
   });
 
@@ -784,6 +820,7 @@ export class ScenarioStore {
 
   private readonly router = inject(Router);
   private readonly location = inject(Location);
+  private readonly transloco = inject(TranslocoService);
 
   constructor() {
     setupAutosave(this, this.router, this.location);
@@ -847,18 +884,18 @@ function numEqDynamic(toleranceFn: () => number): (a: number, b: number) => bool
   return (a, b) => Math.abs(a - b) <= toleranceFn();
 }
 
-// EV ranges are far wider than ICE; locales use different units.
+// EV ranges are far wider than ICE; regions use different units.
 //   EV  US: 1.5 mi/kWh,  EU: 6 kWh/100km
 //   ICE US: 2 mpg,       EU: 1 L/100km
-function fuelEfficiencyTolerance(powertrain: Powertrain, locale: Locale): number {
-  if (powertrain === 'EV') return locale === 'US' ? 1.5 : 6;
-  return locale === 'US' ? 2 : 1;
+function fuelEfficiencyTolerance(powertrain: Powertrain, region: Region): number {
+  if (powertrain === 'EV') return region === 'US' ? 1.5 : 6;
+  return region === 'US' ? 2 : 1;
 }
 
-// Electricity and pump prices use different units per locale.
+// Electricity and pump prices use different units per region.
 //   EV  US: $0.05/kWh,  EU: €0.10/kWh
 //   ICE US: $0.30/gal,  EU: €0.15/L
-function fuelPriceTolerance(powertrain: Powertrain, locale: Locale): number {
-  if (powertrain === 'EV') return locale === 'US' ? 0.05 : 0.1;
-  return locale === 'US' ? 0.3 : 0.15;
+function fuelPriceTolerance(powertrain: Powertrain, region: Region): number {
+  if (powertrain === 'EV') return region === 'US' ? 0.05 : 0.1;
+  return region === 'US' ? 0.3 : 0.15;
 }

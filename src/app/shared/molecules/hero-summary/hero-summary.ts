@@ -1,13 +1,20 @@
 import { Component, computed, inject } from '@angular/core';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ScenarioStore } from '../../../scenario/scenario.store';
-import { formatCurrency } from '../../../scenario/locale.config';
+import { formatCurrency } from '../../../scenario/region.config';
 import { HeroColumn } from '../../atoms/hero-column/hero-column';
 import { Icon } from '../../atoms/icon/icon';
-import { cashHeroData, financeHeroData, leaseHeroData, type HeroData } from './hero-summary.data';
+import {
+  cashHeroData,
+  financeHeroData,
+  leaseHeroData,
+  type HeroData,
+  type TFn,
+} from './hero-summary.data';
 
 @Component({
   selector: 'app-hero-summary',
-  imports: [HeroColumn, Icon],
+  imports: [HeroColumn, Icon, TranslocoPipe],
   template: `
     <section class="hero-card">
       <div class="hero-grid">
@@ -21,7 +28,7 @@ import { cashHeroData, financeHeroData, leaseHeroData, type HeroData } from './h
         />
         <app-hero-column
           side="left"
-          eyebrow="Cash"
+          [eyebrow]="'hero.cashEyebrow' | transloco"
           [value]="data().outOfPocket"
           [caption]="data().outOfPocketCaption"
           [captionMobile]="data().outOfPocketCaptionMobile"
@@ -43,8 +50,8 @@ import { cashHeroData, financeHeroData, leaseHeroData, type HeroData } from './h
 
         <app-hero-column
           side="right"
-          eyebrow="Ownership"
-          eyebrowMobile="Ownership"
+          [eyebrow]="'hero.ownershipEyebrow' | transloco"
+          [eyebrowMobile]="'hero.ownershipEyebrow' | transloco"
           [value]="data().asset"
           [caption]="data().assetCaption"
           [captionMobile]="data().assetCaptionMobile"
@@ -64,14 +71,12 @@ import { cashHeroData, financeHeroData, leaseHeroData, type HeroData } from './h
         <span class="hero-opportunity-icon" aria-hidden="true">
           <app-icon name="trending-up" [size]="18" [strokeWidth]="2" />
         </span>
-        <span class="hero-opportunity-line">
-          Ignoring
-          <span class="hero-opportunity-amount">{{ opportunityCostFootnote() }}</span>
-          in opportunity cost
-        </span>
+        <span class="hero-opportunity-line"
+          [innerHTML]="'hero.oppCostLine' | transloco: { amount: '<span class=\\'hero-opportunity-amount\\'>' + opportunityCostFootnote() + '</span>' }"
+        ></span>
       </div>
       <p class="hero-opportunity-note">
-        Included in the true-cost view, not in the cash-out total.
+        {{ 'hero.oppCostNote' | transloco }}
       </p>
 
       <div class="hero-details">
@@ -88,7 +93,7 @@ import { cashHeroData, financeHeroData, leaseHeroData, type HeroData } from './h
             </div>
           }
           <div class="breakdown-row breakdown-total">
-            <dt class="breakdown-label">Total cash out</dt>
+            <dt class="breakdown-label">{{ 'hero.totalCashOut' | transloco }}</dt>
             <dd class="breakdown-amount">{{ data().outOfPocket }}</dd>
           </div>
         </dl>
@@ -98,12 +103,15 @@ import { cashHeroData, financeHeroData, leaseHeroData, type HeroData } from './h
 })
 export class HeroSummary {
   private readonly store = inject(ScenarioStore);
+  private readonly transloco = inject(TranslocoService);
 
   protected readonly data = computed<HeroData>(() => {
+    const lang = this.store.language();
+    const t: TFn = (key, params) => this.transloco.translate(key, params, lang);
     const tab = this.store.activeTab();
-    if (tab === 'lease') return leaseHeroData(this.store);
-    if (tab === 'finance') return financeHeroData(this.store);
-    return cashHeroData(this.store);
+    if (tab === 'lease') return leaseHeroData(this.store, t);
+    if (tab === 'finance') return financeHeroData(this.store, t);
+    return cashHeroData(this.store, t);
   });
 
   // Mode-specific opportunity cost over keep — pulled from the active
@@ -118,6 +126,6 @@ export class HeroSummary {
         : tab === 'finance'
           ? this.store.financeBreakdown()
           : this.store.cashBreakdown();
-    return formatCurrency(breakdown.totals.opportunityCost, this.store.locale(), 0);
+    return formatCurrency(breakdown.totals.opportunityCost, this.store.formatContext(), 0);
   });
 }

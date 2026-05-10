@@ -29,44 +29,74 @@ One-time setup on the repo: **Settings → Pages → Source: GitHub Actions** mu
 
 ## Architecture
 
-Angular 21 standalone components, no NgModules. Layout under `src/app/`:
+Angular 21 standalone components, no NgModules. Layout under `src/`:
 
 ```
-scenario/                    domain types, store, locale config, pure calc functions (+ specs)
-shared/
+i18n/                        Transloco catalogs (en.ts, de.ts), bundled loader, language-detect helper
+test-helpers/                provideTranslocoTesting() — sync-loads EN+DE catalogs into TestBed
+app/scenario/                domain types, store, region config, pure calc functions (+ specs)
+app/shared/
   slider-control/            atom — labeled range slider + inline editable readout
   kpi-card/                  atom — minimal display
   info-badge/                atom — tooltip-on-hover/focus button
   atoms/                     button, toggle, number-input, icon, label, divider
-  molecules/                 comparison-strip, mode-card, hero-summary, locale-selector, powertrain-selector,
-                             global-controls, your-situation, lease-end-section, maintenance-display,
-                             disclosure, slider-group
-features/
+  molecules/                 comparison-strip, mode-card, hero-summary, region-selector, language-selector,
+                             powertrain-selector, footer, global-controls, your-situation,
+                             lease-end-section, maintenance-display, disclosure, slider-group
+app/features/
   mode-detail-view/          shell: chart + active-mode fields + global-controls + your-situation
                              plus per-mode field components (lease-fields, finance-fields, cash-fields)
   chart/
     tco-chart/               stacked-area Chart.js renderer (responsive options across breakpoints,
                              no separate mobile component)
-pages/
+app/pages/
   splash-page/               cold-start intro card; "Get started" engages → comparison page
   comparison-page/           sticky stack (page-header + comparison-strip + hero-summary) → mode-detail-view
   app-shell/                 single `/` landing — splash vs comparison-page based on hasReturningState()
-app.ts                       <router-outlet/>
-app.routes.ts                single `/` route → AppShell, ** → ''
+app/app.ts                   <router-outlet/>
+app/app.routes.ts            single `/` route → AppShell, ** → ''
 ```
 
 `ComparisonPage` lays out top-down as: sticky stack (top row + comparison strip + hero summary) → chart → mode-specific sliders → global vehicle / your-situation sliders. The strip is the tab control: clicking a card focuses that mode below.
+
+### Internationalization
+
+The app is fully translated to English and German via [Transloco](https://jsverse.gitbook.io/transloco) (`@jsverse/transloco@^8.3.0` + `@jsverse/transloco-messageformat` for ICU plurals/select).
+
+- `src/i18n/en.ts`, `src/i18n/de.ts` — catalogs as **bundled TS modules**, all eagerly loaded (no HTTP fetch). Single bundle, instant switch.
+- `src/i18n/transloco-loader.ts` — `BundledTranslocoLoader` returns the catalog synchronously via `of(...)`.
+- `src/i18n/detect.ts` — `detectLanguage()` precedence: **localStorage** > `navigator.language` (stripped to base) > `'en'`. `writeStoredLanguage()` is called only on user-initiated flips (the splash/initial detection passes `{ persist: false }`).
+- `app.config.ts` — `provideTransloco({...})` + `provideTranslocoMessageformat()`. APP_INITIALIZER calls `store.setLanguage(detectLanguage(), { persist: false })` before bootstrap.
+- `ScenarioStore.language` is a writable signal; `setLanguage(v, opts?)` syncs to `TranslocoService.setActiveLang(v)` and (by default) persists to localStorage.
+
+**localStorage carve-out.** This is the only persistence channel besides the `?s=` URL — language preference (key `lang`) lives in localStorage so a manual flip survives reload. Don't add other localStorage uses without explicit reason; the URL is still the single source of truth for scenario state.
+
+**Region vs Language are independent axes.** `Region` (`'US' | 'EU'`) controls units/currency/symbol/defaults via `REGION_CONFIG`. `Language` (`'en' | 'de'`) controls UI text. The store exposes `formatContext: { region, language }` for `formatCurrency` / `formatCompactCurrency` and `bcp47` for raw `toLocaleString` callers (e.g. `en+US → en-US`, `en+EU → en-GB`, `de+US → de-DE`, `de+EU → de-DE`).
+
+**ICU select for region-driven labels.** Some labels vary by region as well as language (e.g. `lease.fields.apr.label` reads "Money factor" in US contexts, "Lease factor" / "Leasingfaktor" in EU). Catalog values use ICU `{region, select, US {…} EU {…}}` rather than separate keys — pass `{ region: store.region() }` at the call site.
+
+**Pure calc functions stop building user-facing strings.** `recommendTab()` returns structured data (`{ tab, winnerCost, others }`); the comparison-page renders the sentence via `transloco.translate('recommendation.reason', { winner, unit, winnerCost, others })`.
+
+**TS-side reactive translations.** Components inject `TranslocoService` and build computeds that thread `store.language()` into `transloco.translate(key, params, lang)` — the `language()` dependency makes the computed re-run on language change. For templates, prefer the `transloco` pipe (`{{ 'key' | transloco: { ... } }}`).
+
+**Tests** load the EN catalog synchronously via `provideTranslocoTesting()` (a helper in `src/test-helpers/transloco-testing.ts`) using an `ENVIRONMENT_INITIALIZER` that calls `transloco.setTranslation(en, 'en')`. Specs that instantiate `ScenarioStore` or any component using the `transloco` pipe must spread it into `providers`.
+
+### Footer + selectors
+
+- `RegionSelector` (`shared/molecules/region-selector/`) — flag-based pill toggle in the page header. Renamed from the original `LocaleSelector`.
+- `LanguageSelector` (`shared/molecules/language-selector/`) — EN/DE pill toggle, lives inside the footer.
+- `Footer` (`shared/molecules/footer/`) — extracted from the old inline action block. Inputs: `[showActions]` (default false). Outputs: `(share)`. Splash renders `<app-footer />` (no actions); comparison renders `<app-footer [showActions]="true" (share)="openShare()" />`.
 
 ### Scenario module — `src/app/scenario/`
 
 Pure data + math + state, no Angular UI dependencies in the calc layer. Built to be unit-testable without TestBed.
 
-- `scenario.types.ts` — domain types (Locale, Powertrain, Tab, ScenarioSnapshot, CostBreakdown, …). `LeaseInputs.leaseEndChoice` is `LeaseEndChoice | null` — null means auto-derive. `LeaseInputs` and `FinanceInputs` each carry their own `downPayment` (per-tab, defaults differ). Cash uses `purchasePrice` directly.
-- `locale.config.ts` — US/EU defaults, units, formatters, `detectLocaleFromBrowser()`. Insurance baselines: 2% US / 1.5% EU.
+- `scenario.types.ts` — domain types (Region, Language, Powertrain, Tab, ScenarioSnapshot, CostBreakdown, …). `LeaseInputs.leaseEndChoice` is `LeaseEndChoice | null` — null means auto-derive. `LeaseInputs` and `FinanceInputs` each carry their own `downPayment` (per-tab, defaults differ). Cash uses `purchasePrice` directly.
+- `region.config.ts` — US/EU defaults, units, currency formatters, `detectRegionFromBrowser()`, `FormatContext` type and `bcp47ForContext()` derivation. Insurance baselines: 2% US / 1.5% EU. `formatCurrency(value, ctx, fractionDigits)` and `formatCompactCurrency(value, ctx, ...)` take a `FormatContext`, never a raw region.
 - `scenario.defaults.ts` — `defaultScenario()` factory (leaseEndChoice defaults to null so auto-derive fires; lease.downPayment $5k/€4k; finance.downPayment $0). `LEASE_END_DEFAULTS` for fee fallbacks.
-- `scenario.store.ts` — `ScenarioStore` (`providedIn: 'root'`). Holds writable signals for globals + per-tab inputs (`leaseDownPayment`, `financeDownPayment`); exposes `computed` derivations (msrp, vehicle category, insurance/maintenance defaults, three breakdowns, effective monthly, cost per distance, `recommendedTab` based on lowest cost-per-distance, `activeDownPayment` switching on `activeTab`). Uses the **two-signal override pattern** (`_xOverride: signal<T | null>` + `xDefault: computed<T>` + public `x: computed<T>` returning `override ?? default`) for sticky overrides that serialize cleanly. Two effects: (1) URL autosave (`?s=<encoded-json>`), (2) cross-field clamping (down payments and residual ≤ purchase price).
-- `scenario.serializer.ts` — `encodeSnapshot` / `decodeSnapshot` for the autosaved `?s=<encoded-json>` form. URL is the only persistence channel; no localStorage. The share dialog wraps the long URL via `shortener.ts` (is.gd) for compact sharing.
-- `calculations/` — pure functions, one file per concern: `depreciation`, `msrp`, `category` (luxury × 1.3 insurance / × 1.8 maintenance), `financing` (lease + amortized loan), `opportunity`, `fuel`, `recommendation` (now: pick tab with lowest cost-per-distance, with locale-aware reason text), `tco` (the aggregator). Co-located `*.spec.ts` files.
+- `scenario.store.ts` — `ScenarioStore` (`providedIn: 'root'`). Holds writable signals for globals + per-tab inputs (`leaseDownPayment`, `financeDownPayment`); exposes `computed` derivations (msrp, vehicle category, insurance/maintenance defaults, three breakdowns, effective monthly, cost per distance, `recommendedTab` based on lowest cost-per-distance, `formatContext`, `bcp47`). Uses the **two-signal override pattern** (`_xOverride: signal<T | null>` + `xDefault: computed<T>` + public `x: computed<T>` returning `override ?? default`) for sticky overrides that serialize cleanly. Two effects: (1) URL autosave (`?s=<encoded-json>`), (2) cross-field clamping (down payments and residual ≤ purchase price). Injects `TranslocoService` to translate conflict labels/reasons reactively (the `language()` signal flows through the `activeConflicts` computed).
+- `scenario.serializer.ts` — `encodeSnapshot` / `decodeSnapshot` for the autosaved `?s=<encoded-json>` form. URL is the only persistence channel for scenario state. The decoder accepts the legacy `globals.locale` field and folds it forward to `globals.region` so old shared URLs keep working (same value space, just a key rename). The share dialog wraps the long URL via `shortener.ts` (is.gd) for compact sharing.
+- `calculations/` — pure functions, one file per concern: `depreciation`, `msrp`, `category` (luxury × 1.3 insurance / × 1.8 maintenance), `financing` (lease + amortized loan), `opportunity`, `fuel`, `recommendation` (returns structured data; UI builds the sentence), `tco` (the aggregator). Co-located `*.spec.ts` files. None of these depend on Angular or Transloco.
 
 ### Depreciation curve
 
@@ -150,9 +180,10 @@ Single `/` route → `AppShell`, which renders `SplashPage` on cold start and `C
 
 ## Conventions
 
-- **Signals everywhere.** Readable signals on the store, `computed` derivations, no manual change detection. The single autosave `effect` in `ScenarioStore` covers persistence + URL sync — don't add component-level effects for either; let the store own that boundary.
+- **Signals everywhere.** Readable signals on the store, `computed` derivations, no manual change detection. The single autosave `effect` in `ScenarioStore` covers URL sync — don't add component-level effects for it; let the store own that boundary. (Language persistence to localStorage is the one carve-out — it lives in `setLanguage` rather than an effect.)
 - **Atoms are dumb.** No business logic, no internal state beyond view-only derivations (focus tracking, percentage display). All I/O via `input()` / `output()` / `model()`.
-- **Pure calc functions take plain objects, not signals.** Signals call them via `computed()`.
+- **Pure calc functions take plain objects, not signals, and never produce user-facing strings.** Signals call them via `computed()`. UI-facing copy goes through Transloco.
+- **Translations**: every visible string flows through Transloco. Never hardcode English in templates or in `computed`s that produce display strings — always go through the catalog. The `transloco` pipe is preferred for templates; for TS-side reactive strings, thread `store.language()` through a `computed` that calls `transloco.translate(key, params, lang)`.
 - **Tailwind utility classes inline**, using existing color/font tokens (`bg-surface`, `text-tx`, `font-mono`, etc.) defined in `src/styles.css`.
 - **Prettier**: 100-char lines, single quotes. `npx prettier --write .` to format.
 - Find files? **Always exclude `node_modules`** — the directory is large enough to freeze searches.

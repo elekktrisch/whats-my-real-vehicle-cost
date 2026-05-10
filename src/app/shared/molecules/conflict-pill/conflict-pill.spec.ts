@@ -1,8 +1,12 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { ConflictPill } from './conflict-pill';
+import { provideTranslocoTesting } from '../../../../test-helpers/transloco-testing';
 
 function make(): ComponentFixture<ConflictPill> {
-  TestBed.configureTestingModule({ imports: [ConflictPill] });
+  TestBed.configureTestingModule({
+    imports: [ConflictPill],
+    providers: [...provideTranslocoTesting()],
+  });
   const fixture = TestBed.createComponent(ConflictPill);
   fixture.componentRef.setInput('visible', true);
   fixture.componentRef.setInput('label', 'Lease APR');

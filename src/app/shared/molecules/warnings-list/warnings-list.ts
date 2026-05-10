@@ -1,4 +1,5 @@
 import { Component, input } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
 import type { ActiveConflict } from '../../../scenario/conflicts';
 
 /**
@@ -9,6 +10,7 @@ import type { ActiveConflict } from '../../../scenario/conflicts';
  */
 @Component({
   selector: 'app-warnings-list',
+  imports: [TranslocoPipe],
   template: `
     @if (conflicts().length > 0) {
       <ul
@@ -29,11 +31,11 @@ import type { ActiveConflict } from '../../../scenario/conflicts';
               >
                 {{ c.label }}:
               </a>
-              recommending
+              {{ 'conflicts.body.recommending' | transloco }}
               <span class="font-mono text-tx">{{ c.proposedValue }}</span>
-              instead of
+              {{ 'conflicts.body.insteadOf' | transloco }}
               <span class="font-mono text-tx-muted">{{ c.currentValue }}</span>
-              because {{ c.reason }}
+              {{ 'conflicts.body.because' | transloco }} {{ c.reason }}
             </p>
             <div class="flex items-center gap-1 shrink-0">
               <button
@@ -42,7 +44,7 @@ import type { ActiveConflict } from '../../../scenario/conflicts';
                 (click)="c.apply()"
                 class="font-ui text-[0.72rem] uppercase tracking-[0.06em] px-2 py-[2px] rounded border border-accent/60 text-accent hover:bg-accent/10 transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/50"
               >
-                Apply
+                {{ 'conflicts.apply' | transloco }}
               </button>
               <button
                 type="button"
@@ -50,7 +52,7 @@ import type { ActiveConflict } from '../../../scenario/conflicts';
                 (click)="c.keep()"
                 class="font-ui text-[0.72rem] uppercase tracking-[0.06em] px-2 py-[2px] rounded border border-border hover:border-border-strong text-tx-muted transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/50"
               >
-                Keep {{ c.currentValue }}
+                {{ 'conflicts.keep' | transloco: { value: c.currentValue } }}
               </button>
             </div>
           </li>

@@ -14,7 +14,7 @@ describe('scenario.serializer', () => {
     it('round-trips the default scenario without losing values', () => {
       const snap = defaultScenario('US');
       const recovered = decodeSnapshot(encodeSnapshot(snap));
-      expect(recovered.globals?.locale).toBe('US');
+      expect(recovered.globals?.region).toBe('US');
       expect(recovered.globals?.purchasePrice).toBe(snap.globals.purchasePrice);
       expect(recovered.globals?.keepDuration).toBe(snap.globals.keepDuration);
       expect(recovered.globals?.activeTab).toBe(snap.globals.activeTab);

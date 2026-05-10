@@ -1,4 +1,5 @@
 import { Component, computed, inject } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ScenarioStore } from '../../scenario/scenario.store';
 import { SliderControl } from '../../shared/slider-control/slider-control';
 import { SliderGroup } from '../../shared/molecules/slider-group/slider-group';
@@ -8,14 +9,14 @@ import { MoneyPipe } from '../../shared/pipes/money.pipe';
 
 @Component({
   selector: 'app-lease-fields',
-  imports: [SliderControl, SliderGroup, LeaseEndSection, ConflictPill, MoneyPipe],
+  imports: [SliderControl, SliderGroup, LeaseEndSection, ConflictPill, MoneyPipe, TranslocoPipe],
   template: `
     <div role="tabpanel" id="modepanel-lease" aria-labelledby="modetab-lease">
-      <app-slider-group title="Lease financing">
+      <app-slider-group [title]="'lease.fields.groupTitle' | transloco">
         <div id="slider-leaseApr">
           <app-slider-control
-            label="APR"
-            tip="The annual percentage rate (Effektiver Jahreszins in EU). Internally we convert to a money factor. US contracts charge interest on the average of cap + residual; EU contracts charge interest on the financed amount only — same APR, different finance-fee math."
+            [label]="'lease.fields.apr.label' | transloco: { region: store.region() }"
+            [tip]="'lease.fields.apr.tip' | transloco"
             [min]="0"
             [max]="20"
             [step]="0.05"
@@ -41,20 +42,20 @@ import { MoneyPipe } from '../../shared/pipes/money.pipe';
           }
         </div>
         <app-slider-control
-          label="Lease term"
-          tip="How long the lease runs. Common terms are 24, 36, 48, or 60 months."
+          [label]="'lease.fields.term.label' | transloco"
+          [tip]="'lease.fields.term.tip' | transloco"
           [min]="12"
           [max]="84"
           [step]="1"
-          minLabel="12 mo"
-          maxLabel="84 mo"
-          suffix=" mo"
+          [minLabel]="'units.months' | transloco: { count: 12 }"
+          [maxLabel]="'units.months' | transloco: { count: 84 }"
+          [suffix]="' ' + ('units.monthsAbbr' | transloco)"
           [value]="store.leaseTerm()"
           (valueChange)="store.leaseTerm.set($event)"
         />
         <app-slider-control
-          label="Down payment"
-          tip="Cash put down on the lease. Stored separately from the loan down payment so you can compare e.g. $5k down on a lease vs. $0 on a loan. Capped at the purchase price."
+          [label]="'lease.fields.downPayment.label' | transloco"
+          [tip]="'lease.fields.downPayment.tip' | transloco"
           [min]="0"
           [max]="downPaymentMax()"
           [step]="500"

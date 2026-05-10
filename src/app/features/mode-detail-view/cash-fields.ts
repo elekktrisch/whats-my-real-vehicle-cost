@@ -1,13 +1,13 @@
 import { Component } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-cash-fields',
+  imports: [TranslocoPipe],
   template: `
     <div role="tabpanel" id="modepanel-cash" aria-labelledby="modetab-cash">
       <p class="font-mono text-[0.78rem] text-tx-muted leading-snug">
-        Cash buys outright — no APR, no term, no down payment. Use the
-        purchase price in the header and the opportunity-cost preference in
-        "Your situation" below to tune cash TCO.
+        {{ 'cash.fields.intro' | transloco }}
       </p>
     </div>
   `,

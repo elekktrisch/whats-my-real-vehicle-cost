@@ -8,7 +8,7 @@ describe('leasePayment', () => {
       residualValue: 20000,
       apr: 4.5,
       termMonths: 36,
-      locale: 'US',
+      region: 'US',
     });
     expect(r.adjustedCapCost).toBe(35000);
   });
@@ -20,7 +20,7 @@ describe('leasePayment', () => {
       residualValue: 15000,
       apr: 2.4,
       termMonths: 36,
-      locale: 'US',
+      region: 'US',
     });
     expect(r.moneyFactor).toBeCloseTo(0.001, 6);
   });
@@ -32,7 +32,7 @@ describe('leasePayment', () => {
       residualValue: 12000,
       apr: 0,
       termMonths: 36,
-      locale: 'US',
+      region: 'US',
     });
     expect(r.depreciationFee).toBeCloseTo(500, 6);
   });
@@ -44,7 +44,7 @@ describe('leasePayment', () => {
       residualValue: 12000,
       apr: 4.5,
       termMonths: 36,
-      locale: 'US',
+      region: 'US',
     });
     expect(r.monthlyPayment).toBeCloseTo(r.depreciationFee + r.financeFee, 10);
   });
@@ -56,7 +56,7 @@ describe('leasePayment', () => {
       residualValue: 10000,
       apr: 1.0,
       termMonths: 36,
-      locale: 'US',
+      region: 'US',
     });
     const high = leasePayment({
       capCost: 30000,
@@ -64,7 +64,7 @@ describe('leasePayment', () => {
       residualValue: 10000,
       apr: 8.0,
       termMonths: 36,
-      locale: 'US',
+      region: 'US',
     });
     expect(high.monthlyPayment).toBeGreaterThan(low.monthlyPayment);
   });
@@ -76,7 +76,7 @@ describe('leasePayment', () => {
       residualValue: 15000,
       apr: 2.94,
       termMonths: 48,
-      locale: 'US',
+      region: 'US',
     });
     // (20000 + 15000) * 2.94/2400 = 42.875
     expect(r.financeFee).toBeCloseTo(42.875, 4);
@@ -90,7 +90,7 @@ describe('leasePayment', () => {
       residualValue: 15000,
       apr: 2.94,
       termMonths: 48,
-      locale: 'EU',
+      region: 'EU',
     });
     // 20000 * 2.94/2400 = 24.5
     expect(r.financeFee).toBeCloseTo(24.5, 4);

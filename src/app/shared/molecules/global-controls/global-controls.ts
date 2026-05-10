@@ -1,4 +1,5 @@
 import { Component, computed, inject } from '@angular/core';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ScenarioStore } from '../../../scenario/scenario.store';
 import { SliderControl } from '../../slider-control/slider-control';
 import { SliderGroup } from '../slider-group/slider-group';
@@ -14,10 +15,6 @@ import { MoneyPipe } from '../../pipes/money.pipe';
  * methods): annual mileage, keep duration, vehicle age. The "+ Show
  * overrides" disclosure adds the power-user knobs: residual, insurance,
  * fuel efficiency, fuel price, maintenance display row.
- *
- * Down payment moved to the per-mode field components (mode-specific value).
- * Opportunity-cost rate moved to `<app-your-situation>` (one-rate-fits-all
- * preference). EV setup also moved to `<app-your-situation>`.
  */
 @Component({
   selector: 'app-global-controls',
@@ -30,13 +27,14 @@ import { MoneyPipe } from '../../pipes/money.pipe';
     ConflictPill,
     DepreciationCurveEditor,
     MoneyPipe,
+    TranslocoPipe,
   ],
   template: `
-    <app-slider-group title="Vehicle" [caption]="contextCaption()">
+    <app-slider-group [title]="'globals.groupTitle' | transloco" [caption]="contextCaption()">
       <div class="grid grid-cols-1 gap-x-6 gap-y-1">
         <app-slider-control
-          label="Annual mileage"
-          tip="How far you drive each year. Drives fuel cost and (combined with keep-duration) lease overage risk."
+          [label]="'globals.annualMileage.label' | transloco"
+          [tip]="'globals.annualMileage.tip' | transloco"
           [min]="2000"
           [max]="40000"
           [step]="500"
@@ -47,40 +45,40 @@ import { MoneyPipe } from '../../pipes/money.pipe';
           (valueChange)="store.annualMileage.set($event)"
         />
         <app-slider-control
-          label="Vehicle age"
-          tip="0 means new. For used cars we back-derive the original MSRP from this and the purchase price."
+          [label]="'globals.vehicleAge.label' | transloco"
+          [tip]="'globals.vehicleAge.tip' | transloco"
           [min]="0"
           [max]="10"
           [step]="1"
-          minLabel="0 yr"
-          maxLabel="10 yr"
-          suffix=" yr"
+          [minLabel]="'units.years' | transloco: { count: 0 }"
+          [maxLabel]="'units.years' | transloco: { count: 10 }"
+          [suffix]="' ' + ('units.yearsAbbr' | transloco)"
           [value]="store.vehicleAge()"
           (valueChange)="store.vehicleAge.set($event)"
         />
         <app-slider-control
-          label="Keep duration"
-          tip="How many years you plan to keep the car. Sets the chart horizon and the recommended financing method."
+          [label]="'globals.keepDuration.label' | transloco"
+          [tip]="'globals.keepDuration.tip' | transloco"
           [min]="1"
           [max]="15"
           [step]="1"
-          minLabel="1 yr"
-          maxLabel="15 yr"
-          suffix=" yr"
+          [minLabel]="'units.years' | transloco: { count: 1 }"
+          [maxLabel]="'units.years' | transloco: { count: 15 }"
+          [suffix]="' ' + ('units.yearsAbbr' | transloco)"
           [value]="store.keepDuration()"
           (valueChange)="store.keepDuration.set($event)"
         />
       </div>
 
-      <app-disclosure label="+ Advanced">
+      <app-disclosure [label]="'globals.advancedDisclosure' | transloco">
         <div class="grid grid-cols-1 gap-x-6 gap-y-3">
           <div id="slider-residualValue">
             <div class="flex justify-end mb-1">
               <app-depreciation-curve-editor />
             </div>
             <app-slider-control
-              label="Residual value"
-              tip="Auto-derived from the depreciation curve at vehicleAge + keepDuration. Override with the residual percentage from your lease contract for an apples-to-apples lease comparison."
+              [label]="'globals.residualValue.label' | transloco"
+              [tip]="'globals.residualValue.tip' | transloco"
               [min]="0"
               [max]="residualMax()"
               [step]="500"
@@ -107,8 +105,8 @@ import { MoneyPipe } from '../../pipes/money.pipe';
           </div>
           <div id="slider-insurance">
             <app-slider-control
-              label="Insurance / yr"
-              tip="Annual full-coverage insurance. Defaults to purchase price × 2% (US) or 1.5% (EU), tuned by category. Override with your quote."
+              [label]="'globals.insurance.label' | transloco"
+              [tip]="'globals.insurance.tip' | transloco"
               [min]="0"
               [max]="6000"
               [step]="25"
@@ -136,7 +134,7 @@ import { MoneyPipe } from '../../pipes/money.pipe';
           <div id="slider-fuelEfficiency">
             <app-slider-control
               [label]="fuelEfficiencyLabel()"
-              tip="Vehicle efficiency. ICE uses mpg (US) or L/100km (EU). EV uses mi/kWh (US) or kWh/100km (EU)."
+              [tip]="'globals.fuelEfficiency.tip' | transloco"
               [min]="fuelEfficiencyMin()"
               [max]="fuelEfficiencyMax()"
               [step]="0.1"
@@ -164,7 +162,7 @@ import { MoneyPipe } from '../../pipes/money.pipe';
           <div id="slider-fuelPrice">
             <app-slider-control
               [label]="fuelPriceLabel()"
-              tip="Per-unit price for fuel or electricity at your locale's typical rate."
+              [tip]="'globals.fuelPrice.tip' | transloco"
               [min]="0"
               [max]="fuelPriceMax()"
               [step]="0.01"
@@ -201,9 +199,10 @@ import { MoneyPipe } from '../../pipes/money.pipe';
 })
 export class GlobalControls {
   protected readonly store = inject(ScenarioStore);
+  private readonly transloco = inject(TranslocoService);
 
   protected readonly distanceSuffix = computed(
-    () => ' ' + this.store.localeConfig().distanceUnit,
+    () => ' ' + this.store.regionConfig().distanceUnit,
   );
 
   protected readonly residualMax = computed(() =>
@@ -211,26 +210,37 @@ export class GlobalControls {
   );
 
   protected readonly contextCaption = computed(() => {
-    const cfg = this.store.localeConfig();
-    const formatted = Math.round(this.store.msrp()).toLocaleString();
-    const moneyMsrp = cfg.currencyAfter
-      ? `${formatted} ${cfg.currencySymbol}`
-      : `${cfg.currencySymbol}${formatted}`;
-    const cat = this.store.vehicleCategory();
-    return `MSRP ${moneyMsrp} · ${cat.charAt(0).toUpperCase() + cat.slice(1)}`;
+    const lang = this.store.language();
+    const cur = this.store.currencyDisplay();
+    const formatted = Math.round(this.store.msrp()).toLocaleString(this.store.bcp47());
+    const moneyMsrp = cur.after
+      ? `${formatted} ${cur.symbol}`
+      : `${cur.symbol}${formatted}`;
+    const category = this.transloco.translate(
+      `globals.category.${this.store.vehicleCategory()}`,
+      {},
+      lang,
+    );
+    return this.transloco.translate('globals.caption', { msrp: moneyMsrp, category }, lang);
   });
 
   protected readonly fuelEfficiencyUnit = computed(() => {
-    const cfg = this.store.localeConfig();
+    const cfg = this.store.regionConfig();
     return this.store.powertrain() === 'EV' ? cfg.evEfficiencyUnit : cfg.iceEfficiencyUnit;
   });
   protected readonly fuelEfficiencyLabel = computed(() =>
-    this.store.powertrain() === 'EV' ? 'EV efficiency' : 'Fuel efficiency',
+    this.transloco.translate(
+      this.store.powertrain() === 'EV'
+        ? 'globals.evEfficiency.label'
+        : 'globals.fuelEfficiency.label',
+      {},
+      this.store.language(),
+    ),
   );
   protected readonly fuelEfficiencyMin = computed(() => 1);
   protected readonly fuelEfficiencyMax = computed(() => {
-    if (this.store.powertrain() === 'EV') return this.store.locale() === 'US' ? 6 : 30;
-    return this.store.locale() === 'US' ? 80 : 15;
+    if (this.store.powertrain() === 'EV') return this.store.region() === 'US' ? 6 : 30;
+    return this.store.region() === 'US' ? 80 : 15;
   });
   protected readonly fuelEfficiencyMinLabel = computed(() => `1 ${this.fuelEfficiencyUnit()}`);
   protected readonly fuelEfficiencyMaxLabel = computed(
@@ -238,20 +248,26 @@ export class GlobalControls {
   );
 
   protected readonly fuelPriceLabel = computed(() =>
-    this.store.powertrain() === 'EV' ? 'Electricity price' : 'Fuel price',
+    this.transloco.translate(
+      this.store.powertrain() === 'EV'
+        ? 'globals.electricityPrice.label'
+        : 'globals.fuelPrice.label',
+      {},
+      this.store.language(),
+    ),
   );
-  protected readonly fuelPriceSymbol = computed(() => this.store.localeConfig().currencySymbol);
+  protected readonly fuelPriceSymbol = computed(() => this.store.currencyDisplay().symbol);
   protected readonly fuelPriceSuffix = computed(() => {
     if (this.store.powertrain() === 'EV') return ' /kWh';
-    return this.store.locale() === 'US' ? ' /gal' : ' /L';
+    return this.store.region() === 'US' ? ' /gal' : ' /L';
   });
   protected readonly fuelPriceMax = computed(() => {
     if (this.store.powertrain() === 'EV') return 1;
-    return this.store.locale() === 'US' ? 8 : 3;
+    return this.store.region() === 'US' ? 8 : 3;
   });
 
   protected distance(value: number): string {
     const k = value >= 1000 ? `${value / 1000}k` : String(value);
-    return `${k} ${this.store.localeConfig().distanceUnit}`;
+    return `${k} ${this.store.regionConfig().distanceUnit}`;
   }
 }

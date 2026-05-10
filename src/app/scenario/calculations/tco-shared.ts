@@ -2,18 +2,17 @@ import type {
   ChargerStatus,
   CostBreakdown,
   CostCategory,
-  Locale,
   MonthlyTcoPoint,
   Powertrain,
+  Region,
   Tab,
 } from '../scenario.types';
-import { LOCALE_CONFIG } from '../locale.config';
 import { fuelCostOverYears } from './fuel';
 import { MaintenanceContext, maintenanceAt } from './maintenance';
 
 export interface TcoBaseInputs {
   tab: Tab;
-  locale: Locale;
+  region: Region;
   powertrain: Powertrain;
   purchasePrice: number;
   residualValue: number;
@@ -31,6 +30,10 @@ export interface TcoBaseInputs {
   fuelPrice: number;
   chargerStatus: ChargerStatus;
   solar: boolean;
+  // One-shot install cost when the user is buying a home charger. Resolved
+  // by the store from the context-aware region config so UK mode picks up
+  // the GBP-equivalent figure rather than the EUR EU baseline.
+  homeChargerInstall: number;
 }
 
 export const COST_KEYS: CostCategory[] = [
@@ -112,7 +115,7 @@ export function fuelTotalForMonths(input: TcoBaseInputs, months: number): number
     annualMileage: input.annualMileage,
     years: months / 12,
     powertrain: input.powertrain,
-    locale: input.locale,
+    region: input.region,
     chargerStatus: input.chargerStatus,
     solar: input.solar,
   });
@@ -121,7 +124,7 @@ export function fuelTotalForMonths(input: TcoBaseInputs, months: number): number
 // Only 'buying' adds install cost; 'installed' is sunk, don't double-count.
 export function homeChargerInstallCost(input: TcoBaseInputs): number {
   if (input.powertrain !== 'EV' || input.chargerStatus !== 'buying') return 0;
-  return LOCALE_CONFIG[input.locale].defaultHomeChargerInstall;
+  return input.homeChargerInstall;
 }
 
 export function allocateSeries(totalMonths: number): MonthlyTcoPoint[] {

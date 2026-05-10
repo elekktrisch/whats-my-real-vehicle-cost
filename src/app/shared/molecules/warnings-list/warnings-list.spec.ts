@@ -1,6 +1,7 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { WarningsList } from './warnings-list';
 import type { ActiveConflict } from '../../../scenario/conflicts';
+import { provideTranslocoTesting } from '../../../../test-helpers/transloco-testing';
 
 function descriptor(over: Partial<ActiveConflict> = {}): ActiveConflict {
   return {
@@ -19,7 +20,10 @@ function descriptor(over: Partial<ActiveConflict> = {}): ActiveConflict {
 }
 
 function make(): ComponentFixture<WarningsList> {
-  TestBed.configureTestingModule({ imports: [WarningsList] });
+  TestBed.configureTestingModule({
+    imports: [WarningsList],
+    providers: [...provideTranslocoTesting()],
+  });
   const fixture = TestBed.createComponent(WarningsList);
   fixture.componentRef.setInput('conflicts', []);
   return fixture;

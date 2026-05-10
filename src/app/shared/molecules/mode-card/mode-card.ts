@@ -1,10 +1,11 @@
 import { Component, computed, input, output } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
 import type { Tab } from '../../../scenario/scenario.types';
 import { Icon } from '../../atoms/icon/icon';
 
 @Component({
   selector: 'app-mode-card',
-  imports: [Icon],
+  imports: [Icon, TranslocoPipe],
   template: `
     <button
       type="button"
@@ -22,9 +23,9 @@ import { Icon } from '../../atoms/icon/icon';
           @if (conflictCount() > 0) {
             <span
               data-testid="mode-card-badge"
-              [attr.aria-label]="conflictCount() + ' rule conflict' + (conflictCount() === 1 ? '' : 's')"
+              [attr.aria-label]="'modeCard.conflictBadge' | transloco: { count: conflictCount() }"
               class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-warning-soft border border-warning/40 text-warning font-mono text-[0.65rem] font-medium tracking-tight"
-              title="This mode has rule conflicts"
+              [attr.title]="'modeCard.conflictBadgeTitle' | transloco"
             >
               ⚠ {{ conflictCount() }}
             </span>
@@ -40,7 +41,7 @@ import { Icon } from '../../atoms/icon/icon';
 
       <div class="mode-card-total flex items-baseline justify-between flex-wrap gap-1 sm:gap-2">
         <span [class]="rowLabelClass + ' inline-flex items-center gap-[4px]'">
-          Total
+          {{ 'modeCard.total' | transloco }}
           @if (totalTip()) {
             <span
               class="hidden sm:inline-flex items-center justify-center size-[14px] rounded-full bg-elevated border border-border-strong text-tx-dim text-[10px] leading-none cursor-help normal-case tracking-normal"
@@ -60,7 +61,7 @@ import { Icon } from '../../atoms/icon/icon';
 
       <div class="mode-card-monthly flex items-baseline justify-between flex-wrap gap-1 sm:gap-2 mt-[3px] sm:mt-[6px]">
         <span [class]="rowLabelClass + ' inline-flex items-center gap-[4px]'">
-          Monthly
+          {{ 'modeCard.monthly' | transloco }}
           @if (monthlyTip()) {
             <span
               class="hidden sm:inline-flex items-center justify-center size-[14px] rounded-full bg-elevated border border-border-strong text-tx-dim text-[10px] leading-none cursor-help normal-case tracking-normal"
@@ -80,7 +81,7 @@ import { Icon } from '../../atoms/icon/icon';
 
       <div class="mode-card-per-distance flex items-baseline justify-between flex-wrap gap-2 mt-[2px] sm:mt-[4px]">
         <span [class]="rowLabelClass + ' inline-flex items-center gap-[4px]'">
-          Per {{ distanceUnit() }}
+          {{ 'modeCard.perDistance' | transloco: { unit: distanceUnit() } }}
           @if (perDistanceTip()) {
             <span
               class="hidden sm:inline-flex items-center justify-center size-[14px] rounded-full bg-elevated border border-border-strong text-tx-dim text-[10px] leading-none cursor-help normal-case tracking-normal"
@@ -102,10 +103,10 @@ import { Icon } from '../../atoms/icon/icon';
           @if (recommended()) {
             <span
               class="inline-flex items-center gap-[4px] rounded-full bg-accent/15 text-accent text-[0.75rem] tracking-[0.1em] uppercase px-[8px] py-[2px] font-ui font-semibold ring-1 ring-accent/40"
-              aria-label="Recommended — best value"
+              [attr.aria-label]="'modeCard.bestAria' | transloco"
             >
               <app-icon name="star" [size]="11" [filled]="true" [strokeWidth]="0" />
-              Best
+              {{ 'modeCard.best' | transloco }}
             </span>
           } @else {
             @if (delta(); as d) {

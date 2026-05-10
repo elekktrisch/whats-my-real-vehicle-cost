@@ -13,7 +13,7 @@ const mctxLinear = (msrp: number, k: number, baseRate: number): MaintenanceConte
 // ── Fixtures ───────────────────────────────────────────────────────────────
 
 const baseShared = {
-  locale: 'US' as const,
+  region: 'US' as const,
   powertrain: 'ICE' as const,
   purchasePrice: 35_000,
   residualValue: 18_000,
@@ -26,6 +26,7 @@ const baseShared = {
   fuelPrice: 3.5,
   chargerStatus: 'none' as const,
   solar: false,
+  homeChargerInstall: 1_500,
 };
 
 function cashInputs(o: Partial<CashTcoInputs> = {}): CashTcoInputs {

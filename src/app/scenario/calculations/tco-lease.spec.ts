@@ -10,7 +10,7 @@ const mctxLinear = (msrp: number, k: number, baseRate: number): MaintenanceConte
 
 const usLeaseShared = {
   tab: 'lease' as const,
-  locale: 'US' as const,
+  region: 'US' as const,
   powertrain: 'ICE' as const,
   purchasePrice: 35000,
   residualValue: 18000,
@@ -24,6 +24,7 @@ const usLeaseShared = {
   fuelPrice: 3.5,
   chargerStatus: 'none' as const,
   solar: false,
+  homeChargerInstall: 1500,
   apr: 4.5,
   leaseTermMonths: 36,
   leaseEndChoice: 'handBack' as const,

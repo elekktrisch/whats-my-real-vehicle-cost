@@ -1,8 +1,12 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { ModeCard } from './mode-card';
+import { provideTranslocoTesting } from '../../../../test-helpers/transloco-testing';
 
 function make(): ComponentFixture<ModeCard> {
-  TestBed.configureTestingModule({ imports: [ModeCard] });
+  TestBed.configureTestingModule({
+    imports: [ModeCard],
+    providers: [...provideTranslocoTesting()],
+  });
   const fixture = TestBed.createComponent(ModeCard);
   fixture.componentRef.setInput('mode', 'lease');
   fixture.componentRef.setInput('label', 'Lease');

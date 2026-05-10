@@ -1,9 +1,10 @@
 import { Component, computed, input, model, output, signal } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { InfoBadge } from '../info-badge/info-badge';
 
 @Component({
   selector: 'app-slider-control',
-  imports: [InfoBadge],
+  imports: [InfoBadge, TranslocoPipe],
   templateUrl: './slider-control.html',
   host: { class: 'block mb-[22px]' },
 })
