@@ -21,7 +21,7 @@ import type { Region } from '../../../scenario/scenario.types';
         (click)="set('US')"
         [class]="optionClass(store.region() === 'US')"
       >
-        <svg viewBox="0 0 30 20" class="w-[20px] h-[14px] rounded-[2px] shrink-0 sm:w-[18px] sm:h-[12px]">
+        <svg viewBox="0 0 30 20" class="w-[18px] h-[12px] rounded-[2px] shrink-0">
           <rect width="30" height="20" fill="#ffffff" />
           <g fill="#b22234">
             <rect y="0" width="30" height="1.54" />
@@ -44,7 +44,7 @@ import type { Region } from '../../../scenario/scenario.types';
         (click)="set('EU')"
         [class]="optionClass(store.region() === 'EU')"
       >
-        <svg viewBox="0 0 30 20" class="w-[20px] h-[14px] rounded-[2px] shrink-0 sm:w-[18px] sm:h-[12px]">
+        <svg viewBox="0 0 30 20" class="w-[18px] h-[12px] rounded-[2px] shrink-0">
           <rect width="30" height="20" fill="#003399" />
           <g fill="#ffcc00" transform="translate(15 10)">
             @for (s of euStars; track $index) {
@@ -68,12 +68,12 @@ export class RegionSelector {
 
   protected optionClass(active: boolean): string {
     return [
-      'inline-flex items-center justify-center px-2 sm:px-3 h-7 rounded-[6px]',
+      'inline-flex items-center justify-center px-3 h-[30px] rounded-[6px]',
       'transition-[background-color,color] duration-150 cursor-pointer',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
       active
         ? 'bg-surface text-tx shadow-[0_0_0_1px_var(--color-border-strong)]'
-        : 'opacity-60 hover:opacity-100 sm:opacity-100 text-tx-muted sm:hover:text-tx',
+        : 'text-tx-muted hover:text-tx',
     ].join(' ');
   }
 

@@ -2,12 +2,11 @@ import { Component, inject } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { ScenarioStore } from '../../../scenario/scenario.store';
 import { NumberInput } from '../../atoms/number-input/number-input';
-import { RegionSelector } from '../region-selector/region-selector';
 import { PowertrainSelector } from '../powertrain-selector/powertrain-selector';
 
 @Component({
   selector: 'app-page-header',
-  imports: [NumberInput, RegionSelector, PowertrainSelector, TranslocoPipe],
+  imports: [NumberInput, PowertrainSelector, TranslocoPipe],
   template: `
     <header class="page-header border-b border-border">
       <div class="page-header-inner flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3">
@@ -26,10 +25,7 @@ import { PowertrainSelector } from '../powertrain-selector/powertrain-selector';
             size="md"
           />
         </label>
-        <div class="page-header-toggles flex items-center justify-between gap-3">
-          <app-region-selector />
-          <app-powertrain-selector />
-        </div>
+        <app-powertrain-selector />
       </div>
     </header>
   `,

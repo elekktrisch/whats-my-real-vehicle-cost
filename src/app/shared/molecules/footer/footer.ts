@@ -3,30 +3,38 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { ScenarioStore } from '../../../scenario/scenario.store';
 import { Icon } from '../../atoms/icon/icon';
 import { LanguageSelector } from '../language-selector/language-selector';
+import { RegionSelector } from '../region-selector/region-selector';
 
 const REPO_URL = 'https://github.com/elekktrisch/whats-my-real-vehicle-cost';
 
 @Component({
   selector: 'app-footer',
-  imports: [Icon, LanguageSelector, TranslocoPipe],
+  imports: [Icon, LanguageSelector, RegionSelector, TranslocoPipe],
   template: `
     <footer class="pt-8 mt-6 border-t border-border">
-      <div class="flex flex-wrap items-center justify-center gap-3">
-        @if (showActions()) {
-          <button type="button" (click)="onReset()" [class]="btnClass">
-            <app-icon name="reset" [size]="14" />
-            {{ 'nav.reset' | transloco }}
-          </button>
-          <button type="button" (click)="share.emit()" [class]="btnClass">
-            <app-icon name="share" [size]="14" />
-            {{ 'nav.share' | transloco }}
-          </button>
-        }
-        <a [href]="repoUrl" target="_blank" rel="noopener noreferrer" [class]="btnClass">
-          <app-icon name="github" [size]="14" />
-          {{ 'nav.viewOnGitHub' | transloco }}
-        </a>
-        <app-language-selector />
+      <div
+        class="flex flex-col sm:flex-row sm:justify-between items-center gap-4 sm:gap-6"
+      >
+        <div class="flex flex-wrap items-center justify-center gap-3">
+          @if (showActions()) {
+            <button type="button" (click)="onReset()" [class]="btnClass">
+              <app-icon name="reset" [size]="14" />
+              {{ 'nav.reset' | transloco }}
+            </button>
+            <button type="button" (click)="share.emit()" [class]="btnClass">
+              <app-icon name="share" [size]="14" />
+              {{ 'nav.share' | transloco }}
+            </button>
+          }
+          <a [href]="repoUrl" target="_blank" rel="noopener noreferrer" [class]="btnClass">
+            <app-icon name="github" [size]="14" />
+            {{ 'nav.github' | transloco }}
+          </a>
+        </div>
+        <div class="flex items-center gap-3">
+          <app-region-selector />
+          <app-language-selector />
+        </div>
       </div>
 
       <p class="font-ui text-[0.72rem] text-tx-dim leading-relaxed text-center max-w-[640px] mx-auto mt-8 px-2">

@@ -28,14 +28,12 @@ export const de: Translation = {
     priceLabel: 'Verhandelter Preis',
     powertrainLabel: 'Antrieb',
     cta: 'Los geht\'s',
-    regionDefaults:
-      '{region, select, US {US-Vorgaben} EU {EU-Vorgaben} other {{region}-Vorgaben}}',
   },
 
   nav: {
     reset: 'Zurücksetzen',
     share: 'Teilen',
-    viewOnGitHub: 'Auf GitHub ansehen',
+    github: 'GitHub',
   },
 
   regionSelector: {
@@ -46,6 +44,8 @@ export const de: Translation = {
 
   languageSelector: {
     aria: 'Sprache',
+    EN: 'Englisch',
+    DE: 'Deutsch',
   },
 
   powertrain: {
