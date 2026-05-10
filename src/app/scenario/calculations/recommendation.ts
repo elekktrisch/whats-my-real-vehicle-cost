@@ -1,9 +1,9 @@
-import { formatCurrency } from '../locale.config';
-import type { Locale, Tab } from '../scenario.types';
+import { formatCurrency } from '../region.config';
+import type { Region, Tab } from '../scenario.types';
 
 export interface RecommendationInputs {
   costPerDistance: Record<Tab, number>;
-  locale: Locale;
+  region: Region;
   distanceUnit: 'mi' | 'km';
 }
 
@@ -23,7 +23,7 @@ export function recommendTab(input: RecommendationInputs): Recommendation {
   const winner = TABS.reduce((best, t) =>
     input.costPerDistance[t] < input.costPerDistance[best] ? t : best,
   );
-  const fmt = (v: number) => formatCurrency(v, input.locale, 2);
+  const fmt = (v: number) => formatCurrency(v, input.region, 2);
   const others = TABS.filter((t) => t !== winner)
     .map((t) => `${LABEL[t]} ${fmt(input.costPerDistance[t])}`)
     .join(', ');

@@ -31,7 +31,7 @@ import {
   maintenanceAt,
   makeMaintenanceCurve,
 } from '../../../scenario/calculations/maintenance';
-import { formatCurrency } from '../../../scenario/locale.config';
+import { formatCurrency } from '../../../scenario/region.config';
 import { Icon } from '../../atoms/icon/icon';
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, Tooltip, Filler);
@@ -197,7 +197,7 @@ export class MaintenanceCurveEditor {
   });
 
   protected formatMoney(v: number): string {
-    return formatCurrency(v, this.store.locale(), 0);
+    return formatCurrency(v, this.store.region(), 0);
   }
 
   // Currency multiplier — convert stored % factor to displayed currency.

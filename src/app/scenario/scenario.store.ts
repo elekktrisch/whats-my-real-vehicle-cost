@@ -1,19 +1,22 @@
 import { Injectable, Signal, WritableSignal, computed, inject, signal } from '@angular/core';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
-import { LOCALE_CONFIG, fuelEfficiencyDefault, fuelPriceDefault } from './locale.config';
+import { TranslocoService } from '@jsverse/transloco';
+import { REGION_CONFIG, fuelEfficiencyDefault, fuelPriceDefault } from './region.config';
 import { LEASE_END_DEFAULTS, defaultScenario } from './scenario.defaults';
 import type {
   ChargerStatus,
   CostBreakdown,
   DepreciationCurve,
+  Language,
   LeaseEndChoice,
-  Locale,
+  Region,
   MaintenanceCurve,
   Powertrain,
   ScenarioSnapshot,
   Tab,
 } from './scenario.types';
+import { writeStoredLanguage } from '../../i18n/detect';
 import { backDeriveMsrp } from './calculations/msrp';
 import { defaultCurveForPowertrain, depreciationFactor } from './calculations/depreciation';
 import { categorize, categoryMultipliers } from './calculations/category';
@@ -26,7 +29,7 @@ import { recommendTab } from './calculations/recommendation';
 import { costPerDistance, effectiveMonthly, tcoBreakdown } from './calculations/tco';
 import { setupAutosave } from './scenario.persistence';
 import { ActiveConflict, conflictCountForTab } from './conflicts';
-import { formatCurrency } from './locale.config';
+import { formatCurrency } from './region.config';
 
 // Tuple recorded when the user dismisses a conflict pill. The pill stays
 // hidden as long as (override, default) match what was dismissed; any
@@ -40,7 +43,20 @@ const APR_USED_CAR = 3.0;
 export class ScenarioStore {
   private readonly initial = defaultScenario();
 
-  readonly locale = signal<Locale>(this.initial.globals.locale);
+  readonly region = signal<Region>(this.initial.globals.region);
+  // Language is independent from `region` (which controls units/currency).
+  // Detection + persistence live outside the `?s=` snapshot — see
+  // PLAN-i18n.md and `setLanguage` below.
+  readonly language = signal<Language>('en');
+  // Derived BCP-47 for `toLocaleString` callers. Number formatting follows
+  // the chosen language; currency symbol still comes from locale (region).
+  readonly bcp47 = computed<string>(() => {
+    const lang = this.language();
+    const loc = this.region();
+    if (lang === 'en' && loc === 'EU') return 'en-GB';
+    if (lang === 'en') return 'en-US';
+    return 'de-DE';
+  });
   readonly powertrain = signal<Powertrain>(this.initial.globals.powertrain);
   readonly purchasePrice = signal(this.initial.globals.purchasePrice);
   // Override-pattern: each `xOverride` is a `WritableSignal<T | null>` where
@@ -127,15 +143,15 @@ export class ScenarioStore {
   readonly msrp = computed(() =>
     backDeriveMsrp(this.purchasePrice(), this.vehicleAge(), this.depreciationCurve()),
   );
-  readonly vehicleCategory = computed(() => categorize(this.msrp(), this.locale()));
+  readonly vehicleCategory = computed(() => categorize(this.msrp(), this.region()));
   readonly categoryMultipliers = computed(() => categoryMultipliers(this.vehicleCategory()));
-  readonly localeConfig = computed(() => LOCALE_CONFIG[this.locale()]);
+  readonly regionConfig = computed(() => REGION_CONFIG[this.region()]);
   readonly currencyPrefix = computed(() => {
-    const cfg = this.localeConfig();
+    const cfg = this.regionConfig();
     return cfg.currencyAfter ? '' : cfg.currencySymbol;
   });
   readonly currencySuffix = computed(() => {
-    const cfg = this.localeConfig();
+    const cfg = this.regionConfig();
     return cfg.currencyAfter ? ' ' + cfg.currencySymbol : '';
   });
 
@@ -164,13 +180,13 @@ export class ScenarioStore {
   }
 
   private insuranceDefault = computed(() => {
-    const cfg = this.localeConfig();
+    const cfg = this.regionConfig();
     return this.purchasePrice() * cfg.insuranceRate * this.categoryMultipliers().insurance;
   });
   // Heavy drivers wear cars out faster — scale every term of the maintenance
   // curve by annualMileage / nominal so the band steepens.
   private readonly mileageFactor = computed(() => {
-    const nominal = this.locale() === 'US' ? 12000 : 15000;
+    const nominal = this.region() === 'US' ? 12000 : 15000;
     return Math.max(this.annualMileage() / nominal, 0);
   });
   readonly maintenanceCurve = computed(
@@ -187,10 +203,10 @@ export class ScenarioStore {
     mileageFactor: this.mileageFactor(),
   }));
   private fuelEfficiencyDefaultSignal = computed(() =>
-    fuelEfficiencyDefault(this.locale(), this.powertrain()),
+    fuelEfficiencyDefault(this.region(), this.powertrain()),
   );
   private fuelPriceDefaultSignal = computed(() =>
-    fuelPriceDefault(this.locale(), this.powertrain()),
+    fuelPriceDefault(this.region(), this.powertrain()),
   );
 
   readonly insurance = computed(() => this.insuranceOverride() ?? this.insuranceDefault());
@@ -219,7 +235,7 @@ export class ScenarioStore {
   private readonly fuelEfficiencyBindings = this.bindConflict(
     this.fuelEfficiencyOverride,
     () => this.fuelEfficiencyDefaultSignal(),
-    numEqDynamic(() => fuelEfficiencyTolerance(this.powertrain(), this.locale())),
+    numEqDynamic(() => fuelEfficiencyTolerance(this.powertrain(), this.region())),
   );
   readonly fuelEfficiencyConflict = this.fuelEfficiencyBindings.conflict;
   readonly fuelEfficiencyPillVisible = this.fuelEfficiencyBindings.pillVisible;
@@ -233,7 +249,7 @@ export class ScenarioStore {
   private readonly fuelPriceBindings = this.bindConflict(
     this.fuelPriceOverride,
     () => this.fuelPriceDefaultSignal(),
-    numEqDynamic(() => fuelPriceTolerance(this.powertrain(), this.locale())),
+    numEqDynamic(() => fuelPriceTolerance(this.powertrain(), this.region())),
   );
   readonly fuelPriceConflict = this.fuelPriceBindings.conflict;
   readonly fuelPricePillVisible = this.fuelPriceBindings.pillVisible;
@@ -253,8 +269,8 @@ export class ScenarioStore {
         finance: costPerDistance(this.financeBreakdown(), annualMiles, years),
         cash: costPerDistance(this.cashBreakdown(), annualMiles, years),
       },
-      locale: this.locale(),
-      distanceUnit: this.localeConfig().distanceUnit,
+      region: this.region(),
+      distanceUnit: this.regionConfig().distanceUnit,
     });
   });
 
@@ -355,7 +371,7 @@ export class ScenarioStore {
       residualValue: this.leaseEndResidual(),
       apr: this.leaseApr(),
       termMonths: this.leaseTerm(),
-      locale: this.locale(),
+      region: this.region(),
     }),
   );
 
@@ -363,7 +379,7 @@ export class ScenarioStore {
   // knobs + opp-cost rate). Per-mode breakdowns spread this and add their
   // financing-specific fields (down payment, APR, term, lease-end choice…).
   private readonly commonBreakdownArgs = computed(() => ({
-    locale: this.locale(),
+    region: this.region(),
     powertrain: this.powertrain(),
     purchasePrice: this.purchasePrice(),
     residualValue: this.residualValue(),
@@ -434,47 +450,62 @@ export class ScenarioStore {
   // overrides have to be dropped during the toggle. The stash holds each
   // previous value, keyed by the combo it belongs to, so toggling back
   // restores it. Insurance keys on locale only; fuel keys on (locale, pt).
-  private readonly insuranceStash = new Map<Locale, number | null>();
+  private readonly insuranceStash = new Map<Region, number | null>();
   private readonly fuelEffStash = new Map<string, number | null>();
   private readonly fuelPriceStash = new Map<string, number | null>();
-  private fuelComboKey(locale: Locale, pt: Powertrain): string {
-    return `${locale}|${pt}`;
+  private fuelComboKey(region: Region, pt: Powertrain): string {
+    return `${region}|${pt}`;
   }
 
-  setLocale(v: Locale): void {
-    if (this.locale() === v) return;
-    const oldLocale = this.locale();
+  setRegion(v: Region): void {
+    if (this.region() === v) return;
+    const oldRegion = this.region();
     const pt = this.powertrain();
-    this.stashInsuranceOverride(oldLocale);
-    this.stashFuelOverrides(oldLocale, pt);
-    this.locale.set(v);
+    this.stashInsuranceOverride(oldRegion);
+    this.stashFuelOverrides(oldRegion, pt);
+    this.region.set(v);
     this.restoreInsuranceOverride(v);
     this.restoreFuelOverrides(v, pt);
   }
 
-  setPowertrain(v: Powertrain): void {
-    if (this.powertrain() === v) return;
-    const loc = this.locale();
-    const oldPt = this.powertrain();
-    // Insurance keys on locale only — powertrain toggle leaves it alone.
-    this.stashFuelOverrides(loc, oldPt);
-    this.powertrain.set(v);
-    this.restoreFuelOverrides(loc, v);
+  // Updates the active UI language. Syncs to Transloco so templates re-render,
+  // and (by default) writes to localStorage so a manual override survives
+  // reload. APP_INITIALIZER passes `persist: false` for browser-detected
+  // values — only user-initiated flips should write storage.
+  setLanguage(v: Language, opts: { persist?: boolean } = { persist: true }): void {
+    if (this.language() === v) {
+      // Still ensure Transloco is in sync on initial APP_INITIALIZER call.
+      if (this.transloco.getActiveLang() !== v) this.transloco.setActiveLang(v);
+      return;
+    }
+    this.language.set(v);
+    this.transloco.setActiveLang(v);
+    if (opts.persist) writeStoredLanguage(v);
   }
 
-  private stashInsuranceOverride(locale: Locale): void {
-    this.insuranceStash.set(locale, this.insuranceOverride());
+  setPowertrain(v: Powertrain): void {
+    if (this.powertrain() === v) return;
+    const reg = this.region();
+    const oldPt = this.powertrain();
+    // Insurance keys on region only — powertrain toggle leaves it alone.
+    this.stashFuelOverrides(reg, oldPt);
+    this.powertrain.set(v);
+    this.restoreFuelOverrides(reg, v);
   }
-  private restoreInsuranceOverride(locale: Locale): void {
-    this.insuranceOverride.set(this.insuranceStash.get(locale) ?? null);
+
+  private stashInsuranceOverride(region: Region): void {
+    this.insuranceStash.set(region, this.insuranceOverride());
   }
-  private stashFuelOverrides(locale: Locale, pt: Powertrain): void {
-    const key = this.fuelComboKey(locale, pt);
+  private restoreInsuranceOverride(region: Region): void {
+    this.insuranceOverride.set(this.insuranceStash.get(region) ?? null);
+  }
+  private stashFuelOverrides(region: Region, pt: Powertrain): void {
+    const key = this.fuelComboKey(region, pt);
     this.fuelEffStash.set(key, this.fuelEfficiencyOverride());
     this.fuelPriceStash.set(key, this.fuelPriceOverride());
   }
-  private restoreFuelOverrides(locale: Locale, pt: Powertrain): void {
-    const key = this.fuelComboKey(locale, pt);
+  private restoreFuelOverrides(region: Region, pt: Powertrain): void {
+    const key = this.fuelComboKey(region, pt);
     this.fuelEfficiencyOverride.set(this.fuelEffStash.get(key) ?? null);
     this.fuelPriceOverride.set(this.fuelPriceStash.get(key) ?? null);
   }
@@ -499,7 +530,7 @@ export class ScenarioStore {
     };
     this._isHydrating.set(true);
     try {
-      this.locale.set(merged.globals.locale);
+      this.region.set(merged.globals.region);
       this.powertrain.set(merged.globals.powertrain);
       this.purchasePrice.set(merged.globals.purchasePrice);
       this.residualValueOverride.set(merged.globals.residualValue);
@@ -539,7 +570,7 @@ export class ScenarioStore {
   snapshot(): ScenarioSnapshot {
     return {
       globals: {
-        locale: this.locale(),
+        region: this.region(),
         powertrain: this.powertrain(),
         purchasePrice: this.purchasePrice(),
         // Persist null on auto-derived; keeps URLs short and lets the curve
@@ -615,8 +646,8 @@ export class ScenarioStore {
   // produce an empty list automatically.
   readonly activeConflicts = computed<readonly ActiveConflict[]>(() => {
     const out: ActiveConflict[] = [];
-    const loc = this.locale();
-    const efUnit = this.localeConfig().distanceUnit;
+    const loc = this.region();
+    const efUnit = this.regionConfig().distanceUnit;
 
     if (this.leaseAprPillVisible()) {
       const override = this.leaseAprOverride()!;
@@ -671,8 +702,8 @@ export class ScenarioStore {
       const def = this.fuelEfficiencyDefaultSignal();
       const unit =
         this.powertrain() === 'EV'
-          ? this.localeConfig().evEfficiencyUnit
-          : this.localeConfig().iceEfficiencyUnit;
+          ? this.regionConfig().evEfficiencyUnit
+          : this.regionConfig().iceEfficiencyUnit;
       out.push({
         key: 'fuelEfficiency',
         scope: 'global',
@@ -784,6 +815,7 @@ export class ScenarioStore {
 
   private readonly router = inject(Router);
   private readonly location = inject(Location);
+  private readonly transloco = inject(TranslocoService);
 
   constructor() {
     setupAutosave(this, this.router, this.location);
@@ -847,18 +879,18 @@ function numEqDynamic(toleranceFn: () => number): (a: number, b: number) => bool
   return (a, b) => Math.abs(a - b) <= toleranceFn();
 }
 
-// EV ranges are far wider than ICE; locales use different units.
+// EV ranges are far wider than ICE; regions use different units.
 //   EV  US: 1.5 mi/kWh,  EU: 6 kWh/100km
 //   ICE US: 2 mpg,       EU: 1 L/100km
-function fuelEfficiencyTolerance(powertrain: Powertrain, locale: Locale): number {
-  if (powertrain === 'EV') return locale === 'US' ? 1.5 : 6;
-  return locale === 'US' ? 2 : 1;
+function fuelEfficiencyTolerance(powertrain: Powertrain, region: Region): number {
+  if (powertrain === 'EV') return region === 'US' ? 1.5 : 6;
+  return region === 'US' ? 2 : 1;
 }
 
-// Electricity and pump prices use different units per locale.
+// Electricity and pump prices use different units per region.
 //   EV  US: $0.05/kWh,  EU: €0.10/kWh
 //   ICE US: $0.30/gal,  EU: €0.15/L
-function fuelPriceTolerance(powertrain: Powertrain, locale: Locale): number {
-  if (powertrain === 'EV') return locale === 'US' ? 0.05 : 0.1;
-  return locale === 'US' ? 0.3 : 0.15;
+function fuelPriceTolerance(powertrain: Powertrain, region: Region): number {
+  if (powertrain === 'EV') return region === 'US' ? 0.05 : 0.1;
+  return region === 'US' ? 0.3 : 0.15;
 }

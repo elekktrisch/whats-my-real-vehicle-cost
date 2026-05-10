@@ -10,7 +10,7 @@ const mctxLinear = (msrp: number, k: number, baseRate: number): MaintenanceConte
 
 const usFinanceShared = {
   tab: 'finance' as const,
-  locale: 'US' as const,
+  region: 'US' as const,
   powertrain: 'ICE' as const,
   purchasePrice: 35000,
   residualValue: 17500,
@@ -45,7 +45,7 @@ describe('financeTco', () => {
 
   it('100% down ≈ cash for the same scenario (same capital tied up)', () => {
     const shared = {
-      locale: 'US' as const,
+      region: 'US' as const,
       powertrain: 'ICE' as const,
       purchasePrice: 35000,
       residualValue: 17500,

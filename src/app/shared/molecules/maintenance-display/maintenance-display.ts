@@ -1,7 +1,7 @@
 import { Component, computed, inject } from '@angular/core';
 import { ScenarioStore } from '../../../scenario/scenario.store';
 import { maintenanceAt } from '../../../scenario/calculations/maintenance';
-import { formatCurrency } from '../../../scenario/locale.config';
+import { formatCurrency } from '../../../scenario/region.config';
 import { InfoBadge } from '../../info-badge/info-badge';
 
 @Component({
@@ -29,9 +29,9 @@ export class MaintenanceDisplay {
     const ctx = this.store.maintenanceContext();
     const keep = this.store.keepDuration();
     const startAge = this.store.vehicleAge();
-    const locale = this.store.locale();
+    const region = this.store.region();
 
-    const fmt = (v: number) => formatCurrency(v, locale, 0);
+    const fmt = (v: number) => formatCurrency(v, region, 0);
     const yr0 = maintenanceAt(ctx, 0);
 
     if (tab === 'lease') {

@@ -1,7 +1,7 @@
 import { financePayment } from '../../../scenario/calculations/financing';
 import { fuelCostOverYears } from '../../../scenario/calculations/fuel';
 import { maintenanceAt } from '../../../scenario/calculations/maintenance';
-import { formatCompactCurrency, formatCurrency } from '../../../scenario/locale.config';
+import { formatCompactCurrency, formatCurrency } from '../../../scenario/region.config';
 import type { ScenarioStore } from '../../../scenario/scenario.store';
 
 export interface BreakdownItem {
@@ -34,7 +34,7 @@ export interface HeroData {
 // whole numbers here (hero never shows cents); the money pipe uses the
 // 2-decimal variant for templates.
 function compactMoney(v: number, store: ScenarioStore): string {
-  return formatCompactCurrency(v, store.locale());
+  return formatCompactCurrency(v, store.region());
 }
 
 interface RunningCosts {
@@ -64,7 +64,7 @@ function runningCostsOverKeep(store: ScenarioStore): RunningCosts {
     annualMileage: store.annualMileage(),
     years: keep,
     powertrain: store.powertrain(),
-    locale: store.locale(),
+    region: store.region(),
     chargerStatus: store.chargerStatus(),
     solar: store.solar(),
   });
@@ -76,7 +76,7 @@ function runningCostsOverKeep(store: ScenarioStore): RunningCosts {
 // user can see exactly where the charger cost lands.
 function homeChargerInstall(store: ScenarioStore): number {
   if (store.powertrain() !== 'EV' || store.chargerStatus() !== 'buying') return 0;
-  return store.localeConfig().defaultHomeChargerInstall;
+  return store.regionConfig().defaultHomeChargerInstall;
 }
 
 function runningCostItems(
@@ -105,9 +105,9 @@ function captionYearRange(through: number): { full: string; mobile: string } {
 }
 
 export function leaseHeroData(store: ScenarioStore): HeroData {
-  const locale = store.locale();
+  const region = store.region();
   const keep = store.keepDuration();
-  const fmt = (v: number) => formatCurrency(v, locale, 0);
+  const fmt = (v: number) => formatCurrency(v, region, 0);
 
   const lease = store.leasePaymentDetails();
   const monthlyLease = lease.depreciationFee + lease.financeFee;
@@ -205,9 +205,9 @@ export function leaseHeroData(store: ScenarioStore): HeroData {
 }
 
 export function financeHeroData(store: ScenarioStore): HeroData {
-  const locale = store.locale();
+  const region = store.region();
   const keep = store.keepDuration();
-  const fmt = (v: number) => formatCurrency(v, locale, 0);
+  const fmt = (v: number) => formatCurrency(v, region, 0);
 
   const principal = Math.max(store.purchasePrice() - store.financeDownPayment(), 0);
   const monthly = financePayment({
@@ -255,9 +255,9 @@ export function financeHeroData(store: ScenarioStore): HeroData {
 }
 
 export function cashHeroData(store: ScenarioStore): HeroData {
-  const locale = store.locale();
+  const region = store.region();
   const keep = store.keepDuration();
-  const fmt = (v: number) => formatCurrency(v, locale, 0);
+  const fmt = (v: number) => formatCurrency(v, region, 0);
 
   const purchase = store.purchasePrice();
   const rc = runningCostsOverKeep(store);

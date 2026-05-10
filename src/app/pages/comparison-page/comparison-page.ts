@@ -18,7 +18,7 @@ import { WarningsList } from '../../shared/molecules/warnings-list/warnings-list
 import { ShareDialog } from '../../shared/molecules/share-dialog/share-dialog';
 import { ModeDetailView } from '../../features/mode-detail-view/mode-detail-view';
 import { URL_PARAM, encodeSnapshot } from '../../scenario/scenario.serializer';
-import { formatCompactCurrency, formatCurrency } from '../../scenario/locale.config';
+import { formatCompactCurrency, formatCurrency } from '../../scenario/region.config';
 import type { CostBreakdown, Tab } from '../../scenario/scenario.types';
 
 const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Loan', cash: 'Cash' };
@@ -149,12 +149,12 @@ export class ComparisonPage {
     this.shareOpen.set(true);
   }
 
-  protected readonly distanceUnit = computed(() => this.store.localeConfig().distanceUnit);
+  protected readonly distanceUnit = computed(() => this.store.regionConfig().distanceUnit);
   protected readonly recommended = computed(() => this.store.recommendedTab().tab);
   protected readonly recommendationReason = computed(() => this.store.recommendedTab().reason);
 
   protected readonly cards = computed<readonly ModeCardData[]>(() => {
-    const locale = this.store.locale();
+    const region = this.store.region();
     const distanceUnit = this.distanceUnit();
     const months = Math.max(Math.round(this.store.keepDuration() * 12), 1);
     const distance = this.store.annualMileage() * this.store.keepDuration();
@@ -192,12 +192,12 @@ export class ComparisonPage {
           : 0;
       const oppCost = breakdown.totals.opportunityCost;
       const asset = retainedAsset(mode);
-      const fT = formatCurrency(breakdown.total, locale, 0);
-      const fC = formatCurrency(cashOut, locale, 0);
-      const fO = formatCurrency(oppCost, locale, 0);
-      const fA = formatCurrency(asset, locale, 0);
-      const fM = formatCurrency(monthly, locale, 0);
-      const fP = formatCurrency(perDistance, locale, 2);
+      const fT = formatCurrency(breakdown.total, region, 0);
+      const fC = formatCurrency(cashOut, region, 0);
+      const fO = formatCurrency(oppCost, region, 0);
+      const fA = formatCurrency(asset, region, 0);
+      const fM = formatCurrency(monthly, region, 0);
+      const fP = formatCurrency(perDistance, region, 2);
       const totalDistance = Math.round(distance);
       const fDist = totalDistance.toLocaleString();
 
@@ -213,17 +213,17 @@ export class ComparisonPage {
       return {
         mode,
         label: LABEL[mode],
-        total: formatCompactCurrency(breakdown.total, locale),
+        total: formatCompactCurrency(breakdown.total, region),
         totalFull: fT,
         totalTip,
-        monthly: formatCompactCurrency(monthly, locale),
+        monthly: formatCompactCurrency(monthly, region),
         monthlyFull: fM,
         monthlyTip,
         perDistance: fP,
         perDistanceTip,
         delta: isRecommended
           ? null
-          : `+${formatCurrency(deltaPerDistance, locale, 2)}/${distanceUnit}`,
+          : `+${formatCurrency(deltaPerDistance, region, 2)}/${distanceUnit}`,
         conflictCount: this.store.conflictCount(mode),
       };
     });

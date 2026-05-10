@@ -8,7 +8,4 @@
 
 ## Test plan
 
-- [ ] `npm test -- --watch=false --browsers=ChromeHeadless` passes
-- [ ] `npm run e2e` passes (or N/A for non-UI changes)
 - [ ] Manually verified the behavior in the dev server
-- [ ] Screenshots attached for visible UI changes

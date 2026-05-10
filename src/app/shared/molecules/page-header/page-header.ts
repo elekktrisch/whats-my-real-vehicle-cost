@@ -1,12 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { ScenarioStore } from '../../../scenario/scenario.store';
 import { NumberInput } from '../../atoms/number-input/number-input';
-import { LocaleSelector } from '../locale-selector/locale-selector';
+import { RegionSelector } from '../region-selector/region-selector';
 import { PowertrainSelector } from '../powertrain-selector/powertrain-selector';
 
 @Component({
   selector: 'app-page-header',
-  imports: [NumberInput, LocaleSelector, PowertrainSelector],
+  imports: [NumberInput, RegionSelector, PowertrainSelector],
   template: `
     <header class="page-header border-b border-border">
       <div class="page-header-inner flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3">
@@ -26,7 +26,7 @@ import { PowertrainSelector } from '../powertrain-selector/powertrain-selector';
           />
         </label>
         <div class="page-header-toggles flex items-center justify-between gap-3">
-          <app-locale-selector />
+          <app-region-selector />
           <app-powertrain-selector />
         </div>
       </div>

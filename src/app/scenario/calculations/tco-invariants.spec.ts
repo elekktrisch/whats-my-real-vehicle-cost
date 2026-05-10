@@ -13,7 +13,7 @@ const mctxLinear = (msrp: number, k: number, baseRate: number): MaintenanceConte
 // ── Fixtures ───────────────────────────────────────────────────────────────
 
 const baseShared = {
-  locale: 'US' as const,
+  region: 'US' as const,
   powertrain: 'ICE' as const,
   purchasePrice: 35_000,
   residualValue: 18_000,

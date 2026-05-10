@@ -1,23 +1,23 @@
 import { Component, inject } from '@angular/core';
 import { ScenarioStore } from '../../../scenario/scenario.store';
-import type { Locale } from '../../../scenario/scenario.types';
+import type { Region } from '../../../scenario/scenario.types';
 
 // Inline SVG flags (not emoji — Windows renders flag emoji as letter pairs).
 @Component({
-  selector: 'app-locale-selector',
+  selector: 'app-region-selector',
   template: `
     <div
       class="inline-flex items-center gap-0 p-[3px] rounded-[8px] bg-elevated border border-border"
       role="radiogroup"
-      aria-label="Locale"
+      aria-label="Region"
     >
       <button
         type="button"
         role="radio"
-        aria-label="United States locale"
-        [attr.aria-checked]="store.locale() === 'US'"
+        aria-label="United States region"
+        [attr.aria-checked]="store.region() === 'US'"
         (click)="set('US')"
-        [class]="optionClass(store.locale() === 'US')"
+        [class]="optionClass(store.region() === 'US')"
       >
         <svg viewBox="0 0 30 20" class="w-[20px] h-[14px] rounded-[2px] shrink-0 sm:w-[18px] sm:h-[12px]">
           <rect width="30" height="20" fill="#ffffff" />
@@ -37,10 +37,10 @@ import type { Locale } from '../../../scenario/scenario.types';
       <button
         type="button"
         role="radio"
-        aria-label="European Union locale"
-        [attr.aria-checked]="store.locale() === 'EU'"
+        aria-label="European Union region"
+        [attr.aria-checked]="store.region() === 'EU'"
         (click)="set('EU')"
-        [class]="optionClass(store.locale() === 'EU')"
+        [class]="optionClass(store.region() === 'EU')"
       >
         <svg viewBox="0 0 30 20" class="w-[20px] h-[14px] rounded-[2px] shrink-0 sm:w-[18px] sm:h-[12px]">
           <rect width="30" height="20" fill="#003399" />
@@ -55,7 +55,7 @@ import type { Locale } from '../../../scenario/scenario.types';
     </div>
   `,
 })
-export class LocaleSelector {
+export class RegionSelector {
   protected readonly store = inject(ScenarioStore);
 
   // 12 stars in a circle of radius 5, 30° apart.
@@ -75,7 +75,7 @@ export class LocaleSelector {
     ].join(' ');
   }
 
-  protected set(v: Locale): void {
-    this.store.setLocale(v);
+  protected set(v: Region): void {
+    this.store.setRegion(v);
   }
 }

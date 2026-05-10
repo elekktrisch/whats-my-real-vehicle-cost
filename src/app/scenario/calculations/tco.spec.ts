@@ -12,7 +12,7 @@ const mctxLinear = (msrp: number, k: number, baseRate: number): MaintenanceConte
 
 const usLeaseShared = {
   tab: 'lease' as const,
-  locale: 'US' as const,
+  region: 'US' as const,
   powertrain: 'ICE' as const,
   purchasePrice: 35000,
   residualValue: 18000,
@@ -70,7 +70,7 @@ describe('tcoBreakdown', () => {
     const lease = tcoBreakdown(usLeaseShared);
     const finance = tcoBreakdown({
       tab: 'finance',
-      locale: 'US',
+      region: 'US',
       powertrain: 'ICE',
       purchasePrice: 35000,
       residualValue: 18000,

@@ -1,5 +1,5 @@
-import type { Locale, ScenarioSnapshot, TcoOverrides } from './scenario.types';
-import { detectLocaleFromBrowser } from './locale.config';
+import type { Region, ScenarioSnapshot, TcoOverrides } from './scenario.types';
+import { detectRegionFromBrowser } from './region.config';
 
 const EMPTY_OVERRIDES: TcoOverrides = {
   insurance: null,
@@ -7,12 +7,12 @@ const EMPTY_OVERRIDES: TcoOverrides = {
   fuelPrice: null,
 };
 
-export function defaultScenario(localeOverride?: Locale): ScenarioSnapshot {
-  const locale = localeOverride ?? detectLocaleFromBrowser();
-  const isUS = locale === 'US';
+export function defaultScenario(regionOverride?: Region): ScenarioSnapshot {
+  const region = regionOverride ?? detectRegionFromBrowser();
+  const isUS = region === 'US';
   return {
     globals: {
-      locale,
+      region,
       powertrain: 'ICE',
       purchasePrice: isUS ? 35000 : 30000,
       residualValue: null, // auto-derived from msrp × depreciationFactor(end-of-keep age)

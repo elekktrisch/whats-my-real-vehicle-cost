@@ -76,7 +76,7 @@ import { PowertrainSelector } from '../../shared/molecules/powertrain-selector/p
           <app-button size="lg" (click)="getStarted()">Get started</app-button>
           <span
             class="font-ui text-[0.75rem] tracking-[0.16em] uppercase text-tx-dim sm:ml-2"
-            >{{ localeLabel() }}</span
+            >{{ regionLabel() }}</span
           >
         </div>
       </article>
@@ -86,8 +86,8 @@ import { PowertrainSelector } from '../../shared/molecules/powertrain-selector/p
 export class SplashPage {
   protected readonly store = inject(ScenarioStore);
 
-  protected readonly localeLabel = computed(() =>
-    this.store.locale() === 'US' ? 'US defaults' : 'EU defaults',
+  protected readonly regionLabel = computed(() =>
+    this.store.region() === 'US' ? 'US defaults' : 'EU defaults',
   );
 
   protected getStarted(): void {

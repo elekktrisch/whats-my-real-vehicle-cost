@@ -1,6 +1,24 @@
-import type { Locale, Powertrain } from './scenario.types';
+import type { Language, Powertrain, Region } from './scenario.types';
 
-export interface LocaleConfig {
+/**
+ * The pair of axes the formatters need: `region` decides currency symbol +
+ * placement; `language` decides number-formatting conventions (decimal
+ * separator, thousands grouping). Pure code passes a context object so
+ * neither axis leaks individually.
+ */
+export interface FormatContext {
+  region: Region;
+  language: Language;
+}
+
+/** Build a BCP-47 locale string for `toLocaleString` from a FormatContext. */
+export function bcp47ForContext(ctx: FormatContext): string {
+  if (ctx.language === 'en' && ctx.region === 'EU') return 'en-GB';
+  if (ctx.language === 'en') return 'en-US';
+  return 'de-DE';
+}
+
+export interface RegionConfig {
   currencySymbol: string;
   currencyAfter: boolean;
   decimalSeparator: '.' | ',';
@@ -9,7 +27,6 @@ export interface LocaleConfig {
   evEfficiencyUnit: 'mi/kWh' | 'kWh/100km';
   fuelPriceUnit: '$/gal' | '€/L';
   electricityPriceUnit: '$/kWh' | '€/kWh';
-  leaseRateLabel: string;
   insuranceRate: number;
   defaultIceFuelPrice: number;
   defaultIceEfficiency: number;
@@ -18,7 +35,7 @@ export interface LocaleConfig {
   defaultHomeChargerInstall: number;
 }
 
-export const LOCALE_CONFIG: Record<Locale, LocaleConfig> = {
+export const REGION_CONFIG: Record<Region, RegionConfig> = {
   US: {
     currencySymbol: '$',
     currencyAfter: false,
@@ -28,7 +45,6 @@ export const LOCALE_CONFIG: Record<Locale, LocaleConfig> = {
     evEfficiencyUnit: 'mi/kWh',
     fuelPriceUnit: '$/gal',
     electricityPriceUnit: '$/kWh',
-    leaseRateLabel: 'Money factor',
     insuranceRate: 0.02,
     defaultIceFuelPrice: 3.5,
     defaultIceEfficiency: 28,
@@ -45,7 +61,6 @@ export const LOCALE_CONFIG: Record<Locale, LocaleConfig> = {
     evEfficiencyUnit: 'kWh/100km',
     fuelPriceUnit: '€/L',
     electricityPriceUnit: '€/kWh',
-    leaseRateLabel: 'Leasingfaktor',
     insuranceRate: 0.015,
     defaultIceFuelPrice: 1.9,
     defaultIceEfficiency: 6.5,
@@ -55,18 +70,18 @@ export const LOCALE_CONFIG: Record<Locale, LocaleConfig> = {
   },
 };
 
-export function fuelEfficiencyDefault(locale: Locale, powertrain: Powertrain): number {
-  const cfg = LOCALE_CONFIG[locale];
+export function fuelEfficiencyDefault(region: Region, powertrain: Powertrain): number {
+  const cfg = REGION_CONFIG[region];
   return powertrain === 'EV' ? cfg.defaultEvEfficiency : cfg.defaultIceEfficiency;
 }
 
-export function fuelPriceDefault(locale: Locale, powertrain: Powertrain): number {
-  const cfg = LOCALE_CONFIG[locale];
+export function fuelPriceDefault(region: Region, powertrain: Powertrain): number {
+  const cfg = REGION_CONFIG[region];
   return powertrain === 'EV' ? cfg.defaultElectricityPrice : cfg.defaultIceFuelPrice;
 }
 
 /** All 29 IANA timezones inside the United States (including HI/AK). Used to
- * decide locale from physical location rather than browser language — handy
+ * decide region from physical location rather than browser language — handy
  * for e.g. an en-US browser used in Europe. */
 const US_TIMEZONES = new Set<string>([
   'America/New_York',
@@ -100,39 +115,39 @@ const US_TIMEZONES = new Set<string>([
   'Pacific/Honolulu',
 ]);
 
-/** Pure: maps an IANA timezone to a locale, or null if it's neither US nor EU. */
-export function localeFromTimezone(tz: string | null | undefined): Locale | null {
+/** Pure: maps an IANA timezone to a region, or null if it's neither US nor EU. */
+export function regionFromTimezone(tz: string | null | undefined): Region | null {
   if (!tz) return null;
   if (US_TIMEZONES.has(tz)) return 'US';
   if (tz.startsWith('Europe/')) return 'EU';
   return null;
 }
 
-/** Pure: maps a BCP-47 language tag to a locale. Used as a fallback. */
-export function localeFromLanguage(lang: string | null | undefined): Locale {
+/** Pure: maps a BCP-47 language tag to a region. Used as a fallback. */
+export function regionFromLanguage(lang: string | null | undefined): Region {
   const l = (lang ?? 'en-us').toLowerCase();
   return l.startsWith('en-us') || l === 'en' ? 'US' : 'EU';
 }
 
-export function detectLocaleFromBrowser(): Locale {
+export function detectRegionFromBrowser(): Region {
   // Timezone is "where you are" — beats navigator.language which is just
   // "what content you like" (e.g. an en-US browser configured globally).
   try {
     if (typeof Intl !== 'undefined') {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const fromTz = localeFromTimezone(tz);
+      const fromTz = regionFromTimezone(tz);
       if (fromTz) return fromTz;
     }
   } catch {
     // Intl unavailable in some sandboxed envs — fall through to language.
   }
   if (typeof navigator === 'undefined') return 'EU';
-  return localeFromLanguage(navigator.language);
+  return regionFromLanguage(navigator.language);
 }
 
-export function formatCurrency(value: number, locale: Locale, fractionDigits = 0): string {
-  const cfg = LOCALE_CONFIG[locale];
-  const formatted = Math.abs(value).toLocaleString(locale === 'US' ? 'en-US' : 'de-DE', {
+export function formatCurrency(value: number, region: Region, fractionDigits = 0): string {
+  const cfg = REGION_CONFIG[region];
+  const formatted = Math.abs(value).toLocaleString(region === 'US' ? 'en-US' : 'de-DE', {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   });
@@ -152,10 +167,10 @@ export function formatCurrency(value: number, locale: Locale, fractionDigits = 0
  */
 export function formatCompactCurrency(
   value: number,
-  locale: Locale,
+  region: Region,
   subThousandFractionDigits = 0,
 ): string {
-  const cfg = LOCALE_CONFIG[locale];
+  const cfg = REGION_CONFIG[region];
   const abs = Math.abs(value);
   const subThousandScale = 10 ** subThousandFractionDigits;
   const k =

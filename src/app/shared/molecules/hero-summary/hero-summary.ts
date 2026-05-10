@@ -1,6 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 import { ScenarioStore } from '../../../scenario/scenario.store';
-import { formatCurrency } from '../../../scenario/locale.config';
+import { formatCurrency } from '../../../scenario/region.config';
 import { HeroColumn } from '../../atoms/hero-column/hero-column';
 import { Icon } from '../../atoms/icon/icon';
 import { cashHeroData, financeHeroData, leaseHeroData, type HeroData } from './hero-summary.data';
@@ -118,6 +118,6 @@ export class HeroSummary {
         : tab === 'finance'
           ? this.store.financeBreakdown()
           : this.store.cashBreakdown();
-    return formatCurrency(breakdown.totals.opportunityCost, this.store.locale(), 0);
+    return formatCurrency(breakdown.totals.opportunityCost, this.store.region(), 0);
   });
 }

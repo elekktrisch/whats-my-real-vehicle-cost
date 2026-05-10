@@ -8,7 +8,7 @@ describe('fuelCostOverYears', () => {
       annualMileage: 12000,
       years: 3,
       powertrain: 'ICE',
-      locale: 'US',
+      region: 'US',
       chargerStatus: 'none' as const,
       solar: false,
     });
@@ -23,7 +23,7 @@ describe('fuelCostOverYears', () => {
       annualMileage: 12000,
       years: 3,
       powertrain: 'ICE',
-      locale: 'US',
+      region: 'US',
       chargerStatus: 'none' as const,
       solar: false,
     });
@@ -33,7 +33,7 @@ describe('fuelCostOverYears', () => {
       annualMileage: 12000,
       years: 3,
       powertrain: 'EV',
-      locale: 'US',
+      region: 'US',
       chargerStatus: 'none' as const,
       solar: false,
     });
@@ -47,7 +47,7 @@ describe('fuelCostOverYears', () => {
       annualMileage: 15000,
       years: 5,
       powertrain: 'ICE',
-      locale: 'EU',
+      region: 'EU',
       chargerStatus: 'none' as const,
       solar: false,
     });
@@ -63,7 +63,7 @@ describe('fuelCostOverYears', () => {
         annualMileage: 12000,
         years: 0,
         powertrain: 'ICE',
-        locale: 'US',
+        region: 'US',
         chargerStatus: 'none' as const,
         solar: false,
       }),
@@ -77,7 +77,7 @@ describe('fuelCostOverYears', () => {
       annualMileage: 12000,
       years: 3,
       powertrain: 'EV' as const,
-      locale: 'US' as const,
+      region: 'US' as const,
     };
     const grid = fuelCostOverYears({ ...base, chargerStatus: 'installed' as const, solar: false });
     const solar = fuelCostOverYears({ ...base, chargerStatus: 'installed' as const, solar: true });
@@ -91,7 +91,7 @@ describe('fuelCostOverYears', () => {
       annualMileage: 15000,
       years: 5,
       powertrain: 'EV' as const,
-      locale: 'EU' as const,
+      region: 'EU' as const,
     };
     const grid = fuelCostOverYears({ ...base, chargerStatus: 'installed' as const, solar: false });
     const solar = fuelCostOverYears({ ...base, chargerStatus: 'installed' as const, solar: true });
@@ -105,7 +105,7 @@ describe('fuelCostOverYears', () => {
       annualMileage: 12000,
       years: 3,
       powertrain: 'EV' as const,
-      locale: 'US' as const,
+      region: 'US' as const,
     };
     const offOff = fuelCostOverYears({ ...base, chargerStatus: 'none' as const, solar: false });
     const onOff = fuelCostOverYears({ ...base, chargerStatus: 'none' as const, solar: true });
@@ -119,7 +119,7 @@ describe('fuelCostOverYears', () => {
       annualMileage: 12000,
       years: 3,
       powertrain: 'ICE' as const,
-      locale: 'US' as const,
+      region: 'US' as const,
     };
     const noSolar = fuelCostOverYears({ ...base, chargerStatus: 'none' as const, solar: false });
     const withSolar = fuelCostOverYears({ ...base, chargerStatus: 'installed' as const, solar: true });

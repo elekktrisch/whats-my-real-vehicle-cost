@@ -4,7 +4,7 @@ describe('recommendTab', () => {
   it('picks the tab with the lowest cost per distance', () => {
     const rec = recommendTab({
       costPerDistance: { lease: 0.5, finance: 0.4, cash: 0.45 },
-      locale: 'US',
+      region: 'US',
       distanceUnit: 'mi',
     });
     expect(rec.tab).toBe('finance');
@@ -13,7 +13,7 @@ describe('recommendTab', () => {
   it('picks lease when it is the cheapest', () => {
     const rec = recommendTab({
       costPerDistance: { lease: 0.3, finance: 0.45, cash: 0.5 },
-      locale: 'US',
+      region: 'US',
       distanceUnit: 'mi',
     });
     expect(rec.tab).toBe('lease');
@@ -22,7 +22,7 @@ describe('recommendTab', () => {
   it('picks cash when it wins', () => {
     const rec = recommendTab({
       costPerDistance: { lease: 0.5, finance: 0.45, cash: 0.32 },
-      locale: 'EU',
+      region: 'EU',
       distanceUnit: 'km',
     });
     expect(rec.tab).toBe('cash');
@@ -31,7 +31,7 @@ describe('recommendTab', () => {
   it('reason mentions the winner, the unit and the other tabs for comparison', () => {
     const rec = recommendTab({
       costPerDistance: { lease: 0.5, finance: 0.4, cash: 0.45 },
-      locale: 'US',
+      region: 'US',
       distanceUnit: 'mi',
     });
     expect(rec.reason).toContain('Loan');
@@ -44,7 +44,7 @@ describe('recommendTab', () => {
   it('uses EU formatting when locale is EU', () => {
     const rec = recommendTab({
       costPerDistance: { lease: 0.5, finance: 0.4, cash: 0.45 },
-      locale: 'EU',
+      region: 'EU',
       distanceUnit: 'km',
     });
     expect(rec.reason).toContain('€');
@@ -54,7 +54,7 @@ describe('recommendTab', () => {
   it('breaks ties deterministically by preferring earlier tab in lease > finance > cash order', () => {
     const rec = recommendTab({
       costPerDistance: { lease: 0.4, finance: 0.4, cash: 0.4 },
-      locale: 'US',
+      region: 'US',
       distanceUnit: 'mi',
     });
     expect(rec.tab).toBe('lease');

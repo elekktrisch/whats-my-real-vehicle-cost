@@ -2,10 +2,11 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { ScenarioStore } from '../../../scenario/scenario.store';
 import { cashHeroData, financeHeroData, leaseHeroData } from './hero-summary.data';
+import { provideTranslocoTesting } from '../../../../test-helpers/transloco-testing';
 
 function makeStore(): ScenarioStore {
   TestBed.configureTestingModule({
-    providers: [provideRouter([])],
+    providers: [provideRouter([]), ...provideTranslocoTesting()],
   });
   return TestBed.inject(ScenarioStore);
 }

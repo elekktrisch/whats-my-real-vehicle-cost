@@ -7,11 +7,12 @@ import {
   factorsOf,
   makeCurve,
 } from '../../../scenario/calculations/depreciation';
+import { provideTranslocoTesting } from '../../../../test-helpers/transloco-testing';
 
 function make(): { fixture: ComponentFixture<DepreciationCurveEditor>; store: ScenarioStore } {
   TestBed.configureTestingModule({
     imports: [DepreciationCurveEditor],
-    providers: [provideRouter([])],
+    providers: [provideRouter([]), ...provideTranslocoTesting()],
   });
   const store = TestBed.inject(ScenarioStore);
   const fixture = TestBed.createComponent(DepreciationCurveEditor);
@@ -88,7 +89,7 @@ describe('DepreciationCurveEditor — chain display', () => {
 
   it('residual rows reflect the active curve (default ICE)', () => {
     const { fixture, store } = make();
-    store.setLocale('US');
+    store.setRegion('US');
     store.setPowertrain('ICE');
     store.purchasePrice.set(35000);
     store.vehicleAge.set(0);
@@ -104,7 +105,7 @@ describe('DepreciationCurveEditor — chain display', () => {
 
   it('chain values update reactively when the curve override changes', () => {
     const { fixture, store } = make();
-    store.setLocale('US');
+    store.setRegion('US');
     store.setPowertrain('ICE');
     store.purchasePrice.set(35000);
     store.vehicleAge.set(0);

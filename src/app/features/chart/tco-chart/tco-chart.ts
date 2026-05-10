@@ -22,7 +22,7 @@ import {
   Filler,
 } from 'chart.js';
 import { ScenarioStore } from '../../../scenario/scenario.store';
-import { formatCurrency } from '../../../scenario/locale.config';
+import { formatCurrency } from '../../../scenario/region.config';
 import type {
   CostBreakdown,
   CostCategory,
@@ -332,7 +332,7 @@ export class TcoChart {
   });
 
   protected money(v: number): string {
-    return formatCurrency(v, this.store.locale(), 0);
+    return formatCurrency(v, this.store.region(), 0);
   }
 
   protected rowTotal(point: MonthlyTcoPoint): number {

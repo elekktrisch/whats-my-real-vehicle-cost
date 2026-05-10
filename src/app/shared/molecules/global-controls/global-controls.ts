@@ -203,7 +203,7 @@ export class GlobalControls {
   protected readonly store = inject(ScenarioStore);
 
   protected readonly distanceSuffix = computed(
-    () => ' ' + this.store.localeConfig().distanceUnit,
+    () => ' ' + this.store.regionConfig().distanceUnit,
   );
 
   protected readonly residualMax = computed(() =>
@@ -211,7 +211,7 @@ export class GlobalControls {
   );
 
   protected readonly contextCaption = computed(() => {
-    const cfg = this.store.localeConfig();
+    const cfg = this.store.regionConfig();
     const formatted = Math.round(this.store.msrp()).toLocaleString();
     const moneyMsrp = cfg.currencyAfter
       ? `${formatted} ${cfg.currencySymbol}`
@@ -221,7 +221,7 @@ export class GlobalControls {
   });
 
   protected readonly fuelEfficiencyUnit = computed(() => {
-    const cfg = this.store.localeConfig();
+    const cfg = this.store.regionConfig();
     return this.store.powertrain() === 'EV' ? cfg.evEfficiencyUnit : cfg.iceEfficiencyUnit;
   });
   protected readonly fuelEfficiencyLabel = computed(() =>
@@ -229,8 +229,8 @@ export class GlobalControls {
   );
   protected readonly fuelEfficiencyMin = computed(() => 1);
   protected readonly fuelEfficiencyMax = computed(() => {
-    if (this.store.powertrain() === 'EV') return this.store.locale() === 'US' ? 6 : 30;
-    return this.store.locale() === 'US' ? 80 : 15;
+    if (this.store.powertrain() === 'EV') return this.store.region() === 'US' ? 6 : 30;
+    return this.store.region() === 'US' ? 80 : 15;
   });
   protected readonly fuelEfficiencyMinLabel = computed(() => `1 ${this.fuelEfficiencyUnit()}`);
   protected readonly fuelEfficiencyMaxLabel = computed(
@@ -240,18 +240,18 @@ export class GlobalControls {
   protected readonly fuelPriceLabel = computed(() =>
     this.store.powertrain() === 'EV' ? 'Electricity price' : 'Fuel price',
   );
-  protected readonly fuelPriceSymbol = computed(() => this.store.localeConfig().currencySymbol);
+  protected readonly fuelPriceSymbol = computed(() => this.store.regionConfig().currencySymbol);
   protected readonly fuelPriceSuffix = computed(() => {
     if (this.store.powertrain() === 'EV') return ' /kWh';
-    return this.store.locale() === 'US' ? ' /gal' : ' /L';
+    return this.store.region() === 'US' ? ' /gal' : ' /L';
   });
   protected readonly fuelPriceMax = computed(() => {
     if (this.store.powertrain() === 'EV') return 1;
-    return this.store.locale() === 'US' ? 8 : 3;
+    return this.store.region() === 'US' ? 8 : 3;
   });
 
   protected distance(value: number): string {
     const k = value >= 1000 ? `${value / 1000}k` : String(value);
-    return `${k} ${this.store.localeConfig().distanceUnit}`;
+    return `${k} ${this.store.regionConfig().distanceUnit}`;
   }
 }

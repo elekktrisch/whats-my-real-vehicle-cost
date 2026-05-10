@@ -12,7 +12,7 @@ const mctxLinear = (msrp: number, k: number, baseRate: number): MaintenanceConte
 
 const usCashShared = {
   tab: 'cash' as const,
-  locale: 'US' as const,
+  region: 'US' as const,
   powertrain: 'ICE' as const,
   purchasePrice: 40000,
   residualValue: 14000,
@@ -47,7 +47,7 @@ describe('cashTco — maintenance age curve', () => {
   // there's no lease-cycle structure on top of the curve.
   const cashAged = {
     tab: 'cash' as const,
-    locale: 'US' as const,
+    region: 'US' as const,
     powertrain: 'ICE' as const,
     purchasePrice: 40000,
     residualValue: 14000,
@@ -86,7 +86,7 @@ describe('cashTco — maintenance age curve', () => {
 describe('cashTco — solar / home charger', () => {
   const usEv = {
     tab: 'cash' as const,
-    locale: 'US' as const,
+    region: 'US' as const,
     powertrain: 'EV' as const,
     purchasePrice: 40000,
     residualValue: 18000,
@@ -117,7 +117,7 @@ describe('cashTco — solar / home charger', () => {
   it('charger on EU: install cost is €1200', () => {
     const r = tcoBreakdown({
       ...usEv,
-      locale: 'EU',
+      region: 'EU',
       fuelEfficiency: 17,
       fuelPrice: 0.32,
       chargerStatus: 'buying' as const,

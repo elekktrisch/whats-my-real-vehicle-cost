@@ -1,4 +1,4 @@
-import type { Locale } from '../scenario.types';
+import type { Region } from '../scenario.types';
 
 export interface LeasePaymentInputs {
   capCost: number;
@@ -6,7 +6,7 @@ export interface LeasePaymentInputs {
   residualValue: number;
   apr: number;
   termMonths: number;
-  locale: Locale;
+  region: Region;
 }
 
 export interface LeasePaymentResult {
@@ -27,7 +27,7 @@ export function leasePayment(input: LeasePaymentInputs): LeasePaymentResult {
   // financed amount — the residual is the lessor's risk, not a balance the
   // lessee pays interest on.
   const financeFeeBasis =
-    input.locale === 'EU' ? adjustedCapCost : adjustedCapCost + input.residualValue;
+    input.region === 'EU' ? adjustedCapCost : adjustedCapCost + input.residualValue;
   const financeFee = financeFeeBasis * moneyFactor;
   return {
     adjustedCapCost,

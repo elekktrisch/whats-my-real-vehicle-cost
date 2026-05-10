@@ -1,7 +1,7 @@
-import type { CategoryMultipliers, Locale, VehicleCategory } from '../scenario.types';
+import type { CategoryMultipliers, Region, VehicleCategory } from '../scenario.types';
 
-export function categorize(msrp: number, locale: Locale): VehicleCategory {
-  if (locale === 'US') {
+export function categorize(msrp: number, region: Region): VehicleCategory {
+  if (region === 'US') {
     if (msrp < 35000) return 'economy';
     if (msrp <= 70000) return 'mid';
     return 'luxury';

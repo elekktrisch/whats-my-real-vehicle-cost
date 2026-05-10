@@ -3,10 +3,11 @@ import { provideRouter } from '@angular/router';
 import { ScenarioStore } from './scenario.store';
 import { defaultScenario } from './scenario.defaults';
 import { DEFAULT_CURVES, makeCurve } from './calculations/depreciation';
+import { provideTranslocoTesting } from '../../test-helpers/transloco-testing';
 
 function makeStore(): ScenarioStore {
   TestBed.configureTestingModule({
-    providers: [provideRouter([])],
+    providers: [provideRouter([]), ...provideTranslocoTesting()],
   });
   return TestBed.inject(ScenarioStore);
 }
@@ -15,7 +16,7 @@ describe('ScenarioStore — defaults', () => {
   it('initializes from defaultScenario()', () => {
     const store = makeStore();
     const initial = defaultScenario();
-    expect(store.locale()).toBe(initial.globals.locale);
+    expect(store.region()).toBe(initial.globals.region);
     expect(store.powertrain()).toBe(initial.globals.powertrain);
     expect(store.purchasePrice()).toBe(initial.globals.purchasePrice);
     expect(store.leaseDownPayment()).toBe(initial.lease.downPayment);
@@ -506,12 +507,12 @@ describe('ScenarioStore — engage / reset', () => {
 });
 
 describe('ScenarioStore — invariants', () => {
-  it('setLocale clears running-cost overrides', () => {
+  it('setRegion clears running-cost overrides', () => {
     const store = makeStore();
     store.insuranceOverride.set(9999);
     store.fuelPriceOverride.set(7);
-    const otherLocale = store.locale() === 'US' ? 'EU' : 'US';
-    store.setLocale(otherLocale);
+    const otherRegion = store.region() === 'US' ? 'EU' : 'US';
+    store.setRegion(otherRegion);
     expect(store.insurance()).not.toBe(9999);
     expect(store.fuelPrice()).not.toBe(7);
   });

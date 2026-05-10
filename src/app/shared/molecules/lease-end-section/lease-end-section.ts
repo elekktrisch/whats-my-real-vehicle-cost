@@ -228,9 +228,9 @@ export class LeaseEndSection {
     Math.min(100000, this.store.purchasePrice()),
   );
 
-  protected readonly distanceUnit = computed(() => this.store.localeConfig().distanceUnit);
+  protected readonly distanceUnit = computed(() => this.store.regionConfig().distanceUnit);
   protected readonly mileageOverageSuffix = computed(() => {
-    const cfg = this.store.localeConfig();
+    const cfg = this.store.regionConfig();
     const unit = ` /${cfg.distanceUnit}`;
     return cfg.currencyAfter ? `${unit} ${cfg.currencySymbol}` : unit;
   });

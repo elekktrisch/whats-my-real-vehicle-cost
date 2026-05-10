@@ -72,7 +72,7 @@ export function leaseTco(input: LeaseTcoInputs): CostBreakdown {
     residualValue: input.residualValue,
     apr: input.apr,
     termMonths: term,
-    locale: input.locale,
+    region: input.region,
   });
   const fuelTotal = fuelTotalForMonths(input, totalMonths);
   const ctx: LeaseContext = {
