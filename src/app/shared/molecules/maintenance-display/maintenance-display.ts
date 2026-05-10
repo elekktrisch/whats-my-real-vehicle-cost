@@ -29,9 +29,9 @@ export class MaintenanceDisplay {
     const ctx = this.store.maintenanceContext();
     const keep = this.store.keepDuration();
     const startAge = this.store.vehicleAge();
-    const region = this.store.region();
+    const fmtCtx = this.store.formatContext();
 
-    const fmt = (v: number) => formatCurrency(v, region, 0);
+    const fmt = (v: number) => formatCurrency(v, fmtCtx, 0);
     const yr0 = maintenanceAt(ctx, 0);
 
     if (tab === 'lease') {

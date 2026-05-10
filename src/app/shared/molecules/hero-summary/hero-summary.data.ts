@@ -34,7 +34,7 @@ export interface HeroData {
 // whole numbers here (hero never shows cents); the money pipe uses the
 // 2-decimal variant for templates.
 function compactMoney(v: number, store: ScenarioStore): string {
-  return formatCompactCurrency(v, store.region());
+  return formatCompactCurrency(v, store.formatContext());
 }
 
 interface RunningCosts {
@@ -105,9 +105,9 @@ function captionYearRange(through: number): { full: string; mobile: string } {
 }
 
 export function leaseHeroData(store: ScenarioStore): HeroData {
-  const region = store.region();
+  const ctx = store.formatContext();
   const keep = store.keepDuration();
-  const fmt = (v: number) => formatCurrency(v, region, 0);
+  const fmt = (v: number) => formatCurrency(v, ctx, 0);
 
   const lease = store.leasePaymentDetails();
   const monthlyLease = lease.depreciationFee + lease.financeFee;
@@ -205,9 +205,9 @@ export function leaseHeroData(store: ScenarioStore): HeroData {
 }
 
 export function financeHeroData(store: ScenarioStore): HeroData {
-  const region = store.region();
+  const ctx = store.formatContext();
   const keep = store.keepDuration();
-  const fmt = (v: number) => formatCurrency(v, region, 0);
+  const fmt = (v: number) => formatCurrency(v, ctx, 0);
 
   const principal = Math.max(store.purchasePrice() - store.financeDownPayment(), 0);
   const monthly = financePayment({
@@ -255,9 +255,9 @@ export function financeHeroData(store: ScenarioStore): HeroData {
 }
 
 export function cashHeroData(store: ScenarioStore): HeroData {
-  const region = store.region();
+  const ctx = store.formatContext();
   const keep = store.keepDuration();
-  const fmt = (v: number) => formatCurrency(v, region, 0);
+  const fmt = (v: number) => formatCurrency(v, ctx, 0);
 
   const purchase = store.purchasePrice();
   const rc = runningCostsOverKeep(store);

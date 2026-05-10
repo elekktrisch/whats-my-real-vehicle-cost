@@ -13,8 +13,8 @@ export class MoneyPipe implements PipeTransform {
 
   transform(value: number | null | undefined, mode: number | 'compact' = 0): string {
     if (value == null || !Number.isFinite(value)) return '';
-    const region = this.store.region();
-    if (mode === 'compact') return formatCompactCurrency(value, region, 2);
-    return formatCurrency(value, region, mode);
+    const ctx = this.store.formatContext();
+    if (mode === 'compact') return formatCompactCurrency(value, ctx, 2);
+    return formatCurrency(value, ctx, mode);
   }
 }

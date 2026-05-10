@@ -118,6 +118,6 @@ export class HeroSummary {
         : tab === 'finance'
           ? this.store.financeBreakdown()
           : this.store.cashBreakdown();
-    return formatCurrency(breakdown.totals.opportunityCost, this.store.region(), 0);
+    return formatCurrency(breakdown.totals.opportunityCost, this.store.formatContext(), 0);
   });
 }

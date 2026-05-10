@@ -151,10 +151,20 @@ export class ComparisonPage {
 
   protected readonly distanceUnit = computed(() => this.store.regionConfig().distanceUnit);
   protected readonly recommended = computed(() => this.store.recommendedTab().tab);
-  protected readonly recommendationReason = computed(() => this.store.recommendedTab().reason);
+  // Sentence built from structured recommendation data. The English template
+  // is a stand-in until `transloco.translate('recommendation.reason', …)`
+  // takes over in task #8.
+  protected readonly recommendationReason = computed(() => {
+    const rec = this.store.recommendedTab();
+    const fmt = this.store.formatContext();
+    const unit = this.distanceUnit();
+    const fmtCost = (v: number) => `${formatCurrency(v, fmt, 2)}/${unit}`;
+    const others = rec.others.map((o) => `${LABEL[o.tab]} ${fmtCost(o.cost)}`).join(', ');
+    return `${LABEL[rec.tab]} has the lowest cost per ${unit} at ${fmtCost(rec.winnerCost)} — vs ${others}.`;
+  });
 
   protected readonly cards = computed<readonly ModeCardData[]>(() => {
-    const region = this.store.region();
+    const fmt = this.store.formatContext();
     const distanceUnit = this.distanceUnit();
     const months = Math.max(Math.round(this.store.keepDuration() * 12), 1);
     const distance = this.store.annualMileage() * this.store.keepDuration();
@@ -192,12 +202,12 @@ export class ComparisonPage {
           : 0;
       const oppCost = breakdown.totals.opportunityCost;
       const asset = retainedAsset(mode);
-      const fT = formatCurrency(breakdown.total, region, 0);
-      const fC = formatCurrency(cashOut, region, 0);
-      const fO = formatCurrency(oppCost, region, 0);
-      const fA = formatCurrency(asset, region, 0);
-      const fM = formatCurrency(monthly, region, 0);
-      const fP = formatCurrency(perDistance, region, 2);
+      const fT = formatCurrency(breakdown.total, fmt, 0);
+      const fC = formatCurrency(cashOut, fmt, 0);
+      const fO = formatCurrency(oppCost, fmt, 0);
+      const fA = formatCurrency(asset, fmt, 0);
+      const fM = formatCurrency(monthly, fmt, 0);
+      const fP = formatCurrency(perDistance, fmt, 2);
       const totalDistance = Math.round(distance);
       const fDist = totalDistance.toLocaleString();
 
@@ -213,17 +223,17 @@ export class ComparisonPage {
       return {
         mode,
         label: LABEL[mode],
-        total: formatCompactCurrency(breakdown.total, region),
+        total: formatCompactCurrency(breakdown.total, fmt),
         totalFull: fT,
         totalTip,
-        monthly: formatCompactCurrency(monthly, region),
+        monthly: formatCompactCurrency(monthly, fmt),
         monthlyFull: fM,
         monthlyTip,
         perDistance: fP,
         perDistanceTip,
         delta: isRecommended
           ? null
-          : `+${formatCurrency(deltaPerDistance, region, 2)}/${distanceUnit}`,
+          : `+${formatCurrency(deltaPerDistance, fmt, 2)}/${distanceUnit}`,
         conflictCount: this.store.conflictCount(mode),
       };
     });

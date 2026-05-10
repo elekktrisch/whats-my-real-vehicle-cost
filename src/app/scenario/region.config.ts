@@ -145,9 +145,13 @@ export function detectRegionFromBrowser(): Region {
   return regionFromLanguage(navigator.language);
 }
 
-export function formatCurrency(value: number, region: Region, fractionDigits = 0): string {
-  const cfg = REGION_CONFIG[region];
-  const formatted = Math.abs(value).toLocaleString(region === 'US' ? 'en-US' : 'de-DE', {
+export function formatCurrency(
+  value: number,
+  ctx: FormatContext,
+  fractionDigits = 0,
+): string {
+  const cfg = REGION_CONFIG[ctx.region];
+  const formatted = Math.abs(value).toLocaleString(bcp47ForContext(ctx), {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   });
@@ -167,10 +171,10 @@ export function formatCurrency(value: number, region: Region, fractionDigits = 0
  */
 export function formatCompactCurrency(
   value: number,
-  region: Region,
+  ctx: FormatContext,
   subThousandFractionDigits = 0,
 ): string {
-  const cfg = REGION_CONFIG[region];
+  const cfg = REGION_CONFIG[ctx.region];
   const abs = Math.abs(value);
   const subThousandScale = 10 ** subThousandFractionDigits;
   const k =

@@ -332,7 +332,7 @@ export class TcoChart {
   });
 
   protected money(v: number): string {
-    return formatCurrency(v, this.store.region(), 0);
+    return formatCurrency(v, this.store.formatContext(), 0);
   }
 
   protected rowTotal(point: MonthlyTcoPoint): number {

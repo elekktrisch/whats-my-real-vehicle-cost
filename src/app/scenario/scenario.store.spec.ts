@@ -463,7 +463,7 @@ describe('ScenarioStore — recommendation', () => {
     const store = makeStore();
     const rec = store.recommendedTab();
     expect(['lease', 'finance', 'cash']).toContain(rec.tab);
-    expect(rec.reason.length).toBeGreaterThan(0);
+    expect(rec.others.length).toBe(2);
   });
 });
 

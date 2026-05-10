@@ -2,7 +2,13 @@ import { Injectable, Signal, WritableSignal, computed, inject, signal } from '@a
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { TranslocoService } from '@jsverse/transloco';
-import { REGION_CONFIG, fuelEfficiencyDefault, fuelPriceDefault } from './region.config';
+import {
+  FormatContext,
+  REGION_CONFIG,
+  bcp47ForContext,
+  fuelEfficiencyDefault,
+  fuelPriceDefault,
+} from './region.config';
 import { LEASE_END_DEFAULTS, defaultScenario } from './scenario.defaults';
 import type {
   ChargerStatus,
@@ -48,15 +54,14 @@ export class ScenarioStore {
   // Detection + persistence live outside the `?s=` snapshot — see
   // PLAN-i18n.md and `setLanguage` below.
   readonly language = signal<Language>('en');
-  // Derived BCP-47 for `toLocaleString` callers. Number formatting follows
-  // the chosen language; currency symbol still comes from locale (region).
-  readonly bcp47 = computed<string>(() => {
-    const lang = this.language();
-    const loc = this.region();
-    if (lang === 'en' && loc === 'EU') return 'en-GB';
-    if (lang === 'en') return 'en-US';
-    return 'de-DE';
-  });
+  // Bundle threaded through formatCurrency / formatCompactCurrency. Region
+  // picks symbol + placement; language picks number conventions.
+  readonly formatContext = computed<FormatContext>(() => ({
+    region: this.region(),
+    language: this.language(),
+  }));
+  // Derived BCP-47 for `toLocaleString` callers.
+  readonly bcp47 = computed<string>(() => bcp47ForContext(this.formatContext()));
   readonly powertrain = signal<Powertrain>(this.initial.globals.powertrain);
   readonly purchasePrice = signal(this.initial.globals.purchasePrice);
   // Override-pattern: each `xOverride` is a `WritableSignal<T | null>` where
@@ -269,8 +274,6 @@ export class ScenarioStore {
         finance: costPerDistance(this.financeBreakdown(), annualMiles, years),
         cash: costPerDistance(this.cashBreakdown(), annualMiles, years),
       },
-      region: this.region(),
-      distanceUnit: this.regionConfig().distanceUnit,
     });
   });
 
@@ -646,7 +649,8 @@ export class ScenarioStore {
   // produce an empty list automatically.
   readonly activeConflicts = computed<readonly ActiveConflict[]>(() => {
     const out: ActiveConflict[] = [];
-    const loc = this.region();
+    const fmt = this.formatContext();
+    const reg = this.region();
     const efUnit = this.regionConfig().distanceUnit;
 
     if (this.leaseAprPillVisible()) {
@@ -674,8 +678,8 @@ export class ScenarioStore {
         label: 'Residual value',
         reason:
           'the depreciation curve at vehicleAge + keepDuration suggests this end-of-keep value. Override with the figure from your contract for an apples-to-apples comparison.',
-        currentValue: formatCurrency(override, loc, 0),
-        proposedValue: formatCurrency(def, loc, 0),
+        currentValue: formatCurrency(override, fmt, 0),
+        proposedValue: formatCurrency(def, fmt, 0),
         sliderAnchor: 'slider-residualValue',
         apply: () => this.applyResidualValue(),
         keep: () => this.dismissResidualValue(),
@@ -690,8 +694,8 @@ export class ScenarioStore {
         label: 'Insurance / yr',
         reason:
           'purchase price × locale rate × vehicle category yields this baseline. Override with a real quote for accuracy.',
-        currentValue: formatCurrency(override, loc, 0),
-        proposedValue: formatCurrency(def, loc, 0),
+        currentValue: formatCurrency(override, fmt, 0),
+        proposedValue: formatCurrency(def, fmt, 0),
         sliderAnchor: 'slider-insurance',
         apply: () => this.applyInsurance(),
         keep: () => this.dismissInsurance(),
@@ -710,8 +714,8 @@ export class ScenarioStore {
         label: this.powertrain() === 'EV' ? 'EV efficiency' : 'Fuel efficiency',
         reason:
           this.powertrain() === 'EV'
-            ? `this is the typical EV efficiency in ${loc}. Override with your vehicle's spec sheet.`
-            : `this is the typical fuel efficiency in ${loc}. Override with your vehicle's spec sheet.`,
+            ? `this is the typical EV efficiency in ${reg}. Override with your vehicle's spec sheet.`
+            : `this is the typical fuel efficiency in ${reg}. Override with your vehicle's spec sheet.`,
         currentValue: `${override} ${unit}`,
         proposedValue: `${def} ${unit}`,
         sliderAnchor: 'slider-fuelEfficiency',
@@ -728,10 +732,10 @@ export class ScenarioStore {
         label: this.powertrain() === 'EV' ? 'Electricity price' : 'Fuel price',
         reason:
           this.powertrain() === 'EV'
-            ? `this is the typical electricity rate in ${loc}. Override with your local utility tariff.`
-            : `this is the typical pump price in ${loc}. Override with current local prices.`,
-        currentValue: formatCurrency(override, loc, 2),
-        proposedValue: formatCurrency(def, loc, 2),
+            ? `this is the typical electricity rate in ${reg}. Override with your local utility tariff.`
+            : `this is the typical pump price in ${reg}. Override with current local prices.`,
+        currentValue: formatCurrency(override, fmt, 2),
+        proposedValue: formatCurrency(def, fmt, 2),
         sliderAnchor: 'slider-fuelPrice',
         apply: () => this.applyFuelPrice(),
         keep: () => this.dismissFuelPrice(),
@@ -763,8 +767,8 @@ export class ScenarioStore {
         label: 'Early termination penalty',
         reason:
           '(term − keep) / term × total depreciation approximates typical lessor early-exit tables. Replace with the exact figure from your contract.',
-        currentValue: formatCurrency(override, loc, 0),
-        proposedValue: formatCurrency(def, loc, 0),
+        currentValue: formatCurrency(override, fmt, 0),
+        proposedValue: formatCurrency(def, fmt, 0),
         sliderAnchor: 'slider-earlyTerminationFee',
         apply: () => this.applyEarlyTerminationFee(),
         keep: () => this.dismissEarlyTerminationFee(),
@@ -779,8 +783,8 @@ export class ScenarioStore {
         label: 'Residual at lease end',
         reason:
           'the depreciation curve at vehicleAge + leaseTerm gives this contractual residual. Override with the figure from your lease contract.',
-        currentValue: formatCurrency(override, loc, 0),
-        proposedValue: formatCurrency(def, loc, 0),
+        currentValue: formatCurrency(override, fmt, 0),
+        proposedValue: formatCurrency(def, fmt, 0),
         sliderAnchor: 'slider-leaseEndResidual',
         apply: () => this.applyLeaseEndResidual(),
         keep: () => this.dismissLeaseEndResidual(),
