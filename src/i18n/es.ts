@@ -400,6 +400,7 @@ export const es: Translation = {
   },
 
   footer: {
+    seeAlso: 'Calculadoras de costes de verdad',
     fineprint:
       'Letra pequeña — esto es un proyecto personal, vibe-codeado los fines de semana por un tipo cualquiera de internet. Los números son estimaciones aproximadas con un montón de suposiciones simplificadoras (curvas de depreciación, valores regionales por defecto, multiplicadores de categoría, etc.). Útil como prueba de plausibilidad; no sustituye al contrato real del concesionario, una cotización de seguro real, tus propios cálculos ni a un asesor financiero acreditado. No firmes un contrato de cinco cifras solo porque un gráfico en la web de un desconocido lo diga.',
   },

@@ -400,6 +400,7 @@ export const it: Translation = {
   },
 
   footer: {
+    seeAlso: 'Calcolatori di costi seri',
     fineprint:
       'Note legali — questo è un side project, vibe-coded nei weekend da un tipo a caso su internet. I numeri sono stime approssimative con un mucchio di assunzioni semplificative (curve di deprezzamento, default regionali, moltiplicatori di categoria, ecc.). Utile per un controllo di plausibilità; non sostituisce il contratto reale del concessionario, una vera quotazione assicurativa, i tuoi conti né un consulente finanziario abilitato. Non firmare un contratto a cinque cifre solo perché un grafico sul sito di uno sconosciuto te lo dice.',
   },

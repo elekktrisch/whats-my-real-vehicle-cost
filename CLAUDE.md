@@ -61,9 +61,9 @@ app/app.routes.ts            single `/` route → AppShell, ** → ''
 
 ### Internationalization
 
-The app is fully translated to English and German via [Transloco](https://jsverse.gitbook.io/transloco) (`@jsverse/transloco@^8.3.0` + `@jsverse/transloco-messageformat` for ICU plurals/select).
+The app is fully translated to English, German, Italian, French and Spanish via [Transloco](https://jsverse.gitbook.io/transloco) (`@jsverse/transloco@^8.3.0` + `@jsverse/transloco-messageformat` for ICU plurals/select). `availableLangs` is `['en', 'de', 'it', 'fr', 'es']`; `'en'` is the source-of-truth catalog and the fallback.
 
-- `src/i18n/en.ts`, `src/i18n/de.ts` — catalogs as **bundled TS modules**, all eagerly loaded (no HTTP fetch). Single bundle, instant switch.
+- `src/i18n/{en,de,it,fr,es}.ts` — catalogs as **bundled TS modules**, all eagerly loaded (no HTTP fetch). Single bundle, instant switch.
 - `src/i18n/transloco-loader.ts` — `BundledTranslocoLoader` returns the catalog synchronously via `of(...)`.
 - `src/i18n/detect.ts` — `detectLanguage()` precedence: **localStorage** > `navigator.language` (stripped to base) > `'en'`. `writeStoredLanguage()` is called only on user-initiated flips (the splash/initial detection passes `{ persist: false }`).
 - `app.config.ts` — `provideTransloco({...})` + `provideTranslocoMessageformat()`. APP_INITIALIZER calls `store.setLanguage(detectLanguage(), { persist: false })` before bootstrap.
@@ -71,7 +71,7 @@ The app is fully translated to English and German via [Transloco](https://jsvers
 
 **localStorage carve-out.** This is the only persistence channel besides the `?s=` URL — language preference (key `lang`) lives in localStorage so a manual flip survives reload. Don't add other localStorage uses without explicit reason; the URL is still the single source of truth for scenario state.
 
-**Region vs Language are independent axes.** `Region` (`'US' | 'EU'`) controls units/currency/symbol/defaults via `REGION_CONFIG`. `Language` (`'en' | 'de'`) controls UI text. The store exposes `formatContext: { region, language }` for `formatCurrency` / `formatCompactCurrency` and `bcp47` for raw `toLocaleString` callers (e.g. `en+US → en-US`, `en+EU → en-GB`, `de+US → de-DE`, `de+EU → de-DE`).
+**Region vs Language are independent axes.** `Region` (`'US' | 'EU'`) controls units/currency/symbol/defaults via `REGION_CONFIG`. `Language` (`'en' | 'de' | 'it' | 'fr' | 'es'`) controls UI text. The store exposes `formatContext: { region, language }` for `formatCurrency` / `formatCompactCurrency` and `bcp47` for raw `toLocaleString` callers (e.g. `en+US → en-US`, `en+EU → en-GB`, `de+US → de-DE`, `de+EU → de-DE`).
 
 **ICU select for region-driven labels.** Some labels vary by region as well as language (e.g. `lease.fields.apr.label` reads "Money factor" in US contexts, "Lease factor" / "Leasingfaktor" in EU). Catalog values use ICU `{region, select, US {…} EU {…}}` rather than separate keys — pass `{ region: store.region() }` at the call site.
 
@@ -84,7 +84,7 @@ The app is fully translated to English and German via [Transloco](https://jsvers
 ### Footer + selectors
 
 - `RegionSelector` (`shared/molecules/region-selector/`) — flag-based pill toggle in the page header. Renamed from the original `LocaleSelector`.
-- `LanguageSelector` (`shared/molecules/language-selector/`) — EN/DE pill toggle, lives inside the footer.
+- `LanguageSelector` (`shared/molecules/language-selector/`) — flag + native-name dropdown across all five locales, lives inside the footer.
 - `Footer` (`shared/molecules/footer/`) — extracted from the old inline action block. Inputs: `[showActions]` (default false). Outputs: `(share)`. Splash renders `<app-footer />` (no actions); comparison renders `<app-footer [showActions]="true" (share)="openShare()" />`.
 
 ### Scenario module — `src/app/scenario/`

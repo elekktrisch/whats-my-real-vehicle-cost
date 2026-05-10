@@ -400,6 +400,7 @@ export const fr: Translation = {
   },
 
   footer: {
+    seeAlso: 'Vrais calculateurs de coûts',
     fineprint:
       'Petites lignes — c\'est un projet perso, vibe-codé le week-end par un type lambda sur internet. Les chiffres sont des estimations grossières avec un tas d\'hypothèses simplificatrices (courbes de dépréciation, défauts régionaux, multiplicateurs de catégorie, etc.). Utile pour un sanity-check ; ne remplace ni le contrat réel du concessionnaire, ni un vrai devis d\'assurance, ni tes propres calculs, ni un conseiller financier diplômé. Ne signe pas un contrat à cinq chiffres parce qu\'un graphique sur le site d\'un inconnu te le dit.',
   },
