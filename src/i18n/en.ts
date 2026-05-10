@@ -401,6 +401,7 @@ export const en: Translation = {
   },
 
   footer: {
+    seeAlso: 'Actual serious cost calculators',
     fineprint:
       "Fineprint — this is a side project, vibe-coded on weekends by some dude on the internet. The numbers are rough estimates with a stack of simplifying assumptions baked in (depreciation curves, regional defaults, category multipliers, etc). Useful for a sanity check; not a substitute for the actual contract from your dealer, a real insurance quote, your own math, or a financial advisor with credentials. Don't sign a five-figure deal because a chart on a stranger's website said so.",
   },

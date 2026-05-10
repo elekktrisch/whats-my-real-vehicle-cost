@@ -1,0 +1,10 @@
+# Crawler signals for https://elekktrisch.github.io/whats-my-real-vehicle-cost/
+# `?s=` and `?c=` carry encoded scenario state; every variant serves the same
+# index.html, so they're noise from a crawler's perspective.
+
+User-agent: *
+Allow: /
+Disallow: /*?s=
+Disallow: /*?c=
+
+Sitemap: https://elekktrisch.github.io/whats-my-real-vehicle-cost/sitemap.xml

@@ -228,7 +228,7 @@ export const de: Translation = {
     charger: {
       label: 'Wallbox zuhause',
       description:
-        '„Anschaffung" addiert die Installationskosten zur TCO; „Vorhanden" gilt als versunkene Kosten und zählt nicht.',
+        '„Anschaffung" addiert die Installationskosten zur TCO; „Vorhanden" gilt als bereits abgeschrieben und zählt nicht.',
       none: 'Keine',
       installed: 'Vorhanden',
       buying: 'Anschaffung',
@@ -401,6 +401,7 @@ export const de: Translation = {
   },
 
   footer: {
+    seeAlso: 'Richtige Kostenrechner',
     fineprint:
       'Kleingedrucktes — diese Page wurde von einem Kerl aus dem Internet vibe-coded. Die Zahlen sind grobe Schätzungen mit einem Haufen vereinfachender Annahmen (Wertverlustkurven, regionale Vorgaben, Kategoriefaktoren, etc.). Taugt als Plausibilitätscheck; ersetzt aber weder den echten Vertrag vom Händler, ein echtes Versicherungsangebot, deine eigene Rechnung, noch einen Finanzberater mit Lizenz. Bitte unterschreib keinen fünfstelligen Vertrag, weil ein Diagramm auf der Website von einem Fremden das so meint.',
   },
