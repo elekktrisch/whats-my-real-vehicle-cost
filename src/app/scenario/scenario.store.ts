@@ -650,8 +650,9 @@ export class ScenarioStore {
   readonly activeConflicts = computed<readonly ActiveConflict[]>(() => {
     const out: ActiveConflict[] = [];
     const fmt = this.formatContext();
-    const reg = this.region();
-    const efUnit = this.regionConfig().distanceUnit;
+    const lang = this.language();
+    const t = (key: string, params?: Record<string, unknown>) =>
+      this.transloco.translate(key, params, lang);
 
     if (this.leaseAprPillVisible()) {
       const override = this.leaseAprOverride()!;
@@ -659,9 +660,8 @@ export class ScenarioStore {
       out.push({
         key: 'leaseApr',
         scope: 'lease',
-        label: 'Lease APR',
-        reason:
-          'new cars (vehicleAge = 0) typically qualify for promotional ~1% manufacturer financing, while used cars run ~3%.',
+        label: t('conflicts.leaseApr.label'),
+        reason: t('conflicts.leaseApr.reason'),
         currentValue: `${override}%`,
         proposedValue: `${def}%`,
         sliderAnchor: 'slider-leaseApr',
@@ -675,9 +675,8 @@ export class ScenarioStore {
       out.push({
         key: 'residualValue',
         scope: 'global',
-        label: 'Residual value',
-        reason:
-          'the depreciation curve at vehicleAge + keepDuration suggests this end-of-keep value. Override with the figure from your contract for an apples-to-apples comparison.',
+        label: t('conflicts.residualValue.label'),
+        reason: t('conflicts.residualValue.reason'),
         currentValue: formatCurrency(override, fmt, 0),
         proposedValue: formatCurrency(def, fmt, 0),
         sliderAnchor: 'slider-residualValue',
@@ -691,9 +690,8 @@ export class ScenarioStore {
       out.push({
         key: 'insurance',
         scope: 'global',
-        label: 'Insurance / yr',
-        reason:
-          'purchase price × locale rate × vehicle category yields this baseline. Override with a real quote for accuracy.',
+        label: t('conflicts.insurance.label'),
+        reason: t('conflicts.insurance.reason'),
         currentValue: formatCurrency(override, fmt, 0),
         proposedValue: formatCurrency(def, fmt, 0),
         sliderAnchor: 'slider-insurance',
@@ -708,14 +706,14 @@ export class ScenarioStore {
         this.powertrain() === 'EV'
           ? this.regionConfig().evEfficiencyUnit
           : this.regionConfig().iceEfficiencyUnit;
+      const isEV = this.powertrain() === 'EV';
       out.push({
         key: 'fuelEfficiency',
         scope: 'global',
-        label: this.powertrain() === 'EV' ? 'EV efficiency' : 'Fuel efficiency',
-        reason:
-          this.powertrain() === 'EV'
-            ? `this is the typical EV efficiency in ${reg}. Override with your vehicle's spec sheet.`
-            : `this is the typical fuel efficiency in ${reg}. Override with your vehicle's spec sheet.`,
+        label: t(isEV ? 'conflicts.evEfficiency.label' : 'conflicts.fuelEfficiency.label'),
+        reason: t(isEV ? 'conflicts.evEfficiency.reason' : 'conflicts.fuelEfficiency.reason', {
+          region: this.region(),
+        }),
         currentValue: `${override} ${unit}`,
         proposedValue: `${def} ${unit}`,
         sliderAnchor: 'slider-fuelEfficiency',
@@ -726,14 +724,14 @@ export class ScenarioStore {
     if (this.fuelPricePillVisible()) {
       const override = this.fuelPriceOverride()!;
       const def = this.fuelPriceDefaultSignal();
+      const isEV = this.powertrain() === 'EV';
       out.push({
         key: 'fuelPrice',
         scope: 'global',
-        label: this.powertrain() === 'EV' ? 'Electricity price' : 'Fuel price',
-        reason:
-          this.powertrain() === 'EV'
-            ? `this is the typical electricity rate in ${reg}. Override with your local utility tariff.`
-            : `this is the typical pump price in ${reg}. Override with current local prices.`,
+        label: t(isEV ? 'conflicts.electricityPrice.label' : 'conflicts.fuelPrice.label'),
+        reason: t(isEV ? 'conflicts.electricityPrice.reason' : 'conflicts.fuelPrice.reason', {
+          region: this.region(),
+        }),
         currentValue: formatCurrency(override, fmt, 2),
         proposedValue: formatCurrency(def, fmt, 2),
         sliderAnchor: 'slider-fuelPrice',
@@ -744,15 +742,14 @@ export class ScenarioStore {
     if (this.leaseEndChoicePillVisible()) {
       const override = this.leaseEndChoiceOverride()!;
       const def = this.leaseEndChoiceDefault();
-      const fmt = (c: LeaseEndChoice) => (c === 'buyOut' ? 'Buy out' : 'Renew lease');
+      const choiceLabel = (c: LeaseEndChoice) => t(`leaseEnd.choice.${c}`);
       out.push({
         key: 'leaseEndChoice',
         scope: 'lease',
-        label: 'End of lease',
-        reason:
-          'keep duration vs. lease term picks the cheaper outcome — keep ≤ term → renew lease, keep > term → buy out.',
-        currentValue: fmt(override),
-        proposedValue: fmt(def),
+        label: t('conflicts.leaseEndChoice.label'),
+        reason: t('conflicts.leaseEndChoice.reason'),
+        currentValue: choiceLabel(override),
+        proposedValue: choiceLabel(def),
         sliderAnchor: 'slider-leaseEndChoice',
         apply: () => this.applyLeaseEndChoice(),
         keep: () => this.dismissLeaseEndChoice(),
@@ -764,9 +761,8 @@ export class ScenarioStore {
       out.push({
         key: 'earlyTerminationFee',
         scope: 'lease',
-        label: 'Early termination penalty',
-        reason:
-          '(term − keep) / term × total depreciation approximates typical lessor early-exit tables. Replace with the exact figure from your contract.',
+        label: t('conflicts.earlyTerminationFee.label'),
+        reason: t('conflicts.earlyTerminationFee.reason'),
         currentValue: formatCurrency(override, fmt, 0),
         proposedValue: formatCurrency(def, fmt, 0),
         sliderAnchor: 'slider-earlyTerminationFee',
@@ -780,9 +776,8 @@ export class ScenarioStore {
       out.push({
         key: 'leaseEndResidual',
         scope: 'lease',
-        label: 'Residual at lease end',
-        reason:
-          'the depreciation curve at vehicleAge + leaseTerm gives this contractual residual. Override with the figure from your lease contract.',
+        label: t('conflicts.leaseEndResidual.label'),
+        reason: t('conflicts.leaseEndResidual.reason'),
         currentValue: formatCurrency(override, fmt, 0),
         proposedValue: formatCurrency(def, fmt, 0),
         sliderAnchor: 'slider-leaseEndResidual',
@@ -790,8 +785,6 @@ export class ScenarioStore {
         keep: () => this.dismissLeaseEndResidual(),
       });
     }
-    // efUnit suppresses the unused-binding lint when no fuelEfficiency conflict.
-    void efUnit;
     return out;
   });
 

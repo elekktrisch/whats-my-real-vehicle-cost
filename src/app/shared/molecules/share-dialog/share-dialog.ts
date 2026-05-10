@@ -12,16 +12,16 @@ import {
   viewChild,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Icon } from '../../atoms/icon/icon';
 import { shorten } from '../../../scenario/shortener';
-
-const PAGE_TITLE = 'Real Cost of my Vehicle';
+import { ScenarioStore } from '../../../scenario/scenario.store';
 
 type ShareState = 'idle' | 'loading' | 'success' | 'error';
 
 @Component({
   selector: 'app-share-dialog',
-  imports: [Icon],
+  imports: [Icon, TranslocoPipe],
   template: `
     <dialog
       #dlg
@@ -32,12 +32,12 @@ type ShareState = 'idle' | 'loading' | 'success' | 'error';
       <div class="p-6 sm:p-7 flex flex-col gap-5">
         <header class="flex items-center justify-between">
           <h2 class="font-ui text-[1rem] font-medium tracking-[-0.01em] text-tx">
-            Share scenario
+            {{ 'share.dialogTitle' | transloco }}
           </h2>
           <button
             type="button"
             (click)="close()"
-            aria-label="Close"
+            [attr.aria-label]="'common.close' | transloco"
             class="size-7 inline-flex items-center justify-center rounded-[8px] text-tx-muted hover:text-tx hover:bg-elevated transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
           >
             <app-icon name="close" [size]="16" />
@@ -53,7 +53,7 @@ type ShareState = 'idle' | 'loading' | 'success' | 'error';
                 class="inline-block size-3 rounded-full border-2 border-border border-t-accent animate-spin"
                 aria-hidden="true"
               ></span>
-              <span class="font-ui text-[0.78rem] text-tx-dim">Generating short link…</span>
+              <span class="font-ui text-[0.78rem] text-tx-dim">{{ 'share.generating' | transloco }}</span>
             } @else {
               <span
                 class="font-mono text-[0.78rem] text-tx truncate flex-1"
@@ -68,20 +68,20 @@ type ShareState = 'idle' | 'loading' | 'success' | 'error';
                 class="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[6px] bg-transparent border border-border-strong text-tx-muted hover:border-accent hover:text-accent disabled:opacity-50 disabled:cursor-not-allowed font-ui text-[0.7rem] font-medium tracking-[0.06em] uppercase transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
               >
                 <app-icon [name]="copied() ? 'check' : 'link'" [size]="12" />
-                {{ copied() ? 'Copied!' : 'Copy' }}
+                {{ (copied() ? 'share.copied' : 'share.copy') | transloco }}
               </button>
             }
           </div>
           @if (state() === 'error') {
             <p class="font-ui text-[0.7rem] text-tx-dim">
-              Couldn't shorten — using full link.
+              {{ 'share.shortenFailed' | transloco }}
             </p>
           }
         </div>
 
         <div class="flex flex-col gap-2">
           <p class="font-ui text-[0.72rem] tracking-[0.08em] uppercase text-tx-dim">
-            Or send via
+            {{ 'share.orSendVia' | transloco }}
           </p>
           <div class="grid grid-cols-2 gap-2">
             <button
@@ -126,7 +126,7 @@ type ShareState = 'idle' | 'loading' | 'success' | 'error';
             [disabled]="busy()"
             [class]="systemShareBtnClass"
           >
-            <app-icon name="share" [size]="14" /> Use system share sheet
+            <app-icon name="share" [size]="14" /> {{ 'share.systemShare' | transloco }}
           </button>
         }
       </div>
@@ -152,9 +152,16 @@ export class ShareDialog {
 
   protected readonly busy = computed(() => this.state() === 'loading');
 
+  private readonly transloco = inject(TranslocoService);
+  private readonly store = inject(ScenarioStore);
+
+  protected readonly pageTitle = computed(() =>
+    this.transloco.translate('share.pageTitle', {}, this.store.language()),
+  );
+
   protected readonly shareText = computed(() => {
     const yrs = Math.max(Math.round(this.keepDuration()), 1);
-    return `What this car really costs over ${yrs} year${yrs === 1 ? '' : 's'}`;
+    return this.transloco.translate('share.tagline', { years: yrs }, this.store.language());
   });
 
   protected readonly channelBtnClass =
@@ -227,7 +234,7 @@ export class ShareDialog {
   }
 
   protected openEmail(): void {
-    const subject = encodeURIComponent(PAGE_TITLE);
+    const subject = encodeURIComponent(this.pageTitle());
     const body = encodeURIComponent(`${this.shareText()} — ${this.resolvedUrl()}`);
     this.openExternal(`mailto:?subject=${subject}&body=${body}`);
   }
@@ -244,7 +251,7 @@ export class ShareDialog {
     if (!this.canSystemShare) return;
     try {
       await navigator.share({
-        title: PAGE_TITLE,
+        title: this.pageTitle(),
         text: this.shareText(),
         url: this.resolvedUrl(),
       });

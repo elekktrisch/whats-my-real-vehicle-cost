@@ -7,7 +7,7 @@
         data-testid="auto-tag"
         class="font-ui text-[0.65rem] uppercase tracking-[0.08em] text-tx-dim border border-border rounded px-[4px] py-px ml-1"
       >
-        auto
+        {{ 'common.auto' | transloco }}
       </span>
     } @else if (isAuto() === false) {
       <button
@@ -15,9 +15,9 @@
         data-testid="reset-link"
         (click)="reset.emit()"
         class="font-ui text-[0.7rem] text-tx-dim hover:text-accent ml-1 transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/50 rounded px-[2px]"
-        title="Reset to auto-derived value"
+        [title]="'slider.resetTitle' | transloco"
       >
-        ↻ reset
+        ↻ {{ 'common.reset' | transloco }}
       </button>
     }
   </label>

@@ -1,14 +1,20 @@
-import { EnvironmentProviders, Provider } from '@angular/core';
-import { provideTransloco } from '@jsverse/transloco';
+import {
+  EnvironmentProviders,
+  Provider,
+  ENVIRONMENT_INITIALIZER,
+  inject,
+} from '@angular/core';
+import { TranslocoService, provideTransloco } from '@jsverse/transloco';
 import { provideTranslocoMessageformat } from '@jsverse/transloco-messageformat';
-import { BundledTranslocoLoader } from '../i18n';
+import { BundledTranslocoLoader, en, de } from '../i18n';
 
 /**
  * Bundles the Transloco providers required by ScenarioStore (it injects
  * TranslocoService) and any component that uses the `transloco` pipe.
  *
- * Tests load the bundled EN catalog with language fixed to `'en'`, so
- * existing assertions on English copy keep working without per-spec setup.
+ * Tests load the bundled EN catalog *synchronously* via setTranslation so
+ * `translate()` returns the actual string immediately rather than the key
+ * (the loader path is async and tests can't await its observable).
  */
 export function provideTranslocoTesting(): (Provider | EnvironmentProviders)[] {
   return [
@@ -23,5 +29,15 @@ export function provideTranslocoTesting(): (Provider | EnvironmentProviders)[] {
       loader: BundledTranslocoLoader,
     }),
     provideTranslocoMessageformat(),
+    {
+      provide: ENVIRONMENT_INITIALIZER,
+      multi: true,
+      useValue: () => {
+        const transloco = inject(TranslocoService);
+        transloco.setTranslation(en, 'en');
+        transloco.setTranslation(de, 'de');
+        transloco.setActiveLang('en');
+      },
+    },
   ];
 }

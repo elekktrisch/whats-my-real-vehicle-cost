@@ -1,4 +1,5 @@
 import { Component, computed, inject } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ScenarioStore } from '../../scenario/scenario.store';
 import { TcoChart } from '../chart/tco-chart/tco-chart';
 import { GlobalControls } from '../../shared/molecules/global-controls/global-controls';
@@ -18,13 +19,14 @@ import { CashFields } from './cash-fields';
     LeaseFields,
     FinanceFields,
     CashFields,
+    TranslocoPipe,
   ],
   template: `
     <div class="flex flex-col gap-5">
       <button
         type="button"
         (click)="scrollToLevers()"
-        aria-label="Scroll past the chart to the controls"
+        [attr.aria-label]="'modeDetail.scrollToLeversAria' | transloco"
         class="self-center flex flex-col items-center justify-center py-2 text-accent/60 hover:text-accent transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 rounded-[8px]"
       >
         <svg
@@ -42,7 +44,7 @@ import { CashFields } from './cash-fields';
           <path d="M28 8v36 M14 32l14 14 14-14" />
         </svg>
         <span class="font-ui text-[0.72rem] tracking-[0.18em] uppercase text-tx-dim mt-1">
-          Tweak the levers
+          {{ 'modeDetail.tweakLevers' | transloco }}
         </span>
       </button>
 

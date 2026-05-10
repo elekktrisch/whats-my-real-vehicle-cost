@@ -1,8 +1,12 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { SliderControl } from './slider-control';
+import { provideTranslocoTesting } from '../../../test-helpers/transloco-testing';
 
 function make(): ComponentFixture<SliderControl> {
-  TestBed.configureTestingModule({ imports: [SliderControl] });
+  TestBed.configureTestingModule({
+    imports: [SliderControl],
+    providers: [...provideTranslocoTesting()],
+  });
   const fixture = TestBed.createComponent(SliderControl);
   fixture.componentRef.setInput('label', 'APR');
   fixture.componentRef.setInput('tip', '');

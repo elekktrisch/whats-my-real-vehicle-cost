@@ -1,16 +1,18 @@
 import { Component, ElementRef, HostListener, computed, inject, input } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
 
 let nextId = 0;
 
 @Component({
   selector: 'app-info-badge',
+  imports: [TranslocoPipe],
   template: `
     <button
       type="button"
       class="info-badge inline-flex items-center justify-center min-w-[24px] min-h-[24px] p-[3px] bg-transparent border-0 cursor-help relative align-middle shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
       [attr.data-tip]="tip()"
       [attr.aria-describedby]="describedById()"
-      aria-label="More information"
+      [attr.aria-label]="'common.moreInfo' | transloco"
     >
       <span
         class="inline-flex items-center justify-center size-[16px] text-[12px] leading-none font-ui rounded-full bg-elevated border border-border-strong text-tx-muted"

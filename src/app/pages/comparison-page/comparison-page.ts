@@ -7,6 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { TranslocoService } from '@jsverse/transloco';
 import { ScenarioStore } from '../../scenario/scenario.store';
 import { PageHeader } from '../../shared/molecules/page-header/page-header';
 import {
@@ -21,7 +22,6 @@ import { URL_PARAM, encodeSnapshot } from '../../scenario/scenario.serializer';
 import { formatCompactCurrency, formatCurrency } from '../../scenario/region.config';
 import type { CostBreakdown, Tab } from '../../scenario/scenario.types';
 
-const LABEL: Record<Tab, string> = { lease: 'Lease', finance: 'Loan', cash: 'Cash' };
 
 // Hysteresis bands for the binary [data-scrolled] flip — a single threshold
 // would oscillate at the boundary because the sticky region's own
@@ -95,6 +95,8 @@ export class ComparisonPage {
     });
   }
 
+  private readonly transloco = inject(TranslocoService);
+
   protected readonly shareOpen = signal(false);
 
   // Build the share URL deterministically from the current snapshot rather
@@ -114,21 +116,31 @@ export class ComparisonPage {
 
   protected readonly distanceUnit = computed(() => this.store.regionConfig().distanceUnit);
   protected readonly recommended = computed(() => this.store.recommendedTab().tab);
-  // Sentence built from structured recommendation data. The English template
-  // is a stand-in until `transloco.translate('recommendation.reason', …)`
-  // takes over in task #8.
   protected readonly recommendationReason = computed(() => {
     const rec = this.store.recommendedTab();
     const fmt = this.store.formatContext();
     const unit = this.distanceUnit();
+    const lang = this.store.language();
+    const tabLabel = (t: Tab) => this.transloco.translate(`mode.${t}`, {}, lang);
     const fmtCost = (v: number) => `${formatCurrency(v, fmt, 2)}/${unit}`;
-    const others = rec.others.map((o) => `${LABEL[o.tab]} ${fmtCost(o.cost)}`).join(', ');
-    return `${LABEL[rec.tab]} has the lowest cost per ${unit} at ${fmtCost(rec.winnerCost)} — vs ${others}.`;
+    const others = rec.others.map((o) => `${tabLabel(o.tab)} ${fmtCost(o.cost)}`).join(', ');
+    return this.transloco.translate(
+      'recommendation.reason',
+      {
+        winner: tabLabel(rec.tab),
+        unit,
+        winnerCost: fmtCost(rec.winnerCost),
+        others,
+      },
+      lang,
+    );
   });
 
   protected readonly cards = computed<readonly ModeCardData[]>(() => {
     const fmt = this.store.formatContext();
     const distanceUnit = this.distanceUnit();
+    const lang = this.store.language();
+    const t = (k: string, p?: Record<string, unknown>) => this.transloco.translate(k, p, lang);
     const months = Math.max(Math.round(this.store.keepDuration() * 12), 1);
     const distance = this.store.annualMileage() * this.store.keepDuration();
     const rec = this.recommended();
@@ -174,18 +186,23 @@ export class ComparisonPage {
       const totalDistance = Math.round(distance);
       const fDist = totalDistance.toLocaleString();
 
-      const totalTip =
-        `True total cost over your keep duration. ` +
-        `${fC} cash out + ${fO} opportunity cost on tied-up capital − ${fA} asset retained at end of keep = ${fT}.`;
-      const monthlyTip =
-        `${fT} total ÷ ${months} months keep = ${fM}/mo. The "level monthly" equivalent.`;
-      const perDistanceTip =
-        `${fT} total ÷ ${fDist} ${distanceUnit} driven over keep duration = ${fP}/${distanceUnit}. ` +
-        `Useful for comparing scenarios with different mileages.`;
+      const totalTip = t('comparison.tip.total', {
+        cashOut: fC,
+        oppCost: fO,
+        asset: fA,
+        total: fT,
+      });
+      const monthlyTip = t('comparison.tip.monthly', { total: fT, months, monthly: fM });
+      const perDistanceTip = t('comparison.tip.perDistance', {
+        total: fT,
+        distance: fDist,
+        unit: distanceUnit,
+        perDistance: fP,
+      });
 
       return {
         mode,
-        label: LABEL[mode],
+        label: t(`mode.${mode}`),
         total: formatCompactCurrency(breakdown.total, fmt),
         totalFull: fT,
         totalTip,

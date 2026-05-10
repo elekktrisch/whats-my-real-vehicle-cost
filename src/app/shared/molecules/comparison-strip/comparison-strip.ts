@@ -9,6 +9,7 @@ import {
   input,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { TranslocoPipe } from '@jsverse/transloco';
 import type { Tab } from '../../../scenario/scenario.types';
 import { ModeCard } from '../mode-card/mode-card';
 
@@ -31,12 +32,12 @@ const MODES: readonly Tab[] = ['lease', 'finance', 'cash'];
 
 @Component({
   selector: 'app-comparison-strip',
-  imports: [ModeCard],
+  imports: [ModeCard, TranslocoPipe],
   template: `
     <div #stripEl>
       <div
         role="tablist"
-        aria-label="Financing modes"
+        [attr.aria-label]="'comparison.tablist' | transloco"
         class="grid grid-cols-3 gap-[6px] sm:gap-[10px]"
         (keydown)="onKeydown($event)"
       >

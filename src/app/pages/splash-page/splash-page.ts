@@ -1,4 +1,5 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ScenarioStore } from '../../scenario/scenario.store';
 import { Button } from '../../shared/atoms/button/button';
 import { Icon } from '../../shared/atoms/icon/icon';
@@ -8,7 +9,7 @@ import { Footer } from '../../shared/molecules/footer/footer';
 
 @Component({
   selector: 'app-splash-page',
-  imports: [Button, Icon, NumberInput, PowertrainSelector, Footer],
+  imports: [Button, Icon, NumberInput, PowertrainSelector, Footer, TranslocoPipe],
   template: `
     <main class="min-h-[100dvh] flex items-center justify-center px-6 py-12 relative">
       <div
@@ -39,21 +40,19 @@ import { Footer } from '../../shared/molecules/footer/footer';
         <h1
           class="relative font-ui text-[2rem] sm:text-[2.6rem] font-medium tracking-[-0.02em] text-tx leading-[1.05]"
         >
-          The monthly payment
-          <span class="block text-tx-muted/60">is not the cost.</span>
+          {{ 'splash.heroTitle' | transloco }}
+          <span class="block text-tx-muted/60">{{ 'splash.heroTitleAccent' | transloco }}</span>
         </h1>
 
         <p
           class="relative mt-6 font-ui text-[0.92rem] text-tx-muted leading-[1.65] max-w-[460px] mx-auto"
         >
-          One chart. See what a car really costs you over the years —
-          financing, depreciation, fuel, insurance and maintenance, side by
-          side across lease, finance and cash.
+          {{ 'splash.heroSubtitle' | transloco }}
         </p>
 
         <div class="relative mt-10 flex flex-col items-center gap-2">
           <span class="font-ui text-[0.95rem] font-medium text-tx-muted">
-            Negotiated price
+            {{ 'splash.priceLabel' | transloco }}
           </span>
           <app-number-input
             [(value)]="store.purchasePrice"
@@ -61,23 +60,23 @@ import { Footer } from '../../shared/molecules/footer/footer';
             [max]="150000"
             [prefix]="store.currencyPrefix()"
             [suffix]="store.currencySuffix()"
-            ariaLabel="Negotiated price"
+            [ariaLabel]="'splash.priceLabel' | transloco"
             size="lg"
           />
         </div>
 
         <div class="relative mt-5 flex flex-col items-center gap-2">
           <span class="font-ui text-[0.85rem] font-medium text-tx-muted">
-            Powertrain
+            {{ 'splash.powertrainLabel' | transloco }}
           </span>
           <app-powertrain-selector />
         </div>
 
         <div class="relative mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <app-button size="lg" (click)="getStarted()">Get started</app-button>
+          <app-button size="lg" (click)="getStarted()">{{ 'splash.cta' | transloco }}</app-button>
           <span
             class="font-ui text-[0.75rem] tracking-[0.16em] uppercase text-tx-dim sm:ml-2"
-            >{{ regionLabel() }}</span
+            >{{ 'splash.regionDefaults' | transloco: { region: store.region() } }}</span
           >
         </div>
       </article>
@@ -90,10 +89,6 @@ import { Footer } from '../../shared/molecules/footer/footer';
 })
 export class SplashPage {
   protected readonly store = inject(ScenarioStore);
-
-  protected readonly regionLabel = computed(() =>
-    this.store.region() === 'US' ? 'US defaults' : 'EU defaults',
-  );
 
   protected getStarted(): void {
     this.store.engage();

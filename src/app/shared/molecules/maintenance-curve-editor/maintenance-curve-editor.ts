@@ -31,6 +31,7 @@ import {
   maintenanceAt,
   makeMaintenanceCurve,
 } from '../../../scenario/calculations/maintenance';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { formatCurrency } from '../../../scenario/region.config';
 import { Icon } from '../../atoms/icon/icon';
 
@@ -39,7 +40,7 @@ Chart.register(dragDataPlugin);
 
 @Component({
   selector: 'app-maintenance-curve-editor',
-  imports: [Icon, BaseChartDirective],
+  imports: [Icon, BaseChartDirective, TranslocoPipe],
   template: `
     <button
       type="button"
@@ -47,11 +48,11 @@ Chart.register(dragDataPlugin);
       (click)="openDialog()"
       class="inline-flex items-center gap-2 h-8 px-3 rounded-[8px] bg-transparent border border-border-strong text-tx-muted hover:border-accent hover:text-accent font-ui text-[0.72rem] font-medium tracking-[0.06em] uppercase whitespace-nowrap shrink-0 transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
     >
-      Edit maintenance curve
+      {{ 'curveEditor.maintenance.trigger' | transloco }}
       @if (hasOverride()) {
         <span
           data-testid="maintenance-curve-override-dot"
-          aria-label="Override active"
+          [attr.aria-label]="'curveEditor.overrideActive' | transloco"
           class="inline-block size-1.5 rounded-full bg-accent"
         ></span>
       }
@@ -66,12 +67,12 @@ Chart.register(dragDataPlugin);
       <div class="p-6 sm:p-7 flex flex-col gap-5">
         <header class="flex items-center justify-between">
           <h2 class="font-ui text-[1rem] font-medium tracking-[-0.01em] text-tx">
-            Maintenance curve
+            {{ 'curveEditor.maintenance.title' | transloco }}
           </h2>
           <form method="dialog" class="contents">
             <button
               type="submit"
-              aria-label="Close"
+              [attr.aria-label]="'common.close' | transloco"
               class="size-7 inline-flex items-center justify-center rounded-[8px] text-tx-muted hover:text-tx hover:bg-elevated transition-colors duration-150 cursor-pointer touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
             >
               <app-icon name="close" [size]="16" />
@@ -80,9 +81,7 @@ Chart.register(dragDataPlugin);
         </header>
 
         <p class="font-ui text-[0.78rem] text-tx-muted leading-snug">
-          Set the annual maintenance cost as a percentage of MSRP at each
-          milestone year. Defaults differ for ICE and EV; your override applies
-          regardless of powertrain.
+          {{ 'curveEditor.maintenance.description' | transloco }}
         </p>
 
         <div data-testid="maintenance-curve-preview" class="relative h-[180px]">
@@ -100,7 +99,7 @@ Chart.register(dragDataPlugin);
         >
           <div class="flex flex-col items-start gap-0.5">
             <span class="font-ui text-[0.62rem] tracking-[0.08em] uppercase text-tx-dim">
-              Year 1
+              {{ 'curveEditor.maintenance.year1' | transloco }}
             </span>
             <span class="font-mono text-[0.85rem] text-tx">
               {{ formatMoney(yr1Cost()) }}
@@ -108,7 +107,7 @@ Chart.register(dragDataPlugin);
           </div>
           <div class="flex flex-col items-start gap-0.5">
             <span class="font-ui text-[0.62rem] tracking-[0.08em] uppercase text-tx-dim">
-              Year {{ keepYear() }}
+              {{ 'curveEditor.maintenance.yearN' | transloco: { year: keepYear() } }}
             </span>
             <span class="font-mono text-[0.85rem] text-tx">
               {{ formatMoney(yrNCost()) }}
@@ -120,7 +119,7 @@ Chart.register(dragDataPlugin);
           @for (sample of activeSamples(); track sample.age) {
             <label class="flex flex-col gap-1 items-stretch">
               <span class="font-ui text-[0.7rem] tracking-[0.08em] uppercase text-tx-dim text-center">
-                Yr {{ sample.age }}
+                {{ 'curveEditor.yearAbbr' | transloco }} {{ sample.age }}
               </span>
               <input
                 type="number"
@@ -133,7 +132,7 @@ Chart.register(dragDataPlugin);
                 (change)="onInput($index, $event)"
                 class="w-full h-9 px-2 rounded-md bg-elevated border border-border text-center font-mono text-[0.85rem] text-tx focus:outline-none focus-within:border-accent focus:border-accent"
               />
-              <span class="font-mono text-[0.62rem] text-tx-dim text-center">% MSRP</span>
+              <span class="font-mono text-[0.62rem] text-tx-dim text-center">{{ 'curveEditor.maintenance.percentMsrp' | transloco }}</span>
             </label>
           }
         </div>
@@ -147,7 +146,7 @@ Chart.register(dragDataPlugin);
               (pointerup)="reset()"
               class="inline-flex items-center gap-1.5 h-8 px-3 rounded-[8px] bg-transparent border border-border-strong text-tx-muted hover:border-accent hover:text-accent font-ui text-[0.72rem] font-medium tracking-[0.06em] uppercase transition-colors duration-150 cursor-pointer touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
             >
-              <app-icon name="reset" [size]="12" /> Reset to default
+              <app-icon name="reset" [size]="12" /> {{ 'curveEditor.resetToDefault' | transloco }}
             </button>
           } @else {
             <span></span>
@@ -157,7 +156,7 @@ Chart.register(dragDataPlugin);
               type="submit"
               class="inline-flex items-center justify-center h-8 px-4 rounded-[8px] bg-accent text-bg border border-accent hover:brightness-110 font-ui text-[0.75rem] font-medium tracking-[0.06em] uppercase transition-colors duration-150 cursor-pointer touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
             >
-              Done
+              {{ 'curveEditor.done' | transloco }}
             </button>
           </form>
         </div>
@@ -169,6 +168,7 @@ export class MaintenanceCurveEditor {
   readonly open = model(false);
 
   protected readonly store = inject(ScenarioStore);
+  private readonly transloco = inject(TranslocoService);
   private readonly dialogRef = viewChild<ElementRef<HTMLDialogElement>>('dlg');
 
   protected readonly hasOverride = computed(
@@ -296,11 +296,19 @@ export class MaintenanceCurveEditor {
         callbacks: {
           title: (items) => {
             const x = items[0]?.parsed.x ?? 0;
-            return `Year ${(+x).toFixed(1)}`;
+            return this.transloco.translate(
+              'curveEditor.tooltipYear',
+              { year: (+x).toFixed(1) },
+              this.store.language(),
+            );
           },
           label: (item) => {
             const y = (item.parsed.y ?? 0) as number;
-            return `${this.formatMoney(y)} / yr`;
+            return this.transloco.translate(
+              'curveEditor.maintenance.tooltipPerYear',
+              { amount: this.formatMoney(y) },
+              this.store.language(),
+            );
           },
         },
       },

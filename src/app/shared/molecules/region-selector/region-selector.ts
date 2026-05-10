@@ -1,20 +1,22 @@
 import { Component, inject } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ScenarioStore } from '../../../scenario/scenario.store';
 import type { Region } from '../../../scenario/scenario.types';
 
 // Inline SVG flags (not emoji — Windows renders flag emoji as letter pairs).
 @Component({
   selector: 'app-region-selector',
+  imports: [TranslocoPipe],
   template: `
     <div
       class="inline-flex items-center gap-0 p-[3px] rounded-[8px] bg-elevated border border-border"
       role="radiogroup"
-      aria-label="Region"
+      [attr.aria-label]="'regionSelector.aria' | transloco"
     >
       <button
         type="button"
         role="radio"
-        aria-label="United States region"
+        [attr.aria-label]="'regionSelector.US' | transloco"
         [attr.aria-checked]="store.region() === 'US'"
         (click)="set('US')"
         [class]="optionClass(store.region() === 'US')"
@@ -37,7 +39,7 @@ import type { Region } from '../../../scenario/scenario.types';
       <button
         type="button"
         role="radio"
-        aria-label="European Union region"
+        [attr.aria-label]="'regionSelector.EU' | transloco"
         [attr.aria-checked]="store.region() === 'EU'"
         (click)="set('EU')"
         [class]="optionClass(store.region() === 'EU')"

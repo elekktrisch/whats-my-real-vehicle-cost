@@ -1,14 +1,16 @@
 import { Component, inject } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ScenarioStore } from '../../../scenario/scenario.store';
 import type { Language } from '../../../scenario/scenario.types';
 
 @Component({
   selector: 'app-language-selector',
+  imports: [TranslocoPipe],
   template: `
     <div
       class="inline-flex items-center gap-0 p-[3px] rounded-[8px] bg-elevated border border-border"
       role="radiogroup"
-      aria-label="Language"
+      [attr.aria-label]="'languageSelector.aria' | transloco"
     >
       <button
         type="button"

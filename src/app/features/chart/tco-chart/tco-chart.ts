@@ -21,6 +21,7 @@ import {
   Legend,
   Filler,
 } from 'chart.js';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ScenarioStore } from '../../../scenario/scenario.store';
 import { formatCurrency } from '../../../scenario/region.config';
 import type {
@@ -47,25 +48,27 @@ interface LayerSpec {
   fill: string;
 }
 
-const LAYERS: readonly LayerSpec[] = [
-  { key: 'depreciationOrLease',  label: 'Depreciation / lease', color: '#4f8ef7', fill: 'rgba(79, 142, 247, 0.30)' },
-  { key: 'interestAndFees',      label: 'Interest & fees',      color: '#7c5cff', fill: 'rgba(124, 92, 255, 0.30)' },
-  { key: 'opportunityCost',      label: 'Opportunity cost',     color: '#22d3ee', fill: 'rgba(34, 211, 238, 0.28)' },
-  { key: 'fuel',                 label: 'Fuel / electricity',   color: '#34d399', fill: 'rgba(52, 211, 153, 0.30)' },
-  { key: 'insurance',            label: 'Insurance',            color: '#f4845f', fill: 'rgba(244, 132, 95, 0.30)' },
-  { key: 'maintenance',          label: 'Maintenance',          color: '#facc15', fill: 'rgba(250, 204, 21, 0.28)' },
-  { key: 'leaseEnd',             label: 'Lease-end fees',       color: '#f87171', fill: 'rgba(248, 113, 113, 0.30)' },
+interface LayerColors {
+  key: CostCategory;
+  color: string;
+  fill: string;
+}
+
+const LAYER_COLORS: readonly LayerColors[] = [
+  { key: 'depreciationOrLease', color: '#4f8ef7', fill: 'rgba(79, 142, 247, 0.30)' },
+  { key: 'interestAndFees', color: '#7c5cff', fill: 'rgba(124, 92, 255, 0.30)' },
+  { key: 'opportunityCost', color: '#22d3ee', fill: 'rgba(34, 211, 238, 0.28)' },
+  { key: 'fuel', color: '#34d399', fill: 'rgba(52, 211, 153, 0.30)' },
+  { key: 'insurance', color: '#f4845f', fill: 'rgba(244, 132, 95, 0.30)' },
+  { key: 'maintenance', color: '#facc15', fill: 'rgba(250, 204, 21, 0.28)' },
+  { key: 'leaseEnd', color: '#f87171', fill: 'rgba(248, 113, 113, 0.30)' },
 ];
 
 const MOBILE_BP = 600;
 const TABLET_BP = 900;
 
 // Cash-out overlay line — dashed neutral gray, drawn on top of the stack.
-// Tracks pure cash flow (every check the user writes) so the gap to the
-// stacked-area total visualizes the financial cost on top of cash out
-// (opportunity cost + depreciation framing).
 const CASH_OUT_COLOR = '#dde3f0';
-const CASH_OUT_LABEL = 'Cash';
 
 function buildStackedDataset(layer: LayerSpec, series: MonthlyTcoPoint[], isHidden: boolean) {
   return {
@@ -86,12 +89,12 @@ function buildStackedDataset(layer: LayerSpec, series: MonthlyTcoPoint[], isHidd
 
 @Component({
   selector: 'app-tco-chart',
-  imports: [BaseChartDirective],
+  imports: [BaseChartDirective, TranslocoPipe],
   template: `
     <div class="bg-surface border border-border rounded-xl pt-3 px-3 pb-4 sm:pt-[22px] sm:px-[22px]">
       <div class="flex items-center justify-between mb-[18px] flex-wrap gap-2">
         <span class="font-ui text-[0.75rem] font-medium tracking-[0.13em] uppercase text-tx-dim">
-          Cumulative total cost of ownership
+          {{ 'chart.title' | transloco }}
         </span>
         <div class="flex flex-wrap gap-x-1 gap-y-1">
           @for (layer of layers(); track layer.key) {
@@ -120,7 +123,7 @@ function buildStackedDataset(layer: LayerSpec, series: MonthlyTcoPoint[], isHidd
               class="inline-block w-3 h-0 border-t border-dashed"
               [style.border-color]="cashOutColor"
             ></span>
-            {{ cashOutLabel }}
+            {{ cashOutLabel() }}
           </button>
         </div>
       </div>
@@ -136,20 +139,17 @@ function buildStackedDataset(layer: LayerSpec, series: MonthlyTcoPoint[], isHidd
         ></canvas>
       </div>
 
-      <!-- sr-only table covers full data; aria-label on the canvas is just
-           a headline. Year-aligned samples (≤ 15 rows) avoid the DOM/CD load
-           of one-row-per-month at long keeps. -->
       <div class="sr-only">
         <table>
-          <caption>Cumulative total cost of ownership by year and category</caption>
+          <caption>{{ 'chart.tableCaption' | transloco }}</caption>
           <thead>
             <tr>
-              <th scope="col">Year</th>
+              <th scope="col">{{ 'chart.colYear' | transloco }}</th>
               @for (layer of layers(); track layer.key) {
                 <th scope="col">{{ layer.label }}</th>
               }
-              <th scope="col">Total cost</th>
-              <th scope="col">{{ cashOutLabel }}</th>
+              <th scope="col">{{ 'chart.colTotal' | transloco }}</th>
+              <th scope="col">{{ cashOutLabel() }}</th>
             </tr>
           </thead>
           <tbody>
@@ -171,15 +171,24 @@ function buildStackedDataset(layer: LayerSpec, series: MonthlyTcoPoint[], isHidd
 export class TcoChart {
   readonly breakdown = input.required<CostBreakdown>();
 
-  // Replaces the static "Fuel / electricity" label with the powertrain-
-  // specific term so the legend reads "Electricity" on EV scenarios and
-  // "Fuel" on ICE. Keys/colors stay constant; only the display label flips.
+  private readonly transloco = inject(TranslocoService);
+
+  // Replaces "Fuel / electricity" with the powertrain-specific label.
   protected readonly layers = computed<readonly LayerSpec[]>(() => {
+    const lang = this.store.language();
     const ev = this.store.powertrain() === 'EV';
-    return LAYERS.map((l) => (l.key === 'fuel' ? { ...l, label: ev ? 'Electricity' : 'Fuel' } : l));
+    return LAYER_COLORS.map((l) => ({
+      ...l,
+      label:
+        l.key === 'fuel'
+          ? this.transloco.translate(ev ? 'chart.legend.electricity' : 'chart.legend.fuel', {}, lang)
+          : this.transloco.translate(`chart.legend.${l.key}`, {}, lang),
+    }));
   });
   protected readonly cashOutColor = CASH_OUT_COLOR;
-  protected readonly cashOutLabel = CASH_OUT_LABEL;
+  protected readonly cashOutLabel = computed(() =>
+    this.transloco.translate('chart.legend.cashOut', {}, this.store.language()),
+  );
   // Per-session legend toggle state — ephemeral, never persisted to URL.
   protected readonly hiddenSeries = signal<Set<CostCategory | 'cashOut'>>(new Set());
   private readonly store = inject(ScenarioStore);
@@ -227,15 +236,14 @@ export class TcoChart {
   protected readonly chartData = computed<ChartConfiguration<'line'>['data']>(() => {
     const series = this.breakdown().series;
     const hidden = this.hiddenSeries();
-    const labels = series.map((p) => `Mo ${p.month}`);
-    // Stacked-area cost layers — share `stack: 'cost'` so they sum vertically.
+    const lang = this.store.language();
+    const monthLabel = this.transloco.translate('chart.monthLabel', {}, lang);
+    const labels = series.map((p) => `${monthLabel} ${p.month}`);
     const stackDatasets = this.layers().map((layer) =>
       buildStackedDataset(layer, series, hidden.has(layer.key)),
     );
-    // Overlay line: dashed neutral, no fill, on its own stack so it doesn't
-    // sum with the cost layers — its Y is the raw cashOut value.
     const overlayDataset = {
-      label: CASH_OUT_LABEL,
+      label: this.cashOutLabel(),
       data: series.map((p) => p.cashOut),
       borderColor: CASH_OUT_COLOR,
       backgroundColor: 'transparent',
@@ -323,12 +331,19 @@ export class TcoChart {
     const total = this.breakdown().total;
     const cashOut = last?.cashOut ?? 0;
     const totals = this.breakdown().totals;
-    const largest = LAYERS.reduce((a, b) => (totals[a.key] >= totals[b.key] ? a : b));
-    return `Cumulative total cost of ownership over ${months} months. Total cost ${this.money(
-      total,
-    )}, cash out of pocket ${this.money(cashOut)}. Largest cost component: ${
-      largest.label
-    } at ${this.money(totals[largest.key])}.`;
+    const layers = this.layers();
+    const largest = layers.reduce((a, b) => (totals[a.key] >= totals[b.key] ? a : b));
+    return this.transloco.translate(
+      'chart.ariaSummary',
+      {
+        months,
+        total: this.money(total),
+        cashOut: this.money(cashOut),
+        largestLabel: largest.label,
+        largestAmount: this.money(totals[largest.key]),
+      },
+      this.store.language(),
+    );
   });
 
   protected money(v: number): string {
@@ -337,7 +352,7 @@ export class TcoChart {
 
   protected rowTotal(point: MonthlyTcoPoint): number {
     let sum = 0;
-    for (const layer of LAYERS) sum += point[layer.key];
+    for (const layer of LAYER_COLORS) sum += point[layer.key];
     return sum;
   }
 
