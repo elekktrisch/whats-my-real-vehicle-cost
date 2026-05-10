@@ -4,10 +4,11 @@ import { Router } from '@angular/router';
 import { TranslocoService } from '@jsverse/transloco';
 import {
   FormatContext,
-  REGION_CONFIG,
   bcp47ForContext,
+  currencyForContext,
   fuelEfficiencyDefault,
   fuelPriceDefault,
+  regionConfigForContext,
 } from './region.config';
 import { LEASE_END_DEFAULTS, defaultScenario } from './scenario.defaults';
 import type {
@@ -150,14 +151,18 @@ export class ScenarioStore {
   );
   readonly vehicleCategory = computed(() => categorize(this.msrp(), this.region()));
   readonly categoryMultipliers = computed(() => categoryMultipliers(this.vehicleCategory()));
-  readonly regionConfig = computed(() => REGION_CONFIG[this.region()]);
+  // Region config is context-aware: UK overlay applies when en+EU so seed
+  // values for fuel price / electricity / home charger install reflect UK.
+  readonly regionConfig = computed(() => regionConfigForContext(this.formatContext()));
+  // Currency display follows (region, language) — en+EU swaps € → £.
+  readonly currencyDisplay = computed(() => currencyForContext(this.formatContext()));
   readonly currencyPrefix = computed(() => {
-    const cfg = this.regionConfig();
-    return cfg.currencyAfter ? '' : cfg.currencySymbol;
+    const cur = this.currencyDisplay();
+    return cur.after ? '' : cur.symbol;
   });
   readonly currencySuffix = computed(() => {
-    const cfg = this.regionConfig();
-    return cfg.currencyAfter ? ' ' + cfg.currencySymbol : '';
+    const cur = this.currencyDisplay();
+    return cur.after ? ' ' + cur.symbol : '';
   });
 
   private readonly residualValueDefault = computed(() => {
@@ -208,10 +213,10 @@ export class ScenarioStore {
     mileageFactor: this.mileageFactor(),
   }));
   private fuelEfficiencyDefaultSignal = computed(() =>
-    fuelEfficiencyDefault(this.region(), this.powertrain()),
+    fuelEfficiencyDefault(this.formatContext(), this.powertrain()),
   );
   private fuelPriceDefaultSignal = computed(() =>
-    fuelPriceDefault(this.region(), this.powertrain()),
+    fuelPriceDefault(this.formatContext(), this.powertrain()),
   );
 
   readonly insurance = computed(() => this.insuranceOverride() ?? this.insuranceDefault());
@@ -396,6 +401,9 @@ export class ScenarioStore {
     chargerStatus: this.chargerStatus(),
     solar: this.solar(),
     opportunityCostRate: this.opportunityCostRate(),
+    // Resolved here so the calc layer doesn't need a language axis —
+    // regionConfig is already context-aware at this point.
+    homeChargerInstall: this.regionConfig().defaultHomeChargerInstall,
   }));
 
   readonly leaseBreakdown = computed<CostBreakdown>(() =>

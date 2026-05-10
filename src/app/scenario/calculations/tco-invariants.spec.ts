@@ -26,6 +26,7 @@ const baseShared = {
   fuelPrice: 3.5,
   chargerStatus: 'none' as const,
   solar: false,
+  homeChargerInstall: 1_500,
 };
 
 function cashInputs(o: Partial<CashTcoInputs> = {}): CashTcoInputs {

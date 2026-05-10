@@ -27,7 +27,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideTransloco({
       config: {
-        availableLangs: ['en', 'de'],
+        availableLangs: ['en', 'de', 'it', 'fr', 'es'],
         defaultLang: 'en',
         fallbackLang: 'en',
         reRenderOnLangChange: true,

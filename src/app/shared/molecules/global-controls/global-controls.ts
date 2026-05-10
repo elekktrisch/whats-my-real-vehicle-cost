@@ -211,11 +211,11 @@ export class GlobalControls {
 
   protected readonly contextCaption = computed(() => {
     const lang = this.store.language();
-    const cfg = this.store.regionConfig();
+    const cur = this.store.currencyDisplay();
     const formatted = Math.round(this.store.msrp()).toLocaleString(this.store.bcp47());
-    const moneyMsrp = cfg.currencyAfter
-      ? `${formatted} ${cfg.currencySymbol}`
-      : `${cfg.currencySymbol}${formatted}`;
+    const moneyMsrp = cur.after
+      ? `${formatted} ${cur.symbol}`
+      : `${cur.symbol}${formatted}`;
     const category = this.transloco.translate(
       `globals.category.${this.store.vehicleCategory()}`,
       {},
@@ -256,7 +256,7 @@ export class GlobalControls {
       this.store.language(),
     ),
   );
-  protected readonly fuelPriceSymbol = computed(() => this.store.regionConfig().currencySymbol);
+  protected readonly fuelPriceSymbol = computed(() => this.store.currencyDisplay().symbol);
   protected readonly fuelPriceSuffix = computed(() => {
     if (this.store.powertrain() === 'EV') return ' /kWh';
     return this.store.region() === 'US' ? ' /gal' : ' /L';

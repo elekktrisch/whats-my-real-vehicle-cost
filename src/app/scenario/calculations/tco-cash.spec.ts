@@ -26,6 +26,7 @@ const usCashShared = {
   fuelPrice: 3.5,
   chargerStatus: 'none' as const,
   solar: false,
+  homeChargerInstall: 1500,
 };
 
 describe('cashTco', () => {
@@ -61,6 +62,7 @@ describe('cashTco — maintenance age curve', () => {
     fuelPrice: 3.5,
     chargerStatus: 'none' as const,
     solar: false,
+    homeChargerInstall: 1500,
     opportunityCostRate: 0,
   };
 
@@ -101,6 +103,7 @@ describe('cashTco — solar / home charger', () => {
     chargerStatus: 'none' as const,
     solar: false,
     opportunityCostRate: 0,
+    homeChargerInstall: 1500,
   };
 
   it('charger off: no install cost added to maintenance', () => {
@@ -121,6 +124,7 @@ describe('cashTco — solar / home charger', () => {
       fuelEfficiency: 17,
       fuelPrice: 0.32,
       chargerStatus: 'buying' as const,
+      homeChargerInstall: 1200,
     });
     expect(r.series[0].maintenance).toBeCloseTo(1200, 4);
   });

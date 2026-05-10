@@ -6,7 +6,7 @@ import {
 } from '@angular/core';
 import { TranslocoService, provideTransloco } from '@jsverse/transloco';
 import { provideTranslocoMessageformat } from '@jsverse/transloco-messageformat';
-import { BundledTranslocoLoader, en, de } from '../i18n';
+import { BundledTranslocoLoader, en, de, it, fr, es } from '../i18n';
 
 /**
  * Bundles the Transloco providers required by ScenarioStore (it injects
@@ -20,7 +20,7 @@ export function provideTranslocoTesting(): (Provider | EnvironmentProviders)[] {
   return [
     provideTransloco({
       config: {
-        availableLangs: ['en', 'de'],
+        availableLangs: ['en', 'de', 'it', 'fr', 'es'],
         defaultLang: 'en',
         fallbackLang: 'en',
         reRenderOnLangChange: true,
@@ -36,6 +36,9 @@ export function provideTranslocoTesting(): (Provider | EnvironmentProviders)[] {
         const transloco = inject(TranslocoService);
         transloco.setTranslation(en, 'en');
         transloco.setTranslation(de, 'de');
+        transloco.setTranslation(it, 'it');
+        transloco.setTranslation(fr, 'fr');
+        transloco.setTranslation(es, 'es');
         transloco.setActiveLang('en');
       },
     },

@@ -15,7 +15,63 @@ export interface FormatContext {
 export function bcp47ForContext(ctx: FormatContext): string {
   if (ctx.language === 'en' && ctx.region === 'EU') return 'en-GB';
   if (ctx.language === 'en') return 'en-US';
+  if (ctx.language === 'it') return 'it-IT';
+  if (ctx.language === 'fr') return 'fr-FR';
+  if (ctx.language === 'es') return 'es-ES';
   return 'de-DE';
+}
+
+/** Symbol + placement for the displayed currency. Derived from (region, language). */
+export interface CurrencyDisplay {
+  symbol: string;
+  /** true ⇒ render after the number (e.g. "1 234 €"); false ⇒ before ("$1,234"). */
+  after: boolean;
+}
+
+/**
+ * Currency follows the (region, language) pair, not just region:
+ * - US region → $ (always)
+ * - EU region + en language → £ (UK mode — same axis swap as bcp47 en-GB)
+ * - EU region + non-en language → €
+ */
+export function currencyForContext(ctx: FormatContext): CurrencyDisplay {
+  if (isUkContext(ctx)) {
+    return { symbol: '£', after: false };
+  }
+  const cfg = REGION_CONFIG[ctx.region];
+  return { symbol: cfg.currencySymbol, after: cfg.currencyAfter };
+}
+
+/** True when the (region, language) pair represents UK mode. */
+export function isUkContext(ctx: FormatContext): boolean {
+  return ctx.region === 'EU' && ctx.language === 'en';
+}
+
+/**
+ * UK-specific overlay for the EU base config when language is English.
+ * Currency/placement is handled separately via `currencyForContext`; this is
+ * for *numeric* defaults (typical UK petrol price, electricity rate, home
+ * charger install). Distance and efficiency units stay metric.
+ *
+ * Rough 2026 figures: petrol ~£1.45/L, electricity ~£0.25/kWh (Ofgem cap),
+ * home charger install ~£1000 (post OZEV grant). Conservative — user can
+ * always override via the slider.
+ */
+const UK_OVERRIDES: Partial<RegionConfig> = {
+  defaultIceFuelPrice: 1.45,
+  defaultElectricityPrice: 0.25,
+  defaultHomeChargerInstall: 1000,
+};
+
+/**
+ * Returns the active RegionConfig with any (region, language)-specific
+ * overrides applied. Used by the store and the fuel-default helpers so UK
+ * mode picks up British seed values without a separate Region enum entry.
+ */
+export function regionConfigForContext(ctx: FormatContext): RegionConfig {
+  const base = REGION_CONFIG[ctx.region];
+  if (isUkContext(ctx)) return { ...base, ...UK_OVERRIDES };
+  return base;
 }
 
 export interface RegionConfig {
@@ -70,13 +126,13 @@ export const REGION_CONFIG: Record<Region, RegionConfig> = {
   },
 };
 
-export function fuelEfficiencyDefault(region: Region, powertrain: Powertrain): number {
-  const cfg = REGION_CONFIG[region];
+export function fuelEfficiencyDefault(ctx: FormatContext, powertrain: Powertrain): number {
+  const cfg = regionConfigForContext(ctx);
   return powertrain === 'EV' ? cfg.defaultEvEfficiency : cfg.defaultIceEfficiency;
 }
 
-export function fuelPriceDefault(region: Region, powertrain: Powertrain): number {
-  const cfg = REGION_CONFIG[region];
+export function fuelPriceDefault(ctx: FormatContext, powertrain: Powertrain): number {
+  const cfg = regionConfigForContext(ctx);
   return powertrain === 'EV' ? cfg.defaultElectricityPrice : cfg.defaultIceFuelPrice;
 }
 
@@ -150,15 +206,15 @@ export function formatCurrency(
   ctx: FormatContext,
   fractionDigits = 0,
 ): string {
-  const cfg = REGION_CONFIG[ctx.region];
+  const cur = currencyForContext(ctx);
   const formatted = Math.abs(value).toLocaleString(bcp47ForContext(ctx), {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   });
   const sign = value < 0 ? '-' : '';
-  return cfg.currencyAfter
-    ? `${sign}${formatted} ${cfg.currencySymbol}`
-    : `${sign}${cfg.currencySymbol}${formatted}`;
+  return cur.after
+    ? `${sign}${formatted} ${cur.symbol}`
+    : `${sign}${cur.symbol}${formatted}`;
 }
 
 /**
@@ -174,7 +230,7 @@ export function formatCompactCurrency(
   ctx: FormatContext,
   subThousandFractionDigits = 0,
 ): string {
-  const cfg = REGION_CONFIG[ctx.region];
+  const cur = currencyForContext(ctx);
   const abs = Math.abs(value);
   const subThousandScale = 10 ** subThousandFractionDigits;
   const k =
@@ -182,5 +238,5 @@ export function formatCompactCurrency(
       ? `${Math.round(abs / 100) / 10}k`
       : String(Math.round(abs * subThousandScale) / subThousandScale);
   const sign = value < 0 ? '-' : '';
-  return cfg.currencyAfter ? `${sign}${k} ${cfg.currencySymbol}` : `${sign}${cfg.currencySymbol}${k}`;
+  return cur.after ? `${sign}${k} ${cur.symbol}` : `${sign}${cur.symbol}${k}`;
 }

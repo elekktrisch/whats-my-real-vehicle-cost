@@ -24,6 +24,7 @@ const usLeaseShared = {
   fuelPrice: 3.5,
   chargerStatus: 'none' as const,
   solar: false,
+  homeChargerInstall: 1500,
   apr: 4.5,
   leaseTermMonths: 36,
   leaseEndChoice: 'handBack' as const,

@@ -231,18 +231,19 @@ export class LeaseEndSection {
   protected readonly distanceUnit = computed(() => this.store.regionConfig().distanceUnit);
   protected readonly mileageOverageSuffix = computed(() => {
     const cfg = this.store.regionConfig();
+    const cur = this.store.currencyDisplay();
     const unit = ` /${cfg.distanceUnit}`;
-    return cfg.currencyAfter ? `${unit} ${cfg.currencySymbol}` : unit;
+    return cur.after ? `${unit} ${cur.symbol}` : unit;
   });
 
   // Pre-formatted residual span (HTML, monospace) for the buyOut blurb.
   // Built outside the catalog because the styling is locale-independent.
   protected readonly residualHtml = computed(() => {
-    const cfg = this.store.regionConfig();
+    const cur = this.store.currencyDisplay();
     const value = Math.round(this.store.residualValue()).toLocaleString(this.store.bcp47());
-    const formatted = cfg.currencyAfter
-      ? `${value} ${cfg.currencySymbol}`
-      : `${cfg.currencySymbol}${value}`;
+    const formatted = cur.after
+      ? `${value} ${cur.symbol}`
+      : `${cur.symbol}${value}`;
     return `<span class="font-mono text-tx">${formatted}</span>`;
   });
 

@@ -1,5 +1,5 @@
 export type Region = 'US' | 'EU';
-export type Language = 'en' | 'de';
+export type Language = 'en' | 'de' | 'it' | 'fr' | 'es';
 export type Powertrain = 'ICE' | 'EV';
 export type Tab = 'lease' | 'finance' | 'cash';
 export type VehicleCategory = 'economy' | 'mid' | 'luxury';

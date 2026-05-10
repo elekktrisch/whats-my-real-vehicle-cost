@@ -24,6 +24,7 @@ const usFinanceShared = {
   fuelPrice: 3.5,
   chargerStatus: 'none' as const,
   solar: false,
+  homeChargerInstall: 1500,
   apr: 6,
   loanTermMonths: 60,
 };
@@ -58,6 +59,7 @@ describe('financeTco', () => {
       fuelPrice: 3.5,
       chargerStatus: 'none' as const,
       solar: false,
+      homeChargerInstall: 1500,
       opportunityCostRate: 0.05,
     };
     const finance = tcoBreakdown({

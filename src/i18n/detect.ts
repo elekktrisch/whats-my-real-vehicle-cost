@@ -1,6 +1,6 @@
 import type { Language } from '../app/scenario/scenario.types';
 
-const SUPPORTED: readonly Language[] = ['en', 'de'];
+const SUPPORTED: readonly Language[] = ['en', 'de', 'it', 'fr', 'es'];
 const STORAGE_KEY = 'lang';
 
 function isSupported(value: string): value is Language {

@@ -45,8 +45,6 @@ export const en: Translation = {
 
   languageSelector: {
     aria: 'Language',
-    EN: 'English',
-    DE: 'German',
   },
 
   powertrain: {
