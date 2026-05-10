@@ -4,10 +4,11 @@ import { Button } from '../../shared/atoms/button/button';
 import { Icon } from '../../shared/atoms/icon/icon';
 import { NumberInput } from '../../shared/atoms/number-input/number-input';
 import { PowertrainSelector } from '../../shared/molecules/powertrain-selector/powertrain-selector';
+import { Footer } from '../../shared/molecules/footer/footer';
 
 @Component({
   selector: 'app-splash-page',
-  imports: [Button, Icon, NumberInput, PowertrainSelector],
+  imports: [Button, Icon, NumberInput, PowertrainSelector, Footer],
   template: `
     <main class="min-h-[100dvh] flex items-center justify-center px-6 py-12 relative">
       <div
@@ -80,6 +81,10 @@ import { PowertrainSelector } from '../../shared/molecules/powertrain-selector/p
           >
         </div>
       </article>
+
+      <div class="absolute bottom-0 inset-x-0 max-w-[1200px] mx-auto px-4 sm:px-7 pb-6">
+        <app-footer />
+      </div>
     </main>
   `,
 })
