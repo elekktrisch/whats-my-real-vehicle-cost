@@ -12,9 +12,7 @@ A total-cost-of-ownership (TCO) calculator that shows what a car *really* costs 
 
 **Try it →** <https://elekktrisch.github.io/whats-my-real-vehicle-cost/>
 
-![Screenshot of the comparison page](./docs/screenshot.png)
-
-<!-- TODO: capture and commit docs/screenshot.png — comparison page on desktop, chart visible, all three modes in the strip. -->
+![Screenshot of the comparison page](./public/og.png)
 
 ## Why
 
