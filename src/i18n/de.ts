@@ -21,8 +21,8 @@ export const de: Translation = {
   },
 
   splash: {
-    heroTitle: 'Die Monatsrate',
-    heroTitleAccent: 'sind nicht die Kosten.',
+    heroTitle: 'Die Monatsraten',
+    heroTitleAccent: 'sind nicht die einzigen Kosten.',
     heroSubtitle:
       'Ein Diagramm. Was ein Auto über die Jahre wirklich kostet — Finanzierung, Wertverlust, Kraftstoff, Versicherung und Wartung, im Vergleich für Leasing, Kredit und Barkauf.',
     priceLabel: 'Verhandelter Preis',
@@ -50,7 +50,7 @@ export const de: Translation = {
 
   powertrain: {
     aria: 'Antrieb',
-    ICE: '🔥 Verbrenner / Hybrid',
+    ICE: '🔥 Fossil / Hybrid',
     EV: '⚡ 100% Elektro',
   },
 
@@ -122,14 +122,14 @@ export const de: Translation = {
     },
     fuelEfficiency: {
       label: 'Verbrauch',
-      tip: 'Fahrzeugeffizienz. Verbrenner nutzen mpg (US) oder L/100km (EU). EV nutzen mi/kWh (US) oder kWh/100km (EU).',
+      tip: 'Fahrzeugeffizienz. Fossile Fahrzeuge nutzen mpg (US) oder L/100km (EU). EV nutzen mi/kWh (US) oder kWh/100km (EU).',
     },
     evEfficiency: {
       label: 'EV-Effizienz',
     },
     fuelPrice: {
       label: 'Kraftstoffpreis',
-      tip: 'Preis pro Einheit für Kraftstoff oder Strom zum üblichen Tarif deiner Region.',
+      tip: 'Preis pro Einheit für Energie zum üblichen Tarif deiner Region.',
     },
     electricityPrice: {
       label: 'Strompreis',
@@ -185,7 +185,7 @@ export const de: Translation = {
     handBackDesc:
       'Du wechselst am Leasingende auf einen Neuwagen und schließt einen neuen Vertrag. Rückgabegebühr + Mehrkilometer/Verschleiß werden zu jedem Zyklusende fällig; jeder neue Zyklus erfordert eine frische Sonderzahlung.',
     buyOutDesc:
-      'Du übernimmst das Auto am Leasingende. Übernahmepreis ≈ {residual} (Restwert), bar bezahlt. Nach der Übernahme nur noch Versicherung, Wartung und Kraftstoff.',
+      'Du übernimmst das Auto am Leasingende. Übernahmepreis ≈ {residual} (Restwert), bar bezahlt. Nach der Übernahme nur noch Versicherung, Wartung und Energie.',
     choice: {
       handBack: 'Neu leasen',
       buyOut: 'Übernehmen',
@@ -404,7 +404,7 @@ export const de: Translation = {
 
   footer: {
     fineprint:
-      'Kleingedrucktes — das ist ein Hobbyprojekt, an Wochenenden von einem Typen aus dem Internet zusammengeschustert. Die Zahlen sind grobe Schätzungen mit einem Stapel vereinfachender Annahmen (Wertverlustkurven, regionale Vorgaben, Kategoriefaktoren, etc.). Taugt als Plausibilitätscheck; ersetzt aber weder den echten Vertrag vom Händler, ein echtes Versicherungsangebot, deine eigene Rechnung, noch einen Finanzberater mit Lizenz. Bitte unterschreib keinen fünfstelligen Vertrag, weil ein Diagramm auf der Website von einem Fremden das so meint.',
+      'Kleingedrucktes — diese Page wurde von einem Kerl aus dem Internet vibe-coded. Die Zahlen sind grobe Schätzungen mit einem Haufen vereinfachender Annahmen (Wertverlustkurven, regionale Vorgaben, Kategoriefaktoren, etc.). Taugt als Plausibilitätscheck; ersetzt aber weder den echten Vertrag vom Händler, ein echtes Versicherungsangebot, deine eigene Rechnung, noch einen Finanzberater mit Lizenz. Bitte unterschreib keinen fünfstelligen Vertrag, weil ein Diagramm auf der Website von einem Fremden das so meint.',
   },
 
   chart: {
